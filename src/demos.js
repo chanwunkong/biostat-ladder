@@ -91,7 +91,7 @@ const QD = {
   ],
   'c4-5': [
     { demo: { click: ['#ww-mode [data-m="m"]'], set: { 'ww-delta': 2.5, 'ww-sd': 10, 'ww-a': '0.05', 'ww-pw': '0.8' }, look: '差異從 5 減半為 2.5。和 Δ = 5 時的「每組所需」（64 人）比較。' } },
-    { demo: { click: ['#ww-mode [data-m="m"]'], set: { 'ww-delta': 5, 'ww-sd': 10, 'ww-a': '0.05', 'ww-pw': '0.8' }, look: '樣本數應該在研究開始前就決定，依據寫在下方的「論文寫法」裡。' } },
+    { demo: { click: ['#ww-mode [data-m="m"]'], set: { 'ww-delta': 5, 'ww-sd': 10, 'ww-a': '0.05', 'ww-pw': '0.8' }, look: '樣本數應該在研究開始前就決定，計算依據列在下方的「數字的標準寫法」。' } },
   ],
   'c4-6': [
     { demo: { set: { 'wps-m': 3, 'wps-c': 50, 'wps-b': 1 }, look: '每組只有 3 隻小鼠。看「細胞當 n」的偽陽性率遠超過 5%。' } },

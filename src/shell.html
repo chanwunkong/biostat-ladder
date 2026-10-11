@@ -376,6 +376,32 @@ label.flash { animation: flash 1.6s ease; }
 .demo-btn:hover { background: var(--eosin-soft); }
 .site-foot { border-top: 1px solid var(--line); font-size: 12.5px; color: var(--muted); padding-block: 20px 110px !important; }
 .site-foot p { margin: 0 0 6px; max-width: 70ch; }
+/* 數字與圖連動（SPEC 第二條） */
+.hint { font-size: 13px; color: var(--muted); margin: 14px 0 6px; }
+[data-card] { cursor: pointer; }
+.kv > [data-card], .fbar > [data-card] { border: 1.5px solid transparent; }
+.kv > [data-card] > span::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--eosin); margin-right: 6px; vertical-align: 2px; }
+.kv > [data-card]:hover { border-color: var(--line); }
+.kv > [data-card][aria-pressed="true"], .fbar > [data-card][aria-pressed="true"] { border-color: var(--eosin); background: var(--eosin-soft); }
+.fbar > [data-card] { border-radius: 6px; padding: 4px 6px; }
+svg .hlx { display: none; }
+svg .hlx.on { display: inline; }
+svg.focus > :not(.on):not(.gl):not(.ax):not(text):not(.keep) { opacity: .15; transition: opacity .15s; }
+svg.focus [data-k].on { opacity: 1; }
+tr[data-card]:hover td { background: var(--sunk); }
+tr.on td, td.on { background: var(--eosin-soft); }
+.rbar.on, .hbar i.on, .cellw.on .cell { outline: 2px solid var(--eosin); outline-offset: 2px; }
+.cellw { display: inline-block; border-radius: 8px; }
+.pick { display: none; }
+.pick.on { display: block; }
+.facts { margin: 8px 0 0; padding-left: 1.1em; font-size: 12.5px; color: var(--muted); }
+.cards-sec .kv { margin-top: 4px; }
+details.more { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 4px; }
+details.more summary { cursor: pointer; color: var(--accent); font-size: 14px; min-height: 40px; display: flex; align-items: center; }
+.defs > div { margin-bottom: 10px; }
+.defs dt { font-weight: 600; font-size: 14px; }
+.defs dd { margin: 2px 0 0; color: var(--muted); font-size: 13.5px; }
+tr.sub td { border-top: 0; padding-top: 0; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 

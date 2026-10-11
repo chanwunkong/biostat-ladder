@@ -1,18 +1,45 @@
 #!/bin/sh
-# 用無頭 Chrome 載入每一章，並按下所有「在上方圖表示範這題」按鈕，回報 JavaScript 錯誤。
+# 用無頭 Chrome 載入每一章：按下所有「在上方圖表示範這題」按鈕與所有數字卡；
+# 在實驗室頁跑過每一種分析並按遍數字卡。回報 JavaScript 錯誤，以及沒有對應圖上元素的數字卡。
 # 執行：sh tests/smoke.sh（需先 python3 build.py）
 cd "$(dirname "$0")/.." || exit 1
 CHROME="${CHROME:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"
 TMP=$(mktemp -d)
 PROBE="$TMP/probe.html"
+cat > "$TMP/probe.js" <<'EOF'
+setTimeout(() => {
+  let demos = 0, cards = 0; const orphan = [];
+  const clickCards = root => $$('[data-card]', root).forEach(c => {
+    c.click(); cards++;
+    const k = c.dataset.card, hit = [...root.querySelectorAll('[data-k]')].some(e => (e.getAttribute('data-k') || '').split(' ').includes(k));
+    const v = (c.querySelector('b') || c).textContent.trim();
+    if (!hit && !/^0(\s|\/|$)/.test(v)) orphan.push(k);
+    c.click();
+  });
+  if (location.hash === '#lab') {
+    const P = { table1: ['bp_trial', { g: 'group', vars: ['age', 'sex', 'bmi'] }], ttest: ['bp_trial', { y: 'sbp_wk12', g: 'group' }], paired: ['bp_trial', { a: 'sbp_base', b: 'sbp_wk12' }],
+      anova: ['plant_growth', { y: 'height_cm', g: 'fertilizer' }], chisq: ['cvd_cohort', { r: 'smoker', c: 'cvd_10y' }], corr: ['cvd_cohort', { x: 'age', y: 'sbp' }],
+      linreg: ['bp_trial', { y: 'sbp_wk12', xs: ['group', 'sbp_base'] }], logreg: ['cvd_cohort', { y: 'cvd_10y', xs: ['smoker', 'age'] }],
+      surv: ['lung_surv', { time: 'time_months', status: 'status', g: 'treatment', xs: ['treatment', 'stage'] }], multi: ['gene_expr', { g: 'tissue' }], power: ['bp_trial', {}] };
+    for (const [an, [ds, sel]] of Object.entries(P)) {
+      try { state.dsId = ds; state.an = an; state.sels = { [an]: sel }; renderLab(); runAnalysis(); if ($('#result .err')) __e.push(an + ': ' + $('#result .err').textContent); clickCards($('#result')); }
+      catch (x) { __e.push(an + ': ' + x.message); }
+    }
+  } else {
+    $$('[data-demo]').forEach(b => { try { b.click(); demos++; } catch (x) { __e.push(x.message); } });
+    const w = $('#widget'); if (w) clickCards(w);
+  }
+  document.title = `demos=${demos} cards=${cards} orphan=${orphan.join(',')} errors=${__e.join('|')}`;
+}, 1200);
+EOF
 {
   printf '<script>window.__e=[];addEventListener("error",e=>__e.push(e.message));</script>'
-  sed 's#</body>#<script>setTimeout(()=>{let n=0;document.querySelectorAll("[data-demo]").forEach(b=>{try{b.click();n++}catch(x){__e.push(x.message)}});document.title="demos="+n+" errors="+__e.join("|");},1200)</script></body>#' docs/index.html
+  sed 's#</body>#<script src="probe.js"></script></body>#' docs/index.html
 } > "$PROBE"
 fail=0
 for h in home c0-1 c0-2 c0-3 c0-4 c1-1 c1-2 c1-3 c1-4 c1-5 c2-1 c2-2 c2-3 c2-4 c3-1 c3-2 c3-3 c3-4 c3-5 c4-1 c4-2 c4-3 c4-4 c4-5 c4-6 c5-1 c5-2 c5-3 c5-4 c5-5 lab data; do
-  r=$("$CHROME" --headless=new --disable-gpu --window-size=500,900 --virtual-time-budget=6000 --dump-dom "file://$PROBE#$h" 2>/dev/null | grep -o '<title>[^<]*</title>' | tail -1 | sed 's/<[^>]*>//g')
-  case "$r" in *"errors=") echo "ok   $h  $r" ;; *) echo "FAIL $h  $r"; fail=1 ;; esac
+  r=$("$CHROME" --headless=new --disable-gpu --window-size=500,900 --virtual-time-budget=8000 --dump-dom "file://$PROBE#$h" 2>/dev/null | grep -o '<title>[^<]*</title>' | tail -1 | sed 's/<[^>]*>//g')
+  case "$r" in *"orphan= errors=") echo "ok   $h  $r" ;; *) echo "FAIL $h  $r"; fail=1 ;; esac
 done
 rm -rf "$TMP"
 exit $fail
