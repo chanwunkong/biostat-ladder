@@ -55,9 +55,28 @@ function renderHome() {
 <ul class="how"><li><b>沒有程式基礎也可以。</b>所有計算都在瀏覽器裡完成，不需要安裝軟體，也不用寫程式。</li><li><b>照順序讀。</b>每一階都只用到前面學過的東西。已經會的章節可以直接做小測驗確認。</li><li><b>在實驗室動手做。</b>Level 3 開始，每章都有「到實驗室動手做」按鈕，會自動載入對應的資料與設定。</li><li><b>用自己的資料。</b>Excel 存成 CSV 後上傳（UTF-8 或 Big5 編碼都可以），資料不會離開你的電腦。</li></ul>
 </div>`;
 }
+/* ---------- 練習題的名詞（定義來自 content.js 的 GLOSS） ---------- */
+function termsOf(q) {
+  const text = [q.q, ...q.o, q.why, q.demo && q.demo.look].filter(Boolean).join(' '), hits = [];
+  GLOSS.forEach((g, gi) => { const pos = [g[0], ...g[1]].map(f => text.indexOf(f)).filter(i => i >= 0); if (pos.length) hits.push([Math.min(...pos), gi]); });
+  return hits.sort((x, y) => x[0] - y[0]).map(h => h[1]);
+}
+const termsHTML = q => { const t = termsOf(q); return t.length ? `<div class="terms"><span class="lbl">這題的名詞（點一下看定義）</span><div class="tchips">${t.map(gi => `<button type="button" class="tchip" data-g="${gi}" aria-pressed="false">${esc(GLOSS[gi][0])}</button>`).join('')}</div><div class="tdef" hidden></div></div>` : ''; };
+function bindTerms(c) {
+  $$('.terms').forEach(box => {
+    $$('.tchip', box).forEach(b => {
+      b.onclick = () => {
+        const on = b.getAttribute('aria-pressed') !== 'true', d = $('.tdef', box), [term, , def, ch] = GLOSS[+b.dataset.g], t = CH.find(x => x.id === ch);
+        $$('.tchip', box).forEach(x => x.setAttribute('aria-pressed', String(x === b && on)));
+        d.hidden = !on;
+        if (on) d.innerHTML = `<b>${esc(term)}</b>　${esc(def)}<span class="tsrc">${ch === c.id ? '本章內容有說明' : `<a href="#${ch}">${t.num} 章「${esc(t.title)}」</a>${CH.indexOf(t) > CH.indexOf(c) ? '會詳細說明' : '學過'}`}</span>`;
+      };
+    });
+  });
+}
 function renderChapter(id) {
   const i = CH.findIndex(c => c.id === id), c = CH[i], L = LEVELS[c.lv], prev = CH[i - 1], next = CH[i + 1];
-  const quiz = c.quiz.map((q, qi) => { const ord = q.o.map((_, k) => k).sort(() => Math.random() - 0.5); return `<div class="q" data-q="${qi}"><p class="q-t"><span class="mono">Q${qi + 1}</span>${esc(q.q)}</p>${q.demo && c.widget ? `<button type="button" class="demo-btn" data-demo="${qi}"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 15V5M5 9l5-5 5 5" style="fill:none;stroke:currentColor;stroke-width:2"/></svg>在上方圖表示範這題</button>` : ''}<div class="opts">${ord.map(k => `<button type="button" class="opt" data-k="${k}">${esc(q.o[k])}</button>`).join('')}</div><p class="why" hidden></p></div>`; }).join('');
+  const quiz = c.quiz.map((q, qi) => { const ord = q.o.map((_, k) => k).sort(() => Math.random() - 0.5); return `<div class="q" data-q="${qi}"><p class="q-t"><span class="mono">Q${qi + 1}</span>${esc(q.q)}</p>${termsHTML(q)}${q.demo && c.widget ? `<button type="button" class="demo-btn" data-demo="${qi}"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 15V5M5 9l5-5 5 5" style="fill:none;stroke:currentColor;stroke-width:2"/></svg>在上方圖表示範這題</button>` : ''}<div class="opts">${ord.map(k => `<button type="button" class="opt" data-k="${k}">${esc(q.o[k])}</button>`).join('')}</div><p class="why" hidden></p></div>`; }).join('');
   $('#article').innerHTML = `<div class="ch-top"><p class="eyebrow">Level ${L.n} · ${L.name} · 第 ${c.num} 章</p><button class="toc-btn" type="button" data-toc>☰ 目錄</button></div><h1>${c.title}</h1>
 ${c.widget ? `<section class="widget-box"><p class="lbl">動手玩 · ${c.wtitle}</p><div class="demo-note" id="demoNote" hidden></div><div class="widget" id="widget"></div></section>` : ''}
 <div class="prose">${c.body}</div>
@@ -68,7 +87,7 @@ ${c.quiz.length ? `<section class="quiz"><h2>小測驗</h2>${quiz}</section>` : 
   if (c.widget) { W[c.widget]($('#widget')); linkify($('#widget')); }
   $$('[data-lab]').forEach(b => { b.onclick = () => openLab(c.labs[+b.dataset.lab]); });
   $('#doneBtn').onclick = () => { setDone(id, !state.done[id]); const d = !!state.done[id]; $('#doneBtn').textContent = d ? '已完成 ✓' : '標記為完成'; $('#doneBtn').classList.toggle('done', d); };
-  bindDemos(c);
+  bindDemos(c); bindTerms(c);
   const right = new Set();
   $$('.q').forEach(qe => {
     const q = c.quiz[+qe.dataset.q];
