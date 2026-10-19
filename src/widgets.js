@@ -264,16 +264,19 @@ Object.assign(W, {
     el.addEventListener('input', up); up();
   },
   kmbuild(el) {
-    const T = [3, 5, 7, 8, 11, 12, 15, 18, 20, 24], st = [1, 1, 0, 1, 1, 0, 1, 0, 1, 0];
-    el.innerHTML = `<p class="w-cap">每條線是一位病人的追蹤時間。<b>點一下病人那一列</b>切換結局：紅點 = 死亡（事件），藍色 ＋ = 設限（失聯或研究結束時仍存活）。</p><div class="chart-wrap" id="wk-a"></div><div class="chart-wrap" id="wk-b"></div>${legend([['var(--c1)', 'Kaplan–Meier（正確）'], ['var(--c2)', '直接刪除設限者（錯誤）']])}<div class="kv" id="wk-k"></div>`;
+    const D = STUDY(), I = [...Array(D.n).keys()], pick = I.filter(i => D.hospital[i] === 'H1').slice(0, 10).sort((a, b) => D.time_months[a] - D.time_months[b]), T = pick.map(i => D.time_months[i]), st = pick.map(i => D.cvd_event[i]), st0 = st.slice(), ids = pick.map(i => D.id[i]);
+    el.innerHTML = SRC_NOTE + `<p class="w-cap">H1 醫院 10 位病人的追蹤時間。紅點 = 發生心血管事件，藍色 ＋ = 設限（追蹤結束時還沒發生）。<b>點一下病人那一列</b>可以切換結局，看曲線怎麼變。</p><div class="chart-wrap" id="wk-a"></div><div class="chart-wrap" id="wk-b"></div>${legend([['var(--c1)', 'Kaplan–Meier（正確）'], ['var(--c2)', '直接刪除設限者（錯誤）']])}<div class="kv" id="wk-k"></div><h4>全部 400 位病人：新藥 vs 安慰劑</h4><div class="chart-wrap" id="wk-c"></div>${legend([['var(--c1)', '安慰劑'], ['var(--c2)', '新藥']])}<div class="kv" id="wk-k2"></div>`;
     const up = () => {
-      $('#wk-a').innerHTML = chart({ ycats: T.map((_, i) => `病人 ${i + 1}`), x: [0, 25], h: 320, xlab: '月', m: { l: 62 }, xgrid: true }, (X, Y, { M, iw, ih }) => T.map((t, i) => `<g class="tap" data-i="${i}" role="button" tabindex="0" aria-label="病人 ${i + 1}，${st[i] ? '死亡' : '設限'}，點一下切換"><rect x="${M.l}" y="${Y(i) - ih / 20}" width="${iw}" height="${ih / 10}" style="fill:transparent"/><line x1="${X(0)}" x2="${X(t)}" y1="${Y(i)}" y2="${Y(i)}" style="stroke:var(--muted);stroke-width:3"/>${st[i] ? `<circle data-k="ev" cx="${X(t)}" cy="${Y(i)}" r="8" style="fill:var(--c2)"/>` : `<path data-k="ce" d="M${X(t) - 8} ${Y(i)}h16M${X(t)} ${Y(i) - 8}v16" style="stroke:var(--c1);stroke-width:3.5"/>`}</g>`).join(''));
+      $('#wk-a').innerHTML = chart({ ycats: T.map((_, i) => ids[i]), x: [0, 37], h: 320, xlab: '月', m: { l: 62 }, xgrid: true }, (X, Y, { M, iw, ih }) => T.map((t, i) => `<g class="tap" data-i="${i}" role="button" tabindex="0" aria-label="${ids[i]}，${st[i] ? '事件' : '設限'}，點一下切換"><rect x="${M.l}" y="${Y(i) - ih / 20}" width="${iw}" height="${ih / 10}" style="fill:transparent"/><line x1="${X(0)}" x2="${X(t)}" y1="${Y(i)}" y2="${Y(i)}" style="stroke:var(--muted);stroke-width:3"/>${st[i] ? `<circle data-k="ev" cx="${X(t)}" cy="${Y(i)}" r="8" style="fill:var(--c2)"/>` : `<path data-k="ce" d="M${X(t) - 8} ${Y(i)}h16M${X(t)} ${Y(i) - 8}v16" style="stroke:var(--c1);stroke-width:3.5"/>`}</g>`).join(''));
       const k = S.km(T, st), ev = T.filter((_, i) => st[i]), nv = ev.length ? S.km(ev, ev.map(() => 1)) : null;
-      $('#wk-b').innerHTML = chart({ x: [0, 25], y: [0, 1], h: 240, xlab: '月', ylab: '存活機率', xgrid: true }, (X, Y) => (nv ? kmPath(X, Y, nv, 'var(--c2)', true) : '') + kmPath(X, Y, k, 'var(--c1)') + [[k, 'med', 'var(--c1)'], [nv, 'nmed', 'var(--c2)']].map(([kk, key, c]) => (kk && Number.isFinite(kk.median) ? `<g class="hlx" data-k="${key}"><line x1="${X(0)}" x2="${X(kk.median)}" y1="${Y(0.5)}" y2="${Y(0.5)}" style="stroke:${c};stroke-dasharray:4 3"/><line x1="${X(kk.median)}" x2="${X(kk.median)}" y1="${Y(0.5)}" y2="${Y(0)}" style="stroke:${c};stroke-width:3"/></g>` : '')).join('') + k.cens.map(c => `<line x1="${X(c.t)}" x2="${X(c.t)}" y1="${Y(c.S) - 6}" y2="${Y(c.S) + 6}" style="stroke:var(--c1);stroke-width:2"/>`).join(''));
-      $('#wk-k').innerHTML = kvs([['事件', ev.length, 'ev'], ['設限', 10 - ev.length, 'ce'], ['KM 中位存活', Number.isFinite(k.median) ? k.median + ' 月' : '未達到', 'med'], ['刪除設限者的中位數', nv && Number.isFinite(nv.median) ? nv.median + ' 月' : '—', 'nmed']]);
+      $('#wk-b').innerHTML = chart({ x: [0, 37], y: [0, 1], h: 240, xlab: '月', ylab: '未發生事件的機率', xgrid: true }, (X, Y) => (nv ? kmPath(X, Y, nv, 'var(--c2)', true) : '') + kmPath(X, Y, k, 'var(--c1)') + [[k, 'med', 'var(--c1)'], [nv, 'nmed', 'var(--c2)']].map(([kk, key, c]) => (kk && Number.isFinite(kk.median) ? `<g class="hlx" data-k="${key}"><line x1="${X(0)}" x2="${X(kk.median)}" y1="${Y(0.5)}" y2="${Y(0.5)}" style="stroke:${c};stroke-dasharray:4 3"/><line x1="${X(kk.median)}" x2="${X(kk.median)}" y1="${Y(0.5)}" y2="${Y(0)}" style="stroke:${c};stroke-width:3"/></g>` : '')).join('') + k.cens.map(c => `<line x1="${X(c.t)}" x2="${X(c.t)}" y1="${Y(c.S) - 6}" y2="${Y(c.S) + 6}" style="stroke:var(--c1);stroke-width:2"/>`).join(''));
+      $('#wk-k').innerHTML = kvs([['事件', ev.length, 'ev'], ['設限', 10 - ev.length, 'ce'], ['KM 中位存活時間', Number.isFinite(k.median) ? k.median + ' 月' : '未達到', 'med'], ['刪除設限者的中位數', nv && Number.isFinite(nv.median) ? nv.median + ' 月' : '—', 'nmed']]);
       $$('.tap', el).forEach(g => { const tg = () => { st[+g.dataset.i] ^= 1; up(); }; g.onclick = tg; g.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tg(); } }; });
     };
-    el._demo = d => { d.st.forEach((v, i) => { st[i] = v; }); up(); };
+    el._demo = d => { (d.st === 'data' ? st0 : d.st).forEach((v, i) => { st[i] = v; }); up(); };
+    const g = I.map(i => (D.group[i] === 'drug' ? 1 : 0)), K2 = [0, 1].map(k => S.km(I.filter(i => g[i] === k).map(i => D.time_months[i]), I.filter(i => g[i] === k).map(i => D.cvd_event[i]))), cx = S.cox(D.time_months, D.cvd_event, g.map(v => [v])), LR = S.logrank(D.time_months, D.cvd_event, g, 2);
+    $('#wk-c').innerHTML = chart({ x: [0, 37], y: [0.5, 1], h: 240, xlab: '月', ylab: '未發生事件的機率', xgrid: true }, (X, Y) => K2.map((k, j) => { let p = `M${X(0)} ${Y(1)}`; k.steps.slice(1).forEach(s => { p += `H${X(s.t).toFixed(1)}V${Y(s.S).toFixed(1)}`; }); return `<path data-k="hr c${j}" d="${p}H${X(k.end)}" style="fill:none;stroke:var(--c${j + 1});stroke-width:2.5"/>` + k.cens.filter((_, q) => q % 2 === 0).map(c => `<line data-k="cens" x1="${X(c.t)}" x2="${X(c.t)}" y1="${Y(c.S) - 4}" y2="${Y(c.S) + 4}" style="stroke:var(--c${j + 1});stroke-width:1.2"/>`).join(''); }).join(''));
+    $('#wk-k2').innerHTML = kvs([['安慰劑組事件數', `${K2[0].events} / ${K2[0].n}`, 'c0'], ['新藥組事件數', `${K2[1].events} / ${K2[1].n}`, 'c1'], ['24 個月未發生事件（安慰劑 vs 新藥）', `${F.n(100 * K2[0].at(24).S, 1)}% vs ${F.n(100 * K2[1].at(24).S, 1)}%`, 'hr'], ['危險比（新藥 ÷ 安慰劑）', F.n(Math.exp(cx.b[0]), 2), 'hr'], ['log-rank p 值', F.p(LR.p), 'hr']]);
     up();
   },
   mtest(el) {
@@ -1187,28 +1190,42 @@ Object.assign(W, {
     segBind(el, '#wba-m', bt => { mode = bt.dataset.m; up(); }); el.addEventListener('input', up); up();
   },
   mhw(el) {
-    el.innerHTML = `<p class="w-cap">兩個科系：容易進的甲系（錄取率約 65%）、難進的乙系（約 25%）。各 500 名男性、500 名女性申請者。</p>
-<div class="w-row">${slider('wmh-f', '女性申請乙系的比例', 0.1, 0.9, 0.05, 0.8)}${slider('wmh-m', '男性申請乙系的比例', 0.1, 0.9, 0.05, 0.2)}${slider('wmh-g', '乙系中男性比女性多錄取（百分點）', -20, 20, 1, 0)}</div>
+    const D = STUDY(), I = [...Array(D.n).keys()], EX = { smoker: ['吸菸', i => D.smoker[i] === 1], diabetes: ['糖尿病', i => D.diabetes[i] === 1] }, ST = { sex: [['女性', '男性'], i => (D.sex[i] === 'M' ? 1 : 0)], age: [['60 歲以下', '60–69 歲', '70 歲以上'], i => (D.age[i] < 60 ? 0 : D.age[i] < 70 ? 1 : 2)] };
+    el.innerHTML = SRC_NOTE + MODE_SEG('wmh-mode') + `<p class="w-cap" id="wmh-cap"></p><div class="w-row" id="wmh-dr"><label class="fld"><span>暴露</span><select id="wmh-x">${Object.entries(EX).map(([k, v]) => `<option value="${k}">${v[0]}</option>`).join('')}</select></label><label class="fld"><span>分層變數</span><select id="wmh-s"><option value="age">年齡組</option><option value="sex">性別</option></select></label></div>
+<div class="w-row" id="wmh-or" hidden>${slider('wmh-f', '女性申請乙系的比例', 0.1, 0.9, 0.05, 0.8)}${slider('wmh-m', '男性申請乙系的比例', 0.1, 0.9, 0.05, 0.2)}${slider('wmh-g', '乙系中男性比女性多錄取（百分點）', -20, 20, 1, 0)}</div>
 <div class="chart-wrap" id="wmh-c"></div><div class="kv" id="wmh-k"></div>`;
+    let mode = 'data';
+    const orOf = ([[a, b], [c, d]]) => { const h = a * b * c * d === 0 ? 0.5 : 0, A = a + h, B = b + h, C = c + h, Dd = d + h, l = Math.log(A * Dd / (B * C)), se = Math.sqrt(1 / A + 1 / B + 1 / C + 1 / Dd); return { est: Math.exp(l), lo: Math.exp(l - 1.96 * se), hi: Math.exp(l + 1.96 * se) }; };
+    const upData = () => {
+      const [xl, fx] = EX[$('#wmh-x').value], [sl, fs] = ST[$('#wmh-s').value], tab = ix => [[ix.filter(i => fx(i) && D.cvd_event[i]).length, ix.filter(i => !fx(i) && D.cvd_event[i]).length], [ix.filter(i => fx(i) && !D.cvd_event[i]).length, ix.filter(i => !fx(i) && !D.cvd_event[i]).length]], tabs = sl.map((_, k) => tab(I.filter(i => fs(i) === k))), crude = tab(I), M = S.mantelHaenszel(tabs), K = ['sa', 'sb', 'sc'];
+      $('#wmh-cap').textContent = `研究資料：${xl}與 36 個月內心血管事件，依${$('#wmh-s').value === 'age' ? '年齡組' : '性別'}分層。`;
+      const rows = [...tabs.map((t, k) => ({ k: K[k], label: sl[k], ...orOf(t) })), { k: 'crude', label: '不分層（粗）', ...orOf(crude) }, { k: 'mh', label: 'Mantel–Haenszel', est: M.or, lo: M.ci[0], hi: M.ci[1] }];
+      $('#wmh-c').innerHTML = forestChart(rows, `${xl}的勝算比（相對於沒有${xl}，對數尺度）`);
+      $('#wmh-k').innerHTML = kvs([...rows.slice(0, tabs.length).map(r => [`${r.label}的勝算比`, F.n(r.est, 2), r.k]), ['粗勝算比（未分層）', F.n(rows[tabs.length].est, 2), 'crude'], ['Mantel–Haenszel 勝算比', `${F.n(M.or, 2)}（${F.ci(...M.ci, 2)}）`, 'mh']]);
+    };
     const up = () => {
+      $('#wmh-dr').hidden = mode !== 'data'; $('#wmh-or').hidden = mode === 'data';
+      if (mode === 'data') return upData();
+      $('#wmh-cap').textContent = '兩個科系：容易進的甲系（錄取率約 65%）、難進的乙系（約 25%）。各 500 名男性、500 名女性申請者。';
       const fB = sv('wmh-f', v => Math.round(v * 100) + '%'), mB = sv('wmh-m', v => Math.round(v * 100) + '%'), gB = sv('wmh-g') / 100;
       const cell = (n, p) => [Math.round(n * p), n - Math.round(n * p)];
       const tA = (() => { const m = cell(500 * (1 - mB), 0.65), f = cell(500 * (1 - fB), 0.65); return [[m[0], f[0]], [m[1], f[1]]]; })(), tB = (() => { const m = cell(500 * mB, 0.25 + gB / 2), f = cell(500 * fB, 0.25 - gB / 2); return [[m[0], f[0]], [m[1], f[1]]]; })();
       const crude = [[tA[0][0] + tB[0][0], tA[0][1] + tB[0][1]], [tA[1][0] + tB[1][0], tA[1][1] + tB[1][1]]], M = S.mantelHaenszel([tA, tB]);
-      const orOf = ([[a, b], [c, d]]) => { const h = a * b * c * d === 0 ? 0.5 : 0, A = a + h, B = b + h, C = c + h, D = d + h, l = Math.log(A * D / (B * C)), se = Math.sqrt(1 / A + 1 / B + 1 / C + 1 / D); return { est: Math.exp(l), lo: Math.exp(l - 1.96 * se), hi: Math.exp(l + 1.96 * se) }; };
       const rows = [{ k: 'sa', label: '甲系', ...orOf(tA) }, { k: 'sb', label: '乙系', ...orOf(tB) }, { k: 'crude', label: '兩系合起來（粗）', ...orOf(crude) }, { k: 'mh', label: 'Mantel–Haenszel', est: M.or, lo: M.ci[0], hi: M.ci[1] }];
       $('#wmh-c').innerHTML = forestChart(rows, '男性錄取的勝算比（相對於女性，對數尺度）');
       const rate = (t, j) => t[0][j] / (t[0][j] + t[1][j]);
       $('#wmh-k').innerHTML = kvs([['未分層：男 vs 女錄取率', `${F.n(100 * rate(crude, 0), 1)}% vs ${F.n(100 * rate(crude, 1), 1)}%`, 'crude'], ['甲系的勝算比', F.n(rows[0].est, 2), 'sa'], ['乙系的勝算比', F.n(rows[1].est, 2), 'sb'], ['粗勝算比（未分層）', F.n(rows[2].est, 2), 'crude'], ['Mantel–Haenszel 勝算比', `${F.n(M.or, 2)}（${F.ci(...M.ci, 2)}）`, 'mh']]);
     };
-    el.addEventListener('input', up); up();
+    segBind(el, '#wmh-mode', b => { mode = b.dataset.m; up(); }); el.addEventListener('input', up); el.addEventListener('change', up); up();
   },
   stdw(el) {
-    el.innerHTML = `<div class="seg wrap" id="wsd-m"><button type="button" data-m="std" aria-selected="true">年齡標準化</button><button type="button" data-m="paf" aria-selected="false">族群歸因分率</button></div><div id="wsd-body"></div>`;
-    let mode = 'std';
+    el.innerHTML = `<div class="seg wrap" id="wsd-m"><button type="button" data-m="data" aria-selected="true">研究資料：吸菸</button><button type="button" data-m="std" aria-selected="false">年齡標準化（自己調整）</button><button type="button" data-m="paf" aria-selected="false">族群歸因分率（自己調整）</button></div><div id="wsd-body"></div>`;
+    const D = STUDY(), I = [...Array(D.n).keys()], AG = ['60 歲以下', '60–69', '70 歲以上'], ag = i => (D.age[i] < 60 ? 0 : D.age[i] < 70 ? 1 : 2);
+    let mode = 'data';
     const draw = () => {
       const body = $('#wsd-body', el);
-      if (mode === 'std') {
+      if (mode === 'data') body.innerHTML = SRC_NOTE + `<p class="w-cap">吸菸者與不吸菸者 36 個月內心血管事件的比例。吸菸者的年齡分佈和不吸菸者不同，所以用全部 400 人的年齡分佈當標準人口，再比較一次。</p><div class="chart-wrap" id="wsd-c"></div><div class="kv" id="wsd-k"></div>`;
+      else if (mode === 'std') {
         body.innerHTML = `<p class="w-cap">甲、乙兩鎮各 10,000 人。調整各鎮的老年人口比例與各年齡層死亡率（每千人）。標準人口：老年人 30%。</p>
 <div class="w-row">${slider('wsd-oa', '甲鎮老年人比例', 0.05, 0.6, 0.05, 0.5)}${slider('wsd-ob', '乙鎮老年人比例', 0.05, 0.6, 0.05, 0.1)}</div>
 <div class="w-row">${slider('wsd-ya', '甲鎮年輕人死亡率', 0.5, 10, 0.5, 1.5)}${slider('wsd-oa2', '甲鎮老年人死亡率', 5, 80, 1, 40)}${slider('wsd-yb', '乙鎮年輕人死亡率', 0.5, 10, 0.5, 2)}${slider('wsd-ob2', '乙鎮老年人死亡率', 5, 80, 1, 50)}</div><div class="chart-wrap" id="wsd-c"></div><div class="kv" id="wsd-k"></div>`;
@@ -1216,6 +1233,12 @@ Object.assign(W, {
       up();
     };
     const up = () => {
+      if (mode === 'data') {
+        const rt = (s, k) => { const ix = I.filter(i => D.smoker[i] === s && (k == null || ag(i) === k)); return ix.length ? S.mean(ix.map(i => D.cvd_event[i])) : 0; }, wt = [0, 1, 2].map(k => I.filter(i => ag(i) === k).length / D.n), sd = s => S.sum([0, 1, 2].map(k => wt[k] * rt(s, k))), cr = [rt(0), rt(1)], st = [sd(0), sd(1)], pall = S.mean(D.cvd_event), pe = S.mean(D.smoker), paf = (pall - cr[0]) / pall, top = 100 * Math.max(...[0, 1, 2].flatMap(k => [rt(0, k), rt(1, k)]), ...cr, ...st) * 1.15;
+        $('#wsd-c').innerHTML = chart({ xcats: [...AG, '粗率', '年齡標準化'], y: [0, top], h: 250, ylab: '心血管事件 %' }, (X, Y, ctx) => { const bw = ctx.iw / 5 * 0.3; let g = ''; [0, 1, 2].forEach(k => [0, 1].forEach(s => { const v = 100 * rt(s, k); g += `<rect data-k="strat" x="${X(k) + (s - 1) * bw}" y="${Y(v)}" width="${bw}" height="${Y(0) - Y(v)}" style="fill:var(--c${s + 1})"/>`; })); [0, 1].forEach(s => { g += `<rect data-k="crude" x="${X(3) + (s - 1) * bw}" y="${Y(100 * cr[s])}" width="${bw}" height="${Y(0) - Y(100 * cr[s])}" style="fill:var(--c${s + 1})"/><rect data-k="std" x="${X(4) + (s - 1) * bw}" y="${Y(100 * st[s])}" width="${bw}" height="${Y(0) - Y(100 * st[s])}" style="fill:var(--c${s + 1})"/>`; }); return g; }) + legend([['var(--c1)', '不吸菸'], ['var(--c2)', '吸菸']]);
+        $('#wsd-k').innerHTML = kvs([['粗率（不吸菸 vs 吸菸）', `${F.n(100 * cr[0], 1)}% vs ${F.n(100 * cr[1], 1)}%`, 'crude'], ['年齡標準化率（不吸菸 vs 吸菸）', `${F.n(100 * st[0], 1)}% vs ${F.n(100 * st[1], 1)}%`, 'std'], ['族群歸因分率 PAF', `${F.n(100 * paf, 1)}%（吸菸比例 ${F.n(100 * pe, 1)}%）`, 'crude'], ['暴露組歸因分率', F.n(100 * (cr[1] - cr[0]) / cr[1], 1) + '%', 'crude']]);
+        return;
+      }
       if (mode === 'std') {
         const oa = sv('wsd-oa', v => Math.round(v * 100) + '%'), ob = sv('wsd-ob', v => Math.round(v * 100) + '%'), ya = sv('wsd-ya'), o2a = sv('wsd-oa2'), yb = sv('wsd-yb'), o2b = sv('wsd-ob2');
         const crA = (1 - oa) * ya + oa * o2a, crB = (1 - ob) * yb + ob * o2b, sA = 0.7 * ya + 0.3 * o2a, sB = 0.7 * yb + 0.3 * o2b, expA = (1 - oa) * yb + oa * o2b, smr = crA / expA, top = Math.max(crA, crB, sA, sB) * 1.15;
@@ -1234,13 +1257,19 @@ Object.assign(W, {
   },
   phw(el) {
     const u = Array.from({ length: 300 }, rngOf(601)), cens = Array.from({ length: 300 }, rngOf(602));
-    el.innerHTML = `<p class="w-cap">標準療法 vs 手術，各 150 人，追蹤 36 個月。設定手術組在「切點」前後的危險比。</p>
-<div class="w-row">${slider('wph-e', '前期的危險比（手術 ÷ 標準）', 0.3, 3, 0.1, 2)}${slider('wph-l', '後期的危險比', 0.3, 3, 0.1, 0.4)}${slider('wph-t', '切點（月）', 2, 24, 1, 6)}</div>
-<div class="w-cols"><figure class="fig"><figcaption>Kaplan–Meier 曲線</figcaption><div class="chart-wrap" id="wph-a"></div></figure><figure class="fig"><figcaption>log(−log) 圖</figcaption><div class="chart-wrap" id="wph-b"></div></figure></div>${legend([['var(--c1)', '標準療法'], ['var(--c2)', '手術']])}<div class="kv" id="wph-k"></div>`;
+    const DD = STUDY();
+    el.innerHTML = SRC_NOTE + MODE_SEG('wph-m') + `<p class="w-cap" id="wph-cap"></p>
+<div class="w-row"><span id="wph-or" hidden>${slider('wph-e', '前期的危險比（手術 ÷ 標準）', 0.3, 3, 0.1, 2)}${slider('wph-l', '後期的危險比', 0.3, 3, 0.1, 0.4)}</span>${slider('wph-t', '切點（月）', 2, 24, 1, 12)}</div>
+<div class="w-cols"><figure class="fig"><figcaption>Kaplan–Meier 曲線</figcaption><div class="chart-wrap" id="wph-a"></div></figure><figure class="fig"><figcaption>log(−log) 圖</figcaption><div class="chart-wrap" id="wph-b"></div></figure></div><div id="wph-lg"></div><div class="kv" id="wph-k"></div>`;
+    let mode = 'data';
     const up = () => {
+      $('#wph-or').hidden = mode === 'data';
+      $('#wph-cap').textContent = mode === 'data' ? '研究資料：新藥 vs 安慰劑，追蹤 36 個月的心血管事件。用切點把追蹤期分成前後兩段，比較兩段的率比。' : '標準療法 vs 手術，各 150 人，追蹤 36 個月。設定手術組在「切點」前後的危險比。';
+      $('#wph-lg').innerHTML = legend(mode === 'data' ? [['var(--c1)', '安慰劑'], ['var(--c2)', '新藥']] : [['var(--c1)', '標準療法'], ['var(--c2)', '手術']]);
       const he = sv('wph-e', v => v.toFixed(1)), hl = sv('wph-l', v => v.toFixed(1)), tc = sv('wph-t'), base = 0.04;
       const T = [], St = [], g = [];
-      for (let i = 0; i < 300; i++) {
+      if (mode === 'data') DD.id.forEach((_, i) => { T.push(DD.time_months[i]); St.push(DD.cvd_event[i]); g.push(DD.group[i] === 'drug' ? 1 : 0); });
+      else for (let i = 0; i < 300; i++) {
         const grp = i % 2, h1 = base * (grp ? he : 1), h2 = base * (grp ? hl : 1), e = -Math.log(1 - u[i]); let t = e / h1; if (t > tc) t = tc + (e - h1 * tc) / h2;
         const c = 12 + 24 * cens[i]; T.push(Math.min(t, c, 36)); St.push(t <= Math.min(c, 36) ? 1 : 0); g.push(grp);
       }
@@ -1251,7 +1280,7 @@ Object.assign(W, {
       $('#wph-b').innerHTML = chart({ x: [x0, x1], y: [y0, y1], h: 240, xlab: 'log(月)', ylab: 'log(−log S)' }, (X, Y) => ll.map((pts, i) => `<path data-k="ll" d="${pts.map(([a, b], j) => `${j ? 'L' : 'M'}${X(a).toFixed(1)} ${Y(b).toFixed(1)}`).join('')}" style="fill:none;stroke:${col4(i)};stroke-width:2"/>`).join('') + `<line class="hlx" data-k="early late" x1="${X(Math.log(tc))}" x2="${X(Math.log(tc))}" y1="${Y(y0)}" y2="${Y(y1)}" style="stroke:var(--c4);stroke-width:2;stroke-dasharray:5 4"/>`);
       $('#wph-k').innerHTML = kvs([['Cox 模型的單一危險比', F.n(hr, 2), 'hr'], [`切點前的率比（0–${tc} 月）`, F.n(pr(0, tc), 2), 'early'], [`切點後的率比（${tc}–36 月）`, F.n(pr(tc, 36), 2), 'late']]);
     };
-    el.addEventListener('input', up); up();
+    segBind(el, '#wph-m', b => { mode = b.dataset.m; up(); }); el.addEventListener('input', up); up();
   },
   missingw(el) {
     const r = rngOf(701), N = normOf(r), n = 200, age = Array.from({ length: n }, () => N(55, 10)), sbp = age.map(a => 90 + 0.8 * a + N(0, 10)), u = Array.from({ length: n }, () => r()), trueMean = S.mean(sbp);

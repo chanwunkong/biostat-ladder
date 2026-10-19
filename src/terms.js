@@ -746,5 +746,9 @@ const WTERM = {
   'c4-2': { '勝算': 'odds', 'e^β': 'or1 or10', '對數概似': 'll' },
   'poisson-reg': { '率比': 'rr', 'Poisson 迴歸': 'rr', '發生率': 'ra rb' },
   'bland-altman': { '偏差（一致性）': 'bias', '一致性界限': 'loa', 'Bland–Altman 圖': 'bias loa', '一致性': 'bias loa' },
+  'mh': { '分層': 'sa sb sc', 'Mantel–Haenszel 勝算比': 'mh', '粗勝算比': 'crude', '辛普森悖論': 'crude sa sb', '效果修飾': 'sa sb sc' },
+  'standardize': { '粗率': 'crude', '年齡標準化率': 'std', '族群歸因分率': 'crude', '標準化死亡比': 'std' },
+  'c4-3': { 'Kaplan–Meier': 'c0 c1', '設限': 'ce cens', '中位存活時間': 'med', '危險比': 'hr' },
+  'ph-check': { '比例風險假設': 'll', 'log(−log) 圖': 'll', '危險比': 'hr' },
   'c0-4': { '斜率': 'b', '截距': 'a', '殘差': 'ssr', '殘差平方和': 'ssr', '最小平方法': 'best' },
 };
