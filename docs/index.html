@@ -727,6 +727,15 @@ const S = (() => {
     return { po, pe, kappa: kap, se, ci: [kap - 1.959964 * se, kap + 1.959964 * se], n };
   }
   // Mantel–Haenszel：tabs 為各層的 2×2 表 [[a, b], [c, d]]。共同勝算比、Robins–Breslow–Greenland 信賴區間、CMH χ²（含與不含連續性校正）
+  // 反變異數加權統合分析：固定效果與 DerSimonian–Laird 隨機效果。yi 效果（例如 log RR），vi 變異數
+  function meta(yi, vi) {
+    const k = yi.length, w = vi.map(v => 1 / v), sw = sum(w), fe = sum(w.map((x, i) => x * yi[i])) / sw;
+    const Q = sum(w.map((x, i) => x * (yi[i] - fe) ** 2)), df = k - 1, C = sw - sum(w.map(x => x * x)) / sw, tau2 = Math.max(0, (Q - df) / C);
+    const wr = vi.map(v => 1 / (v + tau2)), swr = sum(wr), re = sum(wr.map((x, i) => x * yi[i])) / swr;
+    const pack = (est, se) => ({ est, se, lo: est - 1.959964 * se, hi: est + 1.959964 * se, z: est / se, p: 2 * (1 - pnorm(Math.abs(est / se))) });
+    const fix = pack(fe, Math.sqrt(1 / sw)), ran = pack(re, Math.sqrt(1 / swr)), tq = k > 2 ? qt(0.975, k - 2) : NaN, ps = Math.sqrt(tau2 + ran.se ** 2);
+    return { k, fixed: fix, random: ran, Q, df, pQ: df > 0 ? 1 - pchisq(Q, df) : NaN, I2: Q > df ? (Q - df) / Q : 0, tau2, w: w.map(x => x / sw), wr: wr.map(x => x / swr), pi: [re - tq * ps, re + tq * ps] };
+  }
   function mantelHaenszel(tabs) {
     let R = 0, Sx = 0, PR = 0, PSQR = 0, QS = 0, sumA = 0, sumE = 0, sumV = 0;
     for (const [[a, b], [c, d]] of tabs) {
@@ -901,7 +910,7 @@ const S = (() => {
   const nProps = (p1, p2, alpha, power) => { const za = qnorm(1 - alpha / 2), zb = qnorm(power), pb = (p1 + p2) / 2; return Math.ceil((za * Math.sqrt(2 * pb * (1 - pb)) + zb * Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))) ** 2 / ((p1 - p2) ** 2)); };
   const powerProps = (p1, p2, n, alpha) => { const za = qnorm(1 - alpha / 2), pb = (p1 + p2) / 2; return pnorm((Math.abs(p1 - p2) * Math.sqrt(n) - za * Math.sqrt(2 * pb * (1 - pb))) / Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))); };
 
-  return { dbinom, pbinom, dpois, ppois, propCI, binomTest, gof, signTest, twoProp, mcnemar, kappa, mantelHaenszel, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, varTest, mannWhitney, oneT, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, slrPredict, logistic, poisson, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
+  return { dbinom, pbinom, dpois, ppois, propCI, binomTest, gof, signTest, twoProp, mcnemar, kappa, mantelHaenszel, meta, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, varTest, mannWhitney, oneT, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, slrPredict, logistic, poisson, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
 })();
 
 /* ---------- 格式 ---------- */
@@ -3026,6 +3035,32 @@ const CH = [
       { q: '多重插補為什麼要補很多次，而不是補一次？', o: ['不同的補值之間的差異，反映了「不知道缺值是多少」的不確定性', '補越多次平均數越大', '為了讓樣本數變大', '因為第一次補的通常是錯的'], why: 'Rubin 法則把份與份之間的變異加進總變異數，標準誤才不會太小。' },
     ],
   },
+  {
+    id: 'meta', title: '統合分析',
+    body: `<p>同一個問題常有好幾篇研究，結果有大有小、有的區間包含 1 有的不包含。<b>統合分析</b>（meta-analysis）把多篇研究的效果量用統一的方法合併，得到一個整體估計，並描述研究之間的差異有多大。它通常是<b>系統性回顧</b>的最後一步：先依事先寫好的方法完整搜尋文獻、篩選、評估品質，再合併。</p>
+<h3>每篇研究只需要兩個數字</h3>
+<p>效果量（例如 log RR、log OR、平均差）和它的標準誤。比值類的效果量先取對數再合併，最後再轉回原尺度，因為對數尺度上才近似常態而且對稱。</p>
+<h3>反變異數加權</h3>
+<p>每篇研究的權重 = 1 ÷ 標準誤²。大型研究標準誤小、權重大；合併估計就是效果量的加權平均。</p>
+<h3>固定效果模型與隨機效果模型</h3>
+<ul><li><b>固定效果模型</b>：假設所有研究在估計<b>同一個</b>真實效果，研究之間的差異只來自抽樣誤差。</li>
+<li><b>隨機效果模型</b>：假設每篇研究的真實效果本身就不同（族群、劑量、追蹤時間不同），這些真實效果來自一個分佈，平均為 μ、變異數為 <b>τ²</b>（<b>研究間變異數</b>）。每篇研究的權重改成 1 ÷ (標準誤² + τ²)，小研究的相對權重變大，合併估計的信賴區間變寬。最常用的估計方法是 DerSimonian–Laird。</li></ul>
+<p>這裡的「固定效果」「隨機效果」與 {{random-eff}} 章的概念相同：研究就像從更大群體抽出的「窩」。</p>
+<h3>異質性</h3>
+<ul><li><b>Cochran's Q</b>：各研究效果與合併估計之差的加權平方和；若沒有<b>異質性</b>，Q 約等於自由度 k − 1。</li>
+<li><b>I²</b> = (Q − 自由度) ÷ Q：觀察到的變異中，有多少比例來自研究間的真實差異而不是抽樣誤差。</li>
+<li>隨機效果的 <b>預測區間</b>：下一個新研究（新族群）的真實效果可能落在的範圍；異質性大時，它比合併估計的信賴區間寬很多。</li></ul>
+<h3>森林圖</h3>
+<p><b>森林圖</b>每一列是一篇研究：方塊是效果量（大小代表權重），橫線是 95% 信賴區間；最下面的菱形是合併估計，菱形寬度是它的信賴區間。</p>
+<h3>發表偏差與漏斗圖</h3>
+<p>結果「漂亮」的研究比較容易被發表，這叫<b>發表偏差</b>。<b>漏斗圖</b>把每篇研究的效果量（橫軸）對精確度（縱軸）作圖：沒有偏差時，點會在合併估計兩側對稱，越精確的研究越集中，形如倒過來的漏斗；若某一側的小研究明顯缺少，可能有發表偏差。</p>
+<p class="note">本章資料：BCG 疫苗預防結核病的 13 個試驗（Colditz 等，1994），效果量是風險比 RR。論文依 PRISMA 規範報告系統性回顧與統合分析。</p>`,
+    quiz: [
+      { q: '某統合分析報告 I² = 92%。這代表什麼？', o: ['研究之間效果量的差異，大部分來自真實效果的不同，而不是抽樣誤差', '合併估計有 92% 的機率是對的', '92% 的研究結果相同', '合併估計的 p 值為 0.92'], demo: { click: ['#wma-m [data-m="fe"]'], look: '方塊之間的距離遠大於各自的信賴區間能解釋的範圍：這就是異質性。點 Q 和 I² 的數字卡看偏差。' }, why: 'I² = (Q − 自由度) ÷ Q，描述異質性的比例。' },
+      { q: '從固定效果模型改成隨機效果模型，通常會發生什麼事？', o: ['小研究的相對權重變大，合併估計的信賴區間變寬', '大研究的權重變得更大', '信賴區間一定變窄', '合併估計一定變成 1'], demo: { click: ['#wma-m [data-m="re"]'], look: '切到隨機效果：大型研究（Madras 1980）的方塊變小，小研究變大；隨機效果的菱形比固定效果寬。' }, why: '權重變成 1 ÷ (標準誤² + τ²)；τ² 對每篇研究都一樣，所以權重差距縮小。' },
+      { q: '漏斗圖中，精確度低的小研究幾乎都落在效果有利的一側，另一側空蕩蕩。最可能的解讀？', o: ['可能有發表偏差：效果不明顯的小研究沒被發表', '小研究比較準確', '應該只用小研究', '異質性為 0'], demo: { set: { 'wma-x': '' }, look: '看右圖：越下面的點（越不精確）分散越廣。對稱的漏斗代表兩側都有研究；如果一側缺很多小研究，就要懷疑發表偏差。' }, why: '漏斗圖不對稱是發表偏差的線索之一，但異質性也可能造成不對稱。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -3287,6 +3322,16 @@ const GLOSS = [
   ['單尾檢定', [], '只檢定一個方向（例如只看「變大」）的檢定。', 'c4-5'],
   ['群集', [], '彼此相關的一群觀察，例如同一隻小鼠的細胞、同一間醫院的病人。', 'c4-6'],
   ['偽重複', [], '把同一個實驗單位內的重複測量，誤當成獨立樣本。', 'c4-6'],
+  ['統合分析', ['meta-analysis'], '把多篇研究的效果量以反變異數加權合併，並描述研究間的差異。', 'meta'],
+  ['系統性回顧', [], '依事先寫好的方法完整搜尋、篩選並評估所有相關研究的文獻回顧。', 'meta'],
+  ['固定效果模型', [], '統合分析中假設所有研究估計同一個真實效果的模型。', 'meta'],
+  ['隨機效果模型', [], '統合分析中假設各研究的真實效果來自一個分佈（平均 μ、變異數 τ²）的模型。', 'meta'],
+  ['研究間變異數', ['τ²'], '隨機效果模型中，各研究真實效果之間的變異數。', 'meta'],
+  ['異質性', ['Cochran\'s Q'], '各研究效果量之間超出抽樣誤差的差異；Q 是各研究與合併估計之差的加權平方和。', 'meta'],
+  ['I²', [], '(Q − 自由度) ÷ Q：觀察到的變異中，來自研究間真實差異的比例。', 'meta'],
+  ['森林圖', [], '每列一篇研究的效果量與信賴區間，最下面以菱形表示合併估計的圖。', 'meta'],
+  ['發表偏差', [], '結果有利或明顯的研究較容易被發表，使文獻整體偏向某一方向。', 'meta'],
+  ['漏斗圖', [], '效果量對精確度的散佈圖；不對稱可能代表發表偏差。', 'meta'],
   ['完全案例分析', [], '排除任何變數有缺值的觀察值，只分析完整的資料。', 'missing'],
   ['完全隨機缺失', ['MCAR'], '缺不缺和任何變數都無關。', 'missing'],
   ['隨機缺失', ['MAR'], '缺不缺和已觀察到的變數有關，但給定這些變數後，和缺失的值本身無關。', 'missing'],
@@ -3315,7 +3360,7 @@ const ORDER = [
   ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff', 'ancova'],
   ['c3-4', 'simple-reg', 'c4-1', 'reg-diag', 'c4-2', 'poisson-reg', 'bland-altman'],
   ['mh', 'standardize', 'c4-3', 'ph-check'],
-  ['c4-4', 'c4-6', 'missing'],
+  ['c4-4', 'c4-6', 'missing', 'meta'],
   ['c5-2', 'c5-3', 'c5-4', 'c5-5'],
 ];
 // 對照教科書：W = Whitlock & Schluter 3e、R = Rosner 8e、K = Kirkwood & Sterne 2e（見 CURRICULUM.md）
@@ -3327,7 +3372,7 @@ const REFS = {
   'nonpar': 'Whitlock 13.4–13.7；Rosner 9.2–9.4', 'two-prop': 'Rosner 10.2、10.5；Kirkwood 第 16 章', 'kappa': 'Rosner 10.8；Landis & Koch (1977) Biometrics 33:159', 'mcnemar': 'Rosner 10.4；Kirkwood 第 21 章；Agresti, Categorical Data Analysis', 'two-assume': 'Whitlock 13.1–13.3；Rosner 8.6、8.10；Kirkwood 第 13 章', 'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
   'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'bland-altman': 'Kirkwood 第 36 章；Bland & Altman (1986) Lancet 327:307', 'poisson-reg': 'Kirkwood 第 22–24 章；Rosner 14.1–14.3', 'reg-diag': 'Kirkwood 第 12–13 章；Rosner 11.6；Whitlock 17.5–17.6', 'simple-reg': 'Whitlock 第 17 章；Rosner 11.2–11.6；Kirkwood 第 10 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
   'c4-2': 'Rosner 13.7–13.8；Kirkwood 第 19–20 章', 'ph-check': 'Rosner 14.11；Kirkwood 第 27 章', 'standardize': 'Rosner 13.4–13.5；Kirkwood 第 25、37 章', 'mh': 'Rosner 13.5–13.6；Kirkwood 第 18 章；Bickel 等 (1975) Science 187:398', 'c4-3': 'Whitlock 第 21 章；Rosner 14.8–14.11；Kirkwood 第 26–27 章', 'c4-4': 'Benjamini & Hochberg (1995), J R Stat Soc B 57:289–300',
-  'missing': 'Rosner 13.16；Little & Rubin, Statistical Analysis with Missing Data', 'c4-6': 'Rosner 12.10、13.13–13.14；Kirkwood 第 31 章', 'c5-2': 'Kirkwood 第 38 章；EQUATOR Network', 'c5-3': 'Kirkwood 第 38 章', 'c5-4': 'Kirkwood 第 34、38 章',
+  'meta': 'Rosner 13.10；Kirkwood & Sterne 第 32 章', 'missing': 'Rosner 13.16；Little & Rubin, Statistical Analysis with Missing Data', 'c4-6': 'Rosner 12.10、13.13–13.14；Kirkwood 第 31 章', 'c5-2': 'Kirkwood 第 38 章；EQUATOR Network', 'c5-3': 'Kirkwood 第 38 章', 'c5-4': 'Kirkwood 第 34、38 章',
 };
 (() => {
   const by = Object.fromEntries(CH.map(c => [c.id, c])), out = [];
@@ -4678,6 +4723,35 @@ Object.assign(W, {
     };
     segBind(el, '#wms-m', b => { mode = b.dataset.m; up(); }); el.addEventListener('input', up); up();
   },
+  metaw(el) {
+    const B = [['Aronson 1948', 4, 119, 11, 128], ['Ferguson 1949', 6, 300, 29, 274], ['Rosenthal 1960', 3, 228, 11, 209], ['Hart 1977', 62, 13536, 248, 12619], ['Frimodt-Moller 1973', 33, 5036, 47, 5761], ['Stein 1953', 180, 1361, 372, 1079], ['Vandiviere 1973', 8, 2537, 10, 619], ['Madras 1980', 505, 87886, 499, 87892], ['Coetzee 1968', 29, 7470, 45, 7232], ['Rosenthal 1961', 17, 1699, 65, 1600], ['Comstock 1974', 186, 50448, 141, 27197], ['Comstock 1969', 5, 2493, 3, 2338], ['Comstock 1976', 27, 16886, 29, 17825]];
+    const all = B.map(([l, a, b, c, d]) => ({ l, y: Math.log(a / (a + b) / (c / (c + d))), v: 1 / a - 1 / (a + b) + 1 / c - 1 / (c + d) }));
+    el.innerHTML = `<p class="w-cap">BCG 疫苗與結核病：13 個試驗的風險比 RR（疫苗組 ÷ 對照組）。</p>
+<div class="seg wrap" id="wma-m"><button type="button" data-m="fe" aria-selected="true">方塊大小：固定效果權重</button><button type="button" data-m="re" aria-selected="false">方塊大小：隨機效果權重</button></div>
+<div class="w-row"><label class="fld"><span>暫時拿掉一篇研究（敏感度分析）</span><select id="wma-x"><option value="">全部納入</option>${B.map((r, i) => `<option value="${i}">${r[0]}</option>`).join('')}</select></label></div>
+<figure class="fig"><figcaption>森林圖：方塊＝各研究 RR（大小＝權重），橫線＝95% CI；菱形＝合併估計</figcaption><div class="chart-wrap" id="wma-a"></div></figure>
+<figure class="fig"><figcaption>漏斗圖：越上面越精確；灰線為以固定效果合併估計為中心的 95% 範圍</figcaption><div class="chart-wrap" id="wma-b"></div></figure><div class="kv" id="wma-k"></div>`;
+    let mode = 'fe';
+    const up = () => {
+      const x = $('#wma-x').value, st = all.filter((_, i) => String(i) !== x), m = S.meta(st.map(s => s.y), st.map(s => s.v)), wt = mode === 'fe' ? m.w : m.wr, wmax = Math.max(...wt), e = Math.exp;
+      const rows = [...st.map(s => s.l), '固定效果模型', '隨機效果模型', '預測區間'], lo = 0.05, hi = 5;
+      $('#wma-a').innerHTML = chart({ ycats: rows, xlog: true, x: [lo, hi], h: 70 + rows.length * 24, m: { l: Math.min(150, CW * 0.36) }, xlab: 'RR（對數刻度；< 1 表示疫苗組風險較低）' }, (X, Y, { M: Mg, ih }) => {
+        const cx = v => X(Math.min(hi, Math.max(lo, e(v)))), dia = (r, i, k, c) => `<path data-k="${k}" d="M${cx(r.lo)} ${Y(i)}L${cx(r.est)} ${Y(i) - 7}L${cx(r.hi)} ${Y(i)}L${cx(r.est)} ${Y(i) + 7}Z" style="fill:${c}"/>`;
+        let g = `<line x1="${X(1)}" x2="${X(1)}" y1="${Mg.t}" y2="${Mg.t + ih}" style="stroke:var(--muted);stroke-dasharray:4 3"/><line class="hlx" data-k="q i2" x1="${cx(m.fixed.est)}" x2="${cx(m.fixed.est)}" y1="${Mg.t}" y2="${Mg.t + ih}" style="stroke:var(--c2);stroke-width:1.5"/>`;
+        st.forEach((s, i) => { const se = Math.sqrt(s.v), sz = 3 + 8 * Math.sqrt(wt[i] / wmax); g += `<line class="hlx" data-k="q i2" x1="${cx(s.y)}" x2="${cx(m.fixed.est)}" y1="${Y(i)}" y2="${Y(i)}" style="stroke:var(--c2);stroke-width:3;stroke-opacity:.6"/><g data-k="st"><line x1="${cx(s.y - 1.96 * se)}" x2="${cx(s.y + 1.96 * se)}" y1="${Y(i)}" y2="${Y(i)}" style="stroke:var(--c1);stroke-width:1.5"/><rect x="${cx(s.y) - sz}" y="${Y(i) - sz}" width="${2 * sz}" height="${2 * sz}" style="fill:var(--c1)"/></g>`; });
+        const k = st.length;
+        return g + dia(m.fixed, k, 'fe', 'var(--ink)') + dia(m.random, k + 1, 're', 'var(--c2)') + `<line data-k="pi tau" x1="${cx(m.pi[0])}" x2="${cx(m.pi[1])}" y1="${Y(k + 2)}" y2="${Y(k + 2)}" style="stroke:var(--c2);stroke-width:4;stroke-opacity:.55"/>`;
+      });
+      const pr = st.map(s => 1 / Math.sqrt(s.v)), pmax = Math.max(...pr) * 1.1, ys = Array.from({ length: 40 }, (_, i) => 1.5 + (pmax - 1.5) * i / 39);
+      $('#wma-b').innerHTML = chart({ x: [lo, hi], xlog: true, y: [0, pmax], h: 230, xlab: 'RR（對數刻度）', ylab: '精確度 1/標準誤' }, (X, Y) => {
+        const cx = v => X(Math.min(hi, Math.max(lo, e(v)))), f = m.fixed.est, side = sg => ys.map((p, i) => `${i ? 'L' : 'M'}${cx(f + sg * 1.96 / p).toFixed(1)} ${Y(p).toFixed(1)}`).join('');
+        return `<path class="keep" d="${side(-1)}" style="fill:none;stroke:var(--muted);stroke-dasharray:4 3"/><path class="keep" d="${side(1)}" style="fill:none;stroke:var(--muted);stroke-dasharray:4 3"/><line data-k="fe" x1="${cx(f)}" x2="${cx(f)}" y1="${Y(0)}" y2="${Y(pmax)}" style="stroke:var(--ink);stroke-width:1.5"/>` + st.map((s, i) => `<circle data-k="st" cx="${cx(s.y).toFixed(1)}" cy="${Y(pr[i]).toFixed(1)}" r="4.5" style="fill:var(--c1);fill-opacity:.75"/>`).join('');
+      });
+      const rr = r => `${F.n(e(r.est), 2)}（${F.ci(e(r.lo), e(r.hi), 2)}）`;
+      $('#wma-k').innerHTML = kvs([['納入的研究數 n', String(m.k), 'st'], ['固定效果模型合併 RR', rr(m.fixed), 'fe'], ['隨機效果模型合併 RR', rr(m.random), 're'], ["Cochran's Q", `${F.n(m.Q, 1)}（自由度 ${m.df}，${F.peq(m.pQ)}）`, 'q'], ['I²', `${F.n(100 * m.I2, 1)}%`, 'i2'], ['τ²', F.n(m.tau2, 3), 'tau'], ['隨機效果的 95% 預測區間（RR）', F.ci(e(m.pi[0]), e(m.pi[1]), 2), 'pi']]);
+    };
+    segBind(el, '#wma-m', b => { mode = b.dataset.m; up(); }); el.addEventListener('change', up); up();
+  },
   mosaic(el) {
     el.innerHTML = `<p class="w-cap">正方形代表全部的人（面積 = 1）。左右寬度是吸菸與不吸菸的比例；每一欄內，紅色的高度是該群中有高血壓的比例。</p>
 <div class="w-row">${slider('wm2-a', 'P(吸菸)', 5, 95, 5, 30, '%')}${slider('wm2-ba', 'P(高血壓 | 吸菸)', 0, 100, 5, 30, '%')}${slider('wm2-bn', 'P(高血壓 | 不吸菸)', 0, 100, 5, 15, '%')}</div>
@@ -4695,7 +4769,7 @@ Object.assign(W, {
   },
 });
 
-const WMAP = { 'missing': ['missingw', '缺失機制與處理方法'], 'ph-check': ['phw', '危險比隨時間改變'], 'standardize': ['stdw', '標準化與歸因分率'], 'mh': ['mhw', '辛普森悖論'], 'bland-altman': ['blandw', '兩台血糖儀'], 'poisson-reg': ['ratew', '發生率與率比'], 'reg-diag': ['regdiagw', '看殘差圖找問題'], 'simple-reg': ['simpleregw', '信賴帶與預測帶'], 'graphs': ['graphsw', '同一份資料，四種圖'], 'kappa': ['kappaw', '兩位病理師的一致性'], 'mcnemar': ['mcnemarw', '只看不一致的人'], 'two-prop': ['twopropw', '兩組反應率'], 'nonpar': ['nonparw', '用名次比較'], 'two-assume': ['twoassume', '轉換與極端值'], 'boot': ['bootw', '重抽 2000 次'], 'gof': ['gofw', '孟德爾的豌豆'], 'binom-test': ['binomtestw', '二項檢定'], 'one-t': ['onetw', '單一樣本 t 檢定'], 'prop-ci': ['propciw', '三種比例信賴區間'], 'tdist': ['tdistw', 't 分佈與常態分佈'], 'poisson': ['poissonw', 'Poisson 分佈與培養皿'], 'binom': ['binomw', '二項分佈'], 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
+const WMAP = { 'meta': ['metaw', '森林圖與漏斗圖'], 'missing': ['missingw', '缺失機制與處理方法'], 'ph-check': ['phw', '危險比隨時間改變'], 'standardize': ['stdw', '標準化與歸因分率'], 'mh': ['mhw', '辛普森悖論'], 'bland-altman': ['blandw', '兩台血糖儀'], 'poisson-reg': ['ratew', '發生率與率比'], 'reg-diag': ['regdiagw', '看殘差圖找問題'], 'simple-reg': ['simpleregw', '信賴帶與預測帶'], 'graphs': ['graphsw', '同一份資料，四種圖'], 'kappa': ['kappaw', '兩位病理師的一致性'], 'mcnemar': ['mcnemarw', '只看不一致的人'], 'two-prop': ['twopropw', '兩組反應率'], 'nonpar': ['nonparw', '用名次比較'], 'two-assume': ['twoassume', '轉換與極端值'], 'boot': ['bootw', '重抽 2000 次'], 'gof': ['gofw', '孟德爾的豌豆'], 'binom-test': ['binomtestw', '二項檢定'], 'one-t': ['onetw', '單一樣本 t 檢定'], 'prop-ci': ['propciw', '三種比例信賴區間'], 'tdist': ['tdistw', 't 分佈與常態分佈'], 'poisson': ['poissonw', 'Poisson 分佈與培養皿'], 'binom': ['binomw', '二項分佈'], 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
 for (const [id, [w, t]] of Object.entries(WMAP)) { const c = CH.find(x => x.id === id); c.widget = w; c.wtitle = t; }
 
 /* ---------- 練習題示範：把題目情境帶入同一章的互動圖 ----------

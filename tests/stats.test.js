@@ -165,6 +165,11 @@ near('MH 信賴區間下限', mh.ci[0], 0.7719074);
 near('MH 信賴區間上限', mh.ci[1], 1.0603298);
 near('CMH χ²（連續性校正）', mh.chi2c, 1.4269);
 
+// metafor：rma(measure="RR", ai=tpos, bi=tneg, ci=cpos, di=cneg, data=dat.bcg, method="FE"/"DL")
+{ const b=[[4,119,11,128],[6,300,29,274],[3,228,11,209],[62,13536,248,12619],[33,5036,47,5761],[180,1361,372,1079],[8,2537,10,619],[505,87886,499,87892],[29,7470,45,7232],[17,1699,65,1600],[186,50448,141,27197],[5,2493,3,2338],[27,16886,29,17825]];
+  const m = S.meta(b.map(([a,b1,c,d])=>Math.log(a/(a+b1)/(c/(c+d)))), b.map(([a,b1,c,d])=>1/a-1/(a+b1)+1/c-1/(c+d)));
+  near('統合 固定效果', m.fixed.est, -0.4303, 1e-4); near('統合 固定效果 SE', m.fixed.se, 0.0405, 1e-4); near('統合 Q', m.Q, 152.2330, 1e-3);
+  near('統合 DL τ²', m.tau2, 0.3088, 1e-4); near('統合 DL 估計', m.random.est, -0.7141, 1e-4); near('統合 DL SE', m.random.se, 0.1787, 1e-4); near('統合 I²', m.I2, 0.9212, 1e-4); }
 const DS = {};
 for (const m of DATASETS) { const d = m.gen(); DS[m.id] = makeDS({ ...m, head: d.head, rows: d.rows }); }
 const runs = [

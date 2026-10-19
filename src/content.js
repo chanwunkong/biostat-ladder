@@ -1148,6 +1148,32 @@ const CH = [
       { q: '多重插補為什麼要補很多次，而不是補一次？', o: ['不同的補值之間的差異，反映了「不知道缺值是多少」的不確定性', '補越多次平均數越大', '為了讓樣本數變大', '因為第一次補的通常是錯的'], why: 'Rubin 法則把份與份之間的變異加進總變異數，標準誤才不會太小。' },
     ],
   },
+  {
+    id: 'meta', title: '統合分析',
+    body: `<p>同一個問題常有好幾篇研究，結果有大有小、有的區間包含 1 有的不包含。<b>統合分析</b>（meta-analysis）把多篇研究的效果量用統一的方法合併，得到一個整體估計，並描述研究之間的差異有多大。它通常是<b>系統性回顧</b>的最後一步：先依事先寫好的方法完整搜尋文獻、篩選、評估品質，再合併。</p>
+<h3>每篇研究只需要兩個數字</h3>
+<p>效果量（例如 log RR、log OR、平均差）和它的標準誤。比值類的效果量先取對數再合併，最後再轉回原尺度，因為對數尺度上才近似常態而且對稱。</p>
+<h3>反變異數加權</h3>
+<p>每篇研究的權重 = 1 ÷ 標準誤²。大型研究標準誤小、權重大；合併估計就是效果量的加權平均。</p>
+<h3>固定效果模型與隨機效果模型</h3>
+<ul><li><b>固定效果模型</b>：假設所有研究在估計<b>同一個</b>真實效果，研究之間的差異只來自抽樣誤差。</li>
+<li><b>隨機效果模型</b>：假設每篇研究的真實效果本身就不同（族群、劑量、追蹤時間不同），這些真實效果來自一個分佈，平均為 μ、變異數為 <b>τ²</b>（<b>研究間變異數</b>）。每篇研究的權重改成 1 ÷ (標準誤² + τ²)，小研究的相對權重變大，合併估計的信賴區間變寬。最常用的估計方法是 DerSimonian–Laird。</li></ul>
+<p>這裡的「固定效果」「隨機效果」與 {{random-eff}} 章的概念相同：研究就像從更大群體抽出的「窩」。</p>
+<h3>異質性</h3>
+<ul><li><b>Cochran's Q</b>：各研究效果與合併估計之差的加權平方和；若沒有<b>異質性</b>，Q 約等於自由度 k − 1。</li>
+<li><b>I²</b> = (Q − 自由度) ÷ Q：觀察到的變異中，有多少比例來自研究間的真實差異而不是抽樣誤差。</li>
+<li>隨機效果的 <b>預測區間</b>：下一個新研究（新族群）的真實效果可能落在的範圍；異質性大時，它比合併估計的信賴區間寬很多。</li></ul>
+<h3>森林圖</h3>
+<p><b>森林圖</b>每一列是一篇研究：方塊是效果量（大小代表權重），橫線是 95% 信賴區間；最下面的菱形是合併估計，菱形寬度是它的信賴區間。</p>
+<h3>發表偏差與漏斗圖</h3>
+<p>結果「漂亮」的研究比較容易被發表，這叫<b>發表偏差</b>。<b>漏斗圖</b>把每篇研究的效果量（橫軸）對精確度（縱軸）作圖：沒有偏差時，點會在合併估計兩側對稱，越精確的研究越集中，形如倒過來的漏斗；若某一側的小研究明顯缺少，可能有發表偏差。</p>
+<p class="note">本章資料：BCG 疫苗預防結核病的 13 個試驗（Colditz 等，1994），效果量是風險比 RR。論文依 PRISMA 規範報告系統性回顧與統合分析。</p>`,
+    quiz: [
+      { q: '某統合分析報告 I² = 92%。這代表什麼？', o: ['研究之間效果量的差異，大部分來自真實效果的不同，而不是抽樣誤差', '合併估計有 92% 的機率是對的', '92% 的研究結果相同', '合併估計的 p 值為 0.92'], demo: { click: ['#wma-m [data-m="fe"]'], look: '方塊之間的距離遠大於各自的信賴區間能解釋的範圍：這就是異質性。點 Q 和 I² 的數字卡看偏差。' }, why: 'I² = (Q − 自由度) ÷ Q，描述異質性的比例。' },
+      { q: '從固定效果模型改成隨機效果模型，通常會發生什麼事？', o: ['小研究的相對權重變大，合併估計的信賴區間變寬', '大研究的權重變得更大', '信賴區間一定變窄', '合併估計一定變成 1'], demo: { click: ['#wma-m [data-m="re"]'], look: '切到隨機效果：大型研究（Madras 1980）的方塊變小，小研究變大；隨機效果的菱形比固定效果寬。' }, why: '權重變成 1 ÷ (標準誤² + τ²)；τ² 對每篇研究都一樣，所以權重差距縮小。' },
+      { q: '漏斗圖中，精確度低的小研究幾乎都落在效果有利的一側，另一側空蕩蕩。最可能的解讀？', o: ['可能有發表偏差：效果不明顯的小研究沒被發表', '小研究比較準確', '應該只用小研究', '異質性為 0'], demo: { set: { 'wma-x': '' }, look: '看右圖：越下面的點（越不精確）分散越廣。對稱的漏斗代表兩側都有研究；如果一側缺很多小研究，就要懷疑發表偏差。' }, why: '漏斗圖不對稱是發表偏差的線索之一，但異質性也可能造成不對稱。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -1409,6 +1435,16 @@ const GLOSS = [
   ['單尾檢定', [], '只檢定一個方向（例如只看「變大」）的檢定。', 'c4-5'],
   ['群集', [], '彼此相關的一群觀察，例如同一隻小鼠的細胞、同一間醫院的病人。', 'c4-6'],
   ['偽重複', [], '把同一個實驗單位內的重複測量，誤當成獨立樣本。', 'c4-6'],
+  ['統合分析', ['meta-analysis'], '把多篇研究的效果量以反變異數加權合併，並描述研究間的差異。', 'meta'],
+  ['系統性回顧', [], '依事先寫好的方法完整搜尋、篩選並評估所有相關研究的文獻回顧。', 'meta'],
+  ['固定效果模型', [], '統合分析中假設所有研究估計同一個真實效果的模型。', 'meta'],
+  ['隨機效果模型', [], '統合分析中假設各研究的真實效果來自一個分佈（平均 μ、變異數 τ²）的模型。', 'meta'],
+  ['研究間變異數', ['τ²'], '隨機效果模型中，各研究真實效果之間的變異數。', 'meta'],
+  ['異質性', ['Cochran\'s Q'], '各研究效果量之間超出抽樣誤差的差異；Q 是各研究與合併估計之差的加權平方和。', 'meta'],
+  ['I²', [], '(Q − 自由度) ÷ Q：觀察到的變異中，來自研究間真實差異的比例。', 'meta'],
+  ['森林圖', [], '每列一篇研究的效果量與信賴區間，最下面以菱形表示合併估計的圖。', 'meta'],
+  ['發表偏差', [], '結果有利或明顯的研究較容易被發表，使文獻整體偏向某一方向。', 'meta'],
+  ['漏斗圖', [], '效果量對精確度的散佈圖；不對稱可能代表發表偏差。', 'meta'],
   ['完全案例分析', [], '排除任何變數有缺值的觀察值，只分析完整的資料。', 'missing'],
   ['完全隨機缺失', ['MCAR'], '缺不缺和任何變數都無關。', 'missing'],
   ['隨機缺失', ['MAR'], '缺不缺和已觀察到的變數有關，但給定這些變數後，和缺失的值本身無關。', 'missing'],
@@ -1437,7 +1473,7 @@ const ORDER = [
   ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff', 'ancova'],
   ['c3-4', 'simple-reg', 'c4-1', 'reg-diag', 'c4-2', 'poisson-reg', 'bland-altman'],
   ['mh', 'standardize', 'c4-3', 'ph-check'],
-  ['c4-4', 'c4-6', 'missing'],
+  ['c4-4', 'c4-6', 'missing', 'meta'],
   ['c5-2', 'c5-3', 'c5-4', 'c5-5'],
 ];
 // 對照教科書：W = Whitlock & Schluter 3e、R = Rosner 8e、K = Kirkwood & Sterne 2e（見 CURRICULUM.md）
@@ -1449,7 +1485,7 @@ const REFS = {
   'nonpar': 'Whitlock 13.4–13.7；Rosner 9.2–9.4', 'two-prop': 'Rosner 10.2、10.5；Kirkwood 第 16 章', 'kappa': 'Rosner 10.8；Landis & Koch (1977) Biometrics 33:159', 'mcnemar': 'Rosner 10.4；Kirkwood 第 21 章；Agresti, Categorical Data Analysis', 'two-assume': 'Whitlock 13.1–13.3；Rosner 8.6、8.10；Kirkwood 第 13 章', 'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
   'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'bland-altman': 'Kirkwood 第 36 章；Bland & Altman (1986) Lancet 327:307', 'poisson-reg': 'Kirkwood 第 22–24 章；Rosner 14.1–14.3', 'reg-diag': 'Kirkwood 第 12–13 章；Rosner 11.6；Whitlock 17.5–17.6', 'simple-reg': 'Whitlock 第 17 章；Rosner 11.2–11.6；Kirkwood 第 10 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
   'c4-2': 'Rosner 13.7–13.8；Kirkwood 第 19–20 章', 'ph-check': 'Rosner 14.11；Kirkwood 第 27 章', 'standardize': 'Rosner 13.4–13.5；Kirkwood 第 25、37 章', 'mh': 'Rosner 13.5–13.6；Kirkwood 第 18 章；Bickel 等 (1975) Science 187:398', 'c4-3': 'Whitlock 第 21 章；Rosner 14.8–14.11；Kirkwood 第 26–27 章', 'c4-4': 'Benjamini & Hochberg (1995), J R Stat Soc B 57:289–300',
-  'missing': 'Rosner 13.16；Little & Rubin, Statistical Analysis with Missing Data', 'c4-6': 'Rosner 12.10、13.13–13.14；Kirkwood 第 31 章', 'c5-2': 'Kirkwood 第 38 章；EQUATOR Network', 'c5-3': 'Kirkwood 第 38 章', 'c5-4': 'Kirkwood 第 34、38 章',
+  'meta': 'Rosner 13.10；Kirkwood & Sterne 第 32 章', 'missing': 'Rosner 13.16；Little & Rubin, Statistical Analysis with Missing Data', 'c4-6': 'Rosner 12.10、13.13–13.14；Kirkwood 第 31 章', 'c5-2': 'Kirkwood 第 38 章；EQUATOR Network', 'c5-3': 'Kirkwood 第 38 章', 'c5-4': 'Kirkwood 第 34、38 章',
 };
 (() => {
   const by = Object.fromEntries(CH.map(c => [c.id, c])), out = [];

@@ -214,6 +214,15 @@ const S = (() => {
     return { po, pe, kappa: kap, se, ci: [kap - 1.959964 * se, kap + 1.959964 * se], n };
   }
   // Mantel–Haenszel：tabs 為各層的 2×2 表 [[a, b], [c, d]]。共同勝算比、Robins–Breslow–Greenland 信賴區間、CMH χ²（含與不含連續性校正）
+  // 反變異數加權統合分析：固定效果與 DerSimonian–Laird 隨機效果。yi 效果（例如 log RR），vi 變異數
+  function meta(yi, vi) {
+    const k = yi.length, w = vi.map(v => 1 / v), sw = sum(w), fe = sum(w.map((x, i) => x * yi[i])) / sw;
+    const Q = sum(w.map((x, i) => x * (yi[i] - fe) ** 2)), df = k - 1, C = sw - sum(w.map(x => x * x)) / sw, tau2 = Math.max(0, (Q - df) / C);
+    const wr = vi.map(v => 1 / (v + tau2)), swr = sum(wr), re = sum(wr.map((x, i) => x * yi[i])) / swr;
+    const pack = (est, se) => ({ est, se, lo: est - 1.959964 * se, hi: est + 1.959964 * se, z: est / se, p: 2 * (1 - pnorm(Math.abs(est / se))) });
+    const fix = pack(fe, Math.sqrt(1 / sw)), ran = pack(re, Math.sqrt(1 / swr)), tq = k > 2 ? qt(0.975, k - 2) : NaN, ps = Math.sqrt(tau2 + ran.se ** 2);
+    return { k, fixed: fix, random: ran, Q, df, pQ: df > 0 ? 1 - pchisq(Q, df) : NaN, I2: Q > df ? (Q - df) / Q : 0, tau2, w: w.map(x => x / sw), wr: wr.map(x => x / swr), pi: [re - tq * ps, re + tq * ps] };
+  }
   function mantelHaenszel(tabs) {
     let R = 0, Sx = 0, PR = 0, PSQR = 0, QS = 0, sumA = 0, sumE = 0, sumV = 0;
     for (const [[a, b], [c, d]] of tabs) {
@@ -388,7 +397,7 @@ const S = (() => {
   const nProps = (p1, p2, alpha, power) => { const za = qnorm(1 - alpha / 2), zb = qnorm(power), pb = (p1 + p2) / 2; return Math.ceil((za * Math.sqrt(2 * pb * (1 - pb)) + zb * Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))) ** 2 / ((p1 - p2) ** 2)); };
   const powerProps = (p1, p2, n, alpha) => { const za = qnorm(1 - alpha / 2), pb = (p1 + p2) / 2; return pnorm((Math.abs(p1 - p2) * Math.sqrt(n) - za * Math.sqrt(2 * pb * (1 - pb))) / Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))); };
 
-  return { dbinom, pbinom, dpois, ppois, propCI, binomTest, gof, signTest, twoProp, mcnemar, kappa, mantelHaenszel, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, varTest, mannWhitney, oneT, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, slrPredict, logistic, poisson, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
+  return { dbinom, pbinom, dpois, ppois, propCI, binomTest, gof, signTest, twoProp, mcnemar, kappa, mantelHaenszel, meta, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, varTest, mannWhitney, oneT, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, slrPredict, logistic, poisson, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
 })();
 
 /* ---------- 格式 ---------- */
