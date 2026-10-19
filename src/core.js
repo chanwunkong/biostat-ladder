@@ -214,6 +214,48 @@ const S = (() => {
     return { po, pe, kappa: kap, se, ci: [kap - 1.959964 * se, kap + 1.959964 * se], n };
   }
   // Mantel–Haenszel：tabs 為各層的 2×2 表 [[a, b], [c, d]]。共同勝算比、Robins–Breslow–Greenland 信賴區間、CMH χ²（含與不含連續性校正）
+  // 對稱矩陣的特徵值分解（Jacobi 旋轉）；依特徵值由大到小排序，vecs[j] 是第 j 個特徵向量
+  function eigenSym(A0) {
+    const p = A0.length, A = A0.map(r => r.slice()), V = A.map((_, i) => A.map((_, j) => +(i === j)));
+    for (let sweep = 0; sweep < 100; sweep++) {
+      let off = 0; for (let i = 0; i < p; i++) for (let j = i + 1; j < p; j++) off += A[i][j] ** 2;
+      if (off < 1e-22) break;
+      for (let i = 0; i < p; i++) for (let j = i + 1; j < p; j++) {
+        if (Math.abs(A[i][j]) < 1e-300) continue;
+        const th = (A[j][j] - A[i][i]) / (2 * A[i][j]), t = Math.sign(th || 1) / (Math.abs(th) + Math.sqrt(th * th + 1)), c = 1 / Math.sqrt(t * t + 1), sn = t * c;
+        for (let k = 0; k < p; k++) { const x = A[k][i], y = A[k][j]; A[k][i] = c * x - sn * y; A[k][j] = sn * x + c * y; }
+        for (let k = 0; k < p; k++) { const x = A[i][k], y = A[j][k]; A[i][k] = c * x - sn * y; A[j][k] = sn * x + c * y; }
+        for (let k = 0; k < p; k++) { const x = V[k][i], y = V[k][j]; V[k][i] = c * x - sn * y; V[k][j] = sn * x + c * y; }
+      }
+    }
+    return A.map((r, i) => i).sort((a, b) => A[b][b] - A[a][a]).map(i => { const v = V.map(r => r[i]), sg = Math.sign(v.reduce((m, x) => (Math.abs(x) > Math.abs(m) ? x : m), 0)) || 1; return { val: A[i][i], vec: v.map(x => x * sg) }; });
+  }
+  // 主成分分析（以相關矩陣，即先標準化每個變數）。X：n × p
+  function pca(X) {
+    const n = X.length, p = X[0].length, mu = [], sdv = [];
+    for (let j = 0; j < p; j++) { const c = X.map(r => r[j]); mu.push(mean(c)); sdv.push(sd(c)); }
+    const Z = X.map(r => r.map((x, j) => (x - mu[j]) / sdv[j])), R = mu.map((_, i) => mu.map((_, j) => sum(Z.map(z => z[i] * z[j])) / (n - 1)));
+    const E = eigenSym(R), tot = sum(E.map(e => e.val));
+    return { values: E.map(e => e.val), prop: E.map(e => e.val / tot), loadings: E.map(e => e.vec), scores: Z.map(z => E.map(e => sum(z.map((x, j) => x * e.vec[j])))), R };
+  }
+  // k-means（k-means++ 起點，重複 starts 次取群內平方和最小者）
+  function kmeans(P, k, seed = 1, starts = 10) {
+    let a = seed >>> 0; const rnd = () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    const d2 = (x, y) => sum(x.map((v, j) => (v - y[j]) ** 2)); let best = null;
+    for (let s = 0; s < starts; s++) {
+      const C = [P[Math.floor(rnd() * P.length)].slice()];
+      while (C.length < k) { const dd = P.map(x => Math.min(...C.map(c => d2(x, c)))), tot = sum(dd); let u = rnd() * tot, i = 0; while (i < P.length - 1 && (u -= dd[i]) > 0) i++; C.push(P[i].slice()); }
+      let cl = [];
+      for (let it = 0; it < 100; it++) {
+        const nc = P.map(x => { let b = 0; C.forEach((c, j) => { if (d2(x, c) < d2(x, C[b])) b = j; }); return b; });
+        if (it && nc.every((v, i) => v === cl[i])) break; cl = nc;
+        C.forEach((c, j) => { const m = P.filter((_, i) => cl[i] === j); if (m.length) C[j] = c.map((_, q) => mean(m.map(x => x[q]))); });
+      }
+      const wss = sum(P.map((x, i) => d2(x, C[cl[i]])));
+      if (!best || wss < best.wss - 1e-9) best = { cluster: cl, centers: C.map(c => c.slice()), wss };
+    }
+    return best;
+  }
   // 反變異數加權統合分析：固定效果與 DerSimonian–Laird 隨機效果。yi 效果（例如 log RR），vi 變異數
   function meta(yi, vi) {
     const k = yi.length, w = vi.map(v => 1 / v), sw = sum(w), fe = sum(w.map((x, i) => x * yi[i])) / sw;
@@ -397,7 +439,7 @@ const S = (() => {
   const nProps = (p1, p2, alpha, power) => { const za = qnorm(1 - alpha / 2), zb = qnorm(power), pb = (p1 + p2) / 2; return Math.ceil((za * Math.sqrt(2 * pb * (1 - pb)) + zb * Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))) ** 2 / ((p1 - p2) ** 2)); };
   const powerProps = (p1, p2, n, alpha) => { const za = qnorm(1 - alpha / 2), pb = (p1 + p2) / 2; return pnorm((Math.abs(p1 - p2) * Math.sqrt(n) - za * Math.sqrt(2 * pb * (1 - pb))) / Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))); };
 
-  return { dbinom, pbinom, dpois, ppois, propCI, binomTest, gof, signTest, twoProp, mcnemar, kappa, mantelHaenszel, meta, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, varTest, mannWhitney, oneT, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, slrPredict, logistic, poisson, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
+  return { dbinom, pbinom, dpois, ppois, propCI, binomTest, gof, signTest, twoProp, mcnemar, kappa, mantelHaenszel, meta, eigenSym, pca, kmeans, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, varTest, mannWhitney, oneT, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, slrPredict, logistic, poisson, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
 })();
 
 /* ---------- 格式 ---------- */

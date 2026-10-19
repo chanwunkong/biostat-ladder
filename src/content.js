@@ -1200,6 +1200,27 @@ const CH = [
       { q: '交叉設計所需人數比平行設計少，主要原因是？', o: ['每個人當自己的對照，比較的是同一人身上的差異，去除了人與人之間的變異', '交叉設計不需要隨機分派', '交叉設計的 p 值比較小', '交叉設計不會有延滯效應'], demo: { set: { 'weq-r': 0.7 }, look: '兩期測量的相關係數 ρ 越高，交叉設計需要的總人數越少（是平行設計的 (1 − ρ) ÷ 2 倍）。' }, why: '同一人兩次測量的差異，變異數是 2σ²(1 − ρ)，比兩組不同人的比較小。' },
     ],
   },
+  {
+    id: 'pca', title: '降維與分群：主成分分析與 k-means',
+    body: `<p>基因表現、代謝體、影像特徵等資料常有幾十到上萬個變數，無法一個一個畫圖。這一章的兩個方法都<b>不看結果變數</b>，只找資料本身的結構，稱為<b>非監督式學習</b>。</p>
+<h3>主成分分析（PCA）</h3>
+<p><b>主成分分析</b>找出資料變化最大的方向。先把每個變數轉成 z 分數（{{c1-4}} 章），讓單位不同的變數可以比較；然後：</p>
+<ul><li><b>第一主成分</b>（PC1）是讓資料投影後變異數最大的方向；</li>
+<li><b>第二主成分</b>（PC2）是和 PC1 垂直的方向中變異數最大者，以此類推。</li></ul>
+<p>每個主成分是原始變數的加權組合，權重稱為<b>載荷</b>（loading）：載荷的絕對值越大，該變數對這個主成分的貢獻越大。每個主成分的變異數除以總變異數，就是它<b>解釋的變異比例</b>。把各主成分解釋的變異比例依序畫成<b>陡坡圖</b>（scree plot），可以看出前幾個主成分就保留了大部分資訊。</p>
+<p>兩個變數的相關越高，資料越集中在一條線上，PC1 解釋的變異比例越大。把幾十個變數縮成 PC1、PC2 兩個數字畫散佈圖，就能看見樣本之間的相似與差異。</p>
+<h3>分群</h3>
+<p><b>分群</b>把彼此相似的樣本歸在同一群。<b>k-means</b> 先決定群數 k，然後重複：</p>
+<ol><li>每個樣本分到最近的群中心；</li><li>群中心移到該群樣本的平均位置；</li></ol>
+<p>直到分派不再改變。目標是讓<b>群內平方和</b>（每個樣本到所屬群中心距離平方的總和）最小。k 越大，群內平方和一定越小，所以不能只挑最小的；常見做法是畫群內平方和對 k 的圖，找下降開始變平緩的「手肘」。</p>
+<p><b>階層式分群</b>則不必先決定 k：從每個樣本自成一群開始，逐步合併最相似的兩群，結果畫成<b>樹狀圖</b>；常和熱圖一起出現在基因表現論文中。</p>
+<p class="note">分群演算法一定會分出群，即使資料其實沒有群的結構；分出的群要用其他獨立資料或生物意義驗證。PCA 與分群是探索性工具，用來描述資料、產生假設。</p>`,
+    quiz: [
+      { q: '兩個變數的相關係數從 0 提高到 0.9，PC1 解釋的變異比例會怎樣？', o: ['變大，資料越集中在一條線上', '變小', '不變，永遠是 50%', '變成 0'], demo: { set: { 'wpc-r': 0.9 }, look: '點雲變成細長的橢圓：PC1 沿著長軸，解釋的變異比例接近 95%（兩個變數時為 (1 + |r|) ÷ 2）。' }, why: '相關越高，兩個變數的資訊越重疊，一個方向就能描述大部分變化。' },
+      { q: '用 k-means 分群，群內平方和隨 k 增加的變化是？', o: ['一定越來越小，所以要找下降變平緩的手肘，而不是挑最小值', '先變大後變小', '在真正的群數時最小', '和 k 無關'], demo: { set: { 'wpc-k': 3 }, look: '看右下的群內平方和圖：k 從 1 到 3 下降很多，之後只小幅下降。點「k-means 群內平方和」看每個樣本到群中心的距離。' }, why: 'k 等於樣本數時群內平方和為 0，但毫無意義。' },
+      { q: '對一份沒有任何群結構的資料做 k-means，指定 k = 3。結果會？', o: ['仍然分出 3 群：演算法一定會分群，需要用其他方式驗證', '回報資料沒有群', '程式會出錯', '只分出 1 群'], demo: { click: ['#wpc-d [data-d="none"]'], set: { 'wpc-k': 3 }, look: '切到「沒有群結構」：點雲是一整團，k-means 還是硬切成 3 塊；手肘圖也看不到明顯的轉折。' }, why: '分群演算法只最小化群內平方和，不會判斷群是否真實存在。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -1461,6 +1482,18 @@ const GLOSS = [
   ['單尾檢定', [], '只檢定一個方向（例如只看「變大」）的檢定。', 'c4-5'],
   ['群集', [], '彼此相關的一群觀察，例如同一隻小鼠的細胞、同一間醫院的病人。', 'c4-6'],
   ['偽重複', [], '把同一個實驗單位內的重複測量，誤當成獨立樣本。', 'c4-6'],
+  ['非監督式學習', [], '不使用結果變數、只找資料本身結構的方法，例如 PCA 與分群。', 'pca'],
+  ['主成分分析', ['PCA'], '找出資料變化最大的幾個互相垂直的方向，用少數主成分代表許多變數。', 'pca'],
+  ['第一主成分', ['PC1'], '讓資料投影後變異數最大的方向。', 'pca'],
+  ['第二主成分', ['PC2'], '和 PC1 垂直的方向中，讓投影變異數最大的方向。', 'pca'],
+  ['載荷', ['loading'], '主成分中每個原始變數的權重。', 'pca'],
+  ['解釋的變異比例', [], '一個主成分的變異數占總變異數的比例。', 'pca'],
+  ['陡坡圖', ['scree plot'], '依序畫出各主成分解釋的變異比例的圖。', 'pca'],
+  ['分群', [], '把彼此相似的樣本歸成同一群的方法。', 'pca'],
+  ['k-means', [], '先定群數 k，反覆把樣本分到最近的群中心、再更新群中心，使群內平方和最小。', 'pca'],
+  ['群內平方和', [], '每個樣本到所屬群中心距離平方的總和。', 'pca'],
+  ['階層式分群', [], '從每個樣本自成一群開始，逐步合併最相似的兩群的分群方法。', 'pca'],
+  ['樹狀圖', [], '呈現階層式分群合併過程的圖。', 'pca'],
   ['優越性試驗', [], '想證明新療法比標準療法好的試驗。', 'equiv'],
   ['不劣性試驗', [], '想證明新療法不會比標準療法差超過事先訂定界限 Δ 的試驗。', 'equiv'],
   ['等效性試驗', [], '想證明兩種療法的差異落在 ±Δ 之內的試驗。', 'equiv'],
@@ -1509,7 +1542,7 @@ const ORDER = [
   ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff', 'ancova'],
   ['c3-4', 'simple-reg', 'c4-1', 'reg-diag', 'c4-2', 'poisson-reg', 'bland-altman'],
   ['mh', 'standardize', 'c4-3', 'ph-check'],
-  ['c4-4', 'c4-6', 'missing', 'meta', 'equiv'],
+  ['c4-4', 'c4-6', 'missing', 'meta', 'equiv', 'pca'],
   ['c5-2', 'c5-3', 'c5-4', 'c5-5'],
 ];
 // 對照教科書：W = Whitlock & Schluter 3e、R = Rosner 8e、K = Kirkwood & Sterne 2e（見 CURRICULUM.md）
@@ -1521,7 +1554,7 @@ const REFS = {
   'nonpar': 'Whitlock 13.4–13.7；Rosner 9.2–9.4', 'two-prop': 'Rosner 10.2、10.5；Kirkwood 第 16 章', 'kappa': 'Rosner 10.8；Landis & Koch (1977) Biometrics 33:159', 'mcnemar': 'Rosner 10.4；Kirkwood 第 21 章；Agresti, Categorical Data Analysis', 'two-assume': 'Whitlock 13.1–13.3；Rosner 8.6、8.10；Kirkwood 第 13 章', 'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
   'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'bland-altman': 'Kirkwood 第 36 章；Bland & Altman (1986) Lancet 327:307', 'poisson-reg': 'Kirkwood 第 22–24 章；Rosner 14.1–14.3', 'reg-diag': 'Kirkwood 第 12–13 章；Rosner 11.6；Whitlock 17.5–17.6', 'simple-reg': 'Whitlock 第 17 章；Rosner 11.2–11.6；Kirkwood 第 10 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
   'c4-2': 'Rosner 13.7–13.8；Kirkwood 第 19–20 章', 'ph-check': 'Rosner 14.11；Kirkwood 第 27 章', 'standardize': 'Rosner 13.4–13.5；Kirkwood 第 25、37 章', 'mh': 'Rosner 13.5–13.6；Kirkwood 第 18 章；Bickel 等 (1975) Science 187:398', 'c4-3': 'Whitlock 第 21 章；Rosner 14.8–14.11；Kirkwood 第 26–27 章', 'c4-4': 'Benjamini & Hochberg (1995), J R Stat Soc B 57:289–300',
-  'equiv': 'Rosner 13.11–13.12；CONSORT 不劣性與等效性試驗延伸版（Piaggio 等，2012）', 'meta': 'Rosner 13.10；Kirkwood & Sterne 第 32 章', 'missing': 'Rosner 13.16；Little & Rubin, Statistical Analysis with Missing Data', 'c4-6': 'Rosner 12.10、13.13–13.14；Kirkwood 第 31 章', 'c5-2': 'Kirkwood 第 38 章；EQUATOR Network', 'c5-3': 'Kirkwood 第 38 章', 'c5-4': 'Kirkwood 第 34、38 章',
+  'pca': 'UTHealth GSBS 課綱第 13–14 週；James 等，An Introduction to Statistical Learning 第 12 章', 'equiv': 'Rosner 13.11–13.12；CONSORT 不劣性與等效性試驗延伸版（Piaggio 等，2012）', 'meta': 'Rosner 13.10；Kirkwood & Sterne 第 32 章', 'missing': 'Rosner 13.16；Little & Rubin, Statistical Analysis with Missing Data', 'c4-6': 'Rosner 12.10、13.13–13.14；Kirkwood 第 31 章', 'c5-2': 'Kirkwood 第 38 章；EQUATOR Network', 'c5-3': 'Kirkwood 第 38 章', 'c5-4': 'Kirkwood 第 34、38 章',
 };
 (() => {
   const by = Object.fromEntries(CH.map(c => [c.id, c])), out = [];

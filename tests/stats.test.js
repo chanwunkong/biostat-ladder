@@ -170,6 +170,12 @@ near('CMH χ²（連續性校正）', mh.chi2c, 1.4269);
   const m = S.meta(b.map(([a,b1,c,d])=>Math.log(a/(a+b1)/(c/(c+d)))), b.map(([a,b1,c,d])=>1/a-1/(a+b1)+1/c-1/(c+d)));
   near('統合 固定效果', m.fixed.est, -0.4303, 1e-4); near('統合 固定效果 SE', m.fixed.se, 0.0405, 1e-4); near('統合 Q', m.Q, 152.2330, 1e-3);
   near('統合 DL τ²', m.tau2, 0.3088, 1e-4); near('統合 DL 估計', m.random.est, -0.7141, 1e-4); near('統合 DL SE', m.random.se, 0.1787, 1e-4); near('統合 I²', m.I2, 0.9212, 1e-4); }
+// 特徵值：[[2,1],[1,2]] → 3、1；等相關 r 的 4×4 相關矩陣 → 1 + 3r、1 − r（三重）
+{ const e = S.eigenSym([[2, 1], [1, 2]]); near('特徵值 3', e[0].val, 3, 1e-10); near('特徵值 1', e[1].val, 1, 1e-10); near('特徵向量', Math.abs(e[0].vec[0]), Math.SQRT1_2, 1e-10);
+  const r = 0.6, R = [0, 1, 2, 3].map(i => [0, 1, 2, 3].map(j => (i === j ? 1 : r))), f = S.eigenSym(R); near('等相關 λ1', f[0].val, 1 + 3 * r, 1e-10); near('等相關 λ4', f[3].val, 1 - r, 1e-10);
+  const X = [[1, 2, 0], [2, 1, 1], [3, 5, 2], [4, 3, 2], [6, 7, 5], [5, 4, 3]], P = S.pca(X); near('PCA 變異比例加總', S.sum(P.prop), 1, 1e-12);
+  P.loadings.forEach((v, i) => near('PCA Rv = λv ' + i, S.sum(P.R[0].map((x, j) => x * v[j])), P.values[i] * v[0], 1e-9));
+  const K = S.kmeans([[0, 0], [0, 1], [1, 0], [10, 10], [10, 11], [11, 10]], 2); near('k-means 群內平方和', K.wss, 8 / 3, 1e-12); }
 const DS = {};
 for (const m of DATASETS) { const d = m.gen(); DS[m.id] = makeDS({ ...m, head: d.head, rows: d.rows }); }
 const runs = [
