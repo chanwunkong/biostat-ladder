@@ -580,6 +580,8 @@ const S = (() => {
     const tc = qt(0.975, df), sp = Math.sqrt(((n1 - 1) * v1 + (n2 - 1) * v2) / (n1 + n2 - 2));
     return { n1, n2, m1, m2, s1: Math.sqrt(v1), s2: Math.sqrt(v2), diff, se, t, df, p: se > 0 ? pt2(t, df) : NaN, ci: [diff - tc * se, diff + tc * se], d: diff / sp };
   }
+  // 兩組變異數的 F 檢定（R 的 var.test）：F = s₁² ÷ s₂²
+  function varTest(a, b) { const F = variance(a) / variance(b), d1 = a.length - 1, d2 = b.length - 1, lo = 1 - pf(F, d1, d2); return { F, df1: d1, df2: d2, p: Math.min(1, 2 * Math.min(lo, 1 - lo)) }; }
   function mannWhitney(a, b) {
     const n1 = a.length, n2 = b.length, N = n1 + n2; const { r, ties } = rank([...a, ...b]);
     let R2 = 0; for (let i = n1; i < N; i++) R2 += r[i];
@@ -852,7 +854,7 @@ const S = (() => {
   const nProps = (p1, p2, alpha, power) => { const za = qnorm(1 - alpha / 2), zb = qnorm(power), pb = (p1 + p2) / 2; return Math.ceil((za * Math.sqrt(2 * pb * (1 - pb)) + zb * Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))) ** 2 / ((p1 - p2) ** 2)); };
   const powerProps = (p1, p2, n, alpha) => { const za = qnorm(1 - alpha / 2), pb = (p1 + p2) / 2; return pnorm((Math.abs(p1 - p2) * Math.sqrt(n) - za * Math.sqrt(2 * pb * (1 - pb))) / Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))); };
 
-  return { dbinom, pbinom, dpois, ppois, propCI, binomTest, gof, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, mannWhitney, oneT, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
+  return { dbinom, pbinom, dpois, ppois, propCI, binomTest, gof, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, varTest, mannWhitney, oneT, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
 })();
 
 /* ---------- 格式 ---------- */
@@ -1026,6 +1028,7 @@ const DEF = {
   blockDef: '區集 ANOVA 先扣除區集之間的差異，再比較處理；區集解釋掉的變異越多，殘差均方越小。最後一張卡是忽略區集、直接做單因子 ANOVA 的結果，供比較。',
   rmDef: '重複測量 ANOVA：把每個個體當成區集，扣除個體之間的差異後，比較各時間點的平均。', ggDef: 'Greenhouse–Geisser ε：用各時間點的共變異數矩陣估計違反球形假設的程度，介於 1/(時間點數 − 1) 與 1；自由度乘上 ε 後重新計算 p 值。', friedDef: 'Friedman 檢定：在每個個體內把各時間點的值排名，再比較各時間點的名次總和。',
   adjMean: '校正後平均：用 ANCOVA 模型預測「共變數等於全體平均時」各組的平均；括號內是未校正的原始平均。', parallel: '斜率平行性檢定：在模型中加入「組別 × 共變數」交互作用，檢定各組的迴歸斜率是否相同；ANCOVA 假設斜率相同。',
+  gmr: '幾何平均數比：取對數後的平均差，再取 e 的次方換回原尺度，代表第二組的幾何平均數是第一組的幾倍。',
   n: '分析使用的觀察數。', ev: '結果為事件（編碼 1）的人數。',
 };
 const cd = (k, l, v, d) => ({ k, l, v, d });
@@ -1264,24 +1267,26 @@ const AN = {
   },
   ttest: {
     name: '兩組比較', when: 'Welch t 檢定與 Mann–Whitney：兩組的數值結果',
-    fields: [{ k: 'y', label: '結果變數（數值）', t: 'num' }, { k: 'g', label: '分組變數（兩組）', t: 'cat' }],
+    fields: [{ k: 'y', label: '結果變數（數值）', t: 'num' }, { k: 'g', label: '分組變數（兩組）', t: 'cat' }, { k: 'log', label: '先取自然對數（右偏資料；結果以幾何平均數的比值表示）', t: 'check' }],
     run(ds, s) {
       const yc = colOf(ds, s.y), gc = colOf(ds, s.g), { idx, dropped } = complete(ds, [s.y, s.g]), G = levelsOf(ds, gc, idx);
       if (G.length !== 2) throw new Error(`分組變數需要剛好兩組，「${s.g}」目前有 ${G.length} 組。三組以上請改用「多組比較」。`);
-      const [a, b] = G.map(l => idx.filter(i => lab(gc.values[i]) === l).map(i => yc.values[i]));
+      const tf = s.log ? Math.log : v => v;
+      if (s.log && idx.some(i => !(yc.values[i] > 0))) throw new Error('取對數需要所有值都大於 0。');
+      const [a, b] = G.map(l => idx.filter(i => lab(gc.values[i]) === l).map(i => tf(yc.values[i])));
       if (a.length < 2 || b.length < 2) throw new Error('每組至少需要 2 筆資料。');
-      const w = S.welch(a, b), mw = S.mannWhitney(a, b), m0 = w.m1, m1 = w.m2;
-      const box = boxStrip([{ label: G[0], v: a }, { label: G[1], v: b }], s.y, (X, Y, { bw }) => {
+      const w = S.welch(a, b), mw = S.mannWhitney(a, b), m0 = w.m1, m1 = w.m2, Lv = S.levene([a, b]), ylab2 = s.log ? `ln(${s.y})` : s.y;
+      const box = boxStrip([{ label: G[0], v: a }, { label: G[1], v: b }], ylab2, (X, Y, { bw }) => {
         const x0 = X(0), x1 = X(1), xm = (x0 + x1) / 2, cx = x1 + bw / 2 + 30;
         return `<g class="hlx" data-k="diff d"><line x1="${x0}" x2="${x1}" y1="${Y(m0)}" y2="${Y(m0)}" style="stroke:var(--c1);stroke-dasharray:5 4;stroke-width:1.5"/><line x1="${xm}" x2="${xm}" y1="${Y(m0)}" y2="${Y(m1)}" style="stroke:var(--c2);stroke-width:3"/><text x="${xm + 6}" y="${(Y(m0) + Y(m1)) / 2}" dy=".32em" style="fill:var(--c2)">${F.n(w.diff)}</text></g>`
           + `<g class="hlx" data-k="ci"><line x1="${x0}" x2="${cx}" y1="${Y(m0)}" y2="${Y(m0)}" style="stroke:var(--c1);stroke-dasharray:5 4;stroke-width:1.5"/><line x1="${cx}" x2="${cx}" y1="${Y(m0 + w.ci[0])}" y2="${Y(m0 + w.ci[1])}" style="stroke:var(--c2);stroke-width:4"/><circle cx="${cx}" cy="${Y(m1)}" r="4" style="fill:var(--c2)"/></g>`;
       });
       return {
-        title: `${esc(s.y)}：${esc(G[1])} vs ${esc(G[0])}`, meta: meta(idx.length, dropped), facts: [],
-        charts: [{ svg: box, cap: boxCap }, { svg: distChart('t', w.t, w.df, `t（自由度 ${F.n(w.df, 1)}）`), cap: distCap.t }],
+        title: `${esc(s.y)}${s.log ? '（取自然對數）' : ''}：${esc(G[1])} vs ${esc(G[0])}`, meta: meta(idx.length, dropped), facts: s.log ? [`已取自然對數；平均差換算回原尺度為幾何平均數比 ${F.n(Math.exp(w.diff), 3)}（95% CI ${F.ci(Math.exp(w.ci[0]), Math.exp(w.ci[1]), 3)}）`] : [],
+        charts: [{ svg: box, cap: boxCap }, { svg: distChart('t', w.t, w.df, `t（自由度 ${F.n(w.df, 1)}）`), cap: distCap.t }, { svg: qqChart([...a.map(v => v - m0), ...b.map(v => v - m1)]), cap: '殘差（每個值 − 自己那組的平均）的 Q-Q 圖。' }],
         cards: [cd('mean0', `${esc(G[0])} 平均`, F.n(m0), 'mean'), cd('mean1', `${esc(G[1])} 平均`, F.n(m1), 'mean'), cd('sd0', `${esc(G[0])} SD`, F.n(w.s1), 'sd'), cd('sd1', `${esc(G[1])} SD`, F.n(w.s2), 'sd'),
           cd('med0', `${esc(G[0])} 中位數`, F.n(S.median(a)), 'median'), cd('med1', `${esc(G[1])} 中位數`, F.n(S.median(b)), 'median'), cd('diff', `平均差（${esc(G[1])} − ${esc(G[0])}）`, F.n(w.diff), 'diff'), cd('ci', '平均差 95% CI', F.ci(...w.ci), 'ci'),
-          cd('t', 'Welch t', `${F.n(w.t, 2)}（df ${F.n(w.df, 1)}）`, 't'), cd('p', 'p 值（Welch）', F.p(w.p), 'p'), cd('d', "Cohen's d", F.n(w.d, 2), 'd'), cd('rank', 'p 值（Mann–Whitney）', F.p(mw.p), 'U')],
+          cd('t', 'Welch t', `${F.n(w.t, 2)}（df ${F.n(w.df, 1)}）`, 't'), cd('p', 'p 值（Welch）', F.p(w.p), 'p'), cd('d', "Cohen's d", F.n(w.d, 2), 'd'), cd('rank', 'p 值（Mann–Whitney）', F.p(mw.p), 'U'), cd('qq', 'p 值（Levene）', F.p(Lv.p), 'levene'), ...(s.log ? [cd('diff', `幾何平均數比（${esc(G[1])} ÷ ${esc(G[0])}）`, `${F.n(Math.exp(w.diff), 3)}（${F.ci(Math.exp(w.ci[0]), Math.exp(w.ci[1]), 3)}）`, 'gmr')] : [])],
         tables: [{ head: ['', `${esc(G[0])}`, `${esc(G[1])}`], rows: descRows(G, [a, b]) }, { head: ['檢定', '估計值', '95% CI', '統計量', 'p 值'], rows: [[`Welch t<br><span class="mut">平均差（${esc(G[1])} − ${esc(G[0])}）</span>`, F.n(w.diff), F.ci(...w.ci), `t(${F.n(w.df, 1)}) = ${F.n(w.t, 2)}`, F.p(w.p)], ['Mann–Whitney U', '—', '—', `U = ${F.n(mw.U, 1)}，z = ${F.n(mw.z, 2)}`, F.p(mw.p)], ["Cohen's d", F.n(w.d, 2), '—', '—', '—']] }],
         write: W2(`${s.y} 的兩組比較使用 Welch t 檢定（不假設變異數相等）與 Mann–Whitney U 檢定；效果量為 Cohen's d。檢定皆為雙尾。`,
           `${G[1]} 組（n = ${b.length}）${s.y} ${F.n(m1)} ± ${F.n(w.s2)}；${G[0]} 組（n = ${a.length}）${F.n(m0)} ± ${F.n(w.s1)}；平均差 ${F.n(w.diff)}（95% CI ${F.ci(...w.ci)}；Welch t(${F.n(w.df, 1)}) = ${F.n(w.t, 2)}，${F.peq(w.p)}；Cohen's d = ${F.n(w.d, 2)}）。Mann–Whitney U = ${F.n(mw.U, 1)}，${F.peq(mw.p)}。`,
@@ -2552,6 +2557,30 @@ const CH = [
       { q: '想估計一組偏態資料「中位數」的 95% 信賴區間，最方便的方法是？', o: ['Bootstrap：重抽幾千次，取中位數分佈的第 2.5 與第 97.5 百分位', '平均 ± 1.96 × SD', '卡方檢定', '中位數 ± 1.96'], why: '中位數的標準誤沒有簡單公式；Bootstrap 直接從資料估計它的分佈。' },
     ],
   },
+  {
+    id: 'two-assume', title: '兩組比較的前提、資料轉換與極端值',
+    body: `<p>兩組 t 檢定（{{c3-1}} 章）的 p 值要可靠，需要三個前提：觀察值<b>獨立</b>、每組資料（或樣本夠大時的平均數）<b>接近常態</b>，以及只有傳統 Student t 檢定才需要的<b>兩組變異數相等</b>。</p>
+<h3>檢查常態性</h3>
+<p>最有用的是看圖：直方圖、箱型圖，以及每組的 Q-Q 圖（{{anova-assume}} 章）。也有形式上的常態性檢定（例如 Shapiro–Wilk），但它在樣本小時檢定力很低、樣本大時連微小的偏離都會顯著，所以不建議用它機械式地決定方法。</p>
+<h3>變異數相等嗎？</h3>
+<p>比較兩組變異數的傳統方法是 <b>F 檢定</b>（F = s₁² ÷ s₂²），但它對非常態非常敏感，不建議使用；Levene 檢定比較穩健。實務上更簡單的做法是：<b>預設使用 Welch t 檢定</b>，它本來就不要求變異數相等，變異數真的相等時也幾乎沒有損失。</p>
+<h3>資料轉換</h3>
+<p>生物資料常常右偏：濃度、細胞數、酵素活性、基因表現量。這類資料通常是「乘法」的關係（處理讓數值變成幾倍），標準差也會隨平均變大。</p>
+<ul><li><b>對數轉換</b>：取 log 後常變得對稱、兩組變異數也較接近。對 log 資料做 t 檢定，平均差取 e 的次方換回原尺度，得到兩組<b>幾何平均數</b>的比值，例如「處理組是對照組的 1.8 倍（95% CI 1.3–2.5）」。資料中有 0 時不能直接取 log。</li>
+<li><b>平方根轉換</b>：常用於計數資料。</li></ul>
+<p>轉換後的結果要用原尺度的意義來報告，並在方法中寫明使用了哪一種轉換。</p>
+<h3>極端值</h3>
+<p>遇到特別大或特別小的值，處理順序是：</p>
+<ol><li>先檢查是不是登錄或測量錯誤；確定是錯誤才更正或排除，並在論文中說明。</li>
+<li>不能只因為它「太極端」或「讓結果不顯著」就刪除，這會造成偏差。</li>
+<li>做<b>敏感度分析</b>：比較有、沒有這個值的結果，或改用受極端值影響較小的方法（中位數、Mann–Whitney 等無母數方法，下一章介紹），看結論是否改變。</li></ol>`,
+    labs: [{ label: '兩組比較：試試「先取對數」', ds: 'diet_geno', an: 'ttest', sel: { y: 'liver_fat_pct', g: 'diet', log: true } }],
+    quiz: [
+      { q: '兩組右偏的濃度資料取自然對數後做 t 檢定，平均差 = 0.59。e^0.59 ≈ 1.8 代表什麼？', o: ['第二組的幾何平均數約是第一組的 1.8 倍', '兩組平均差 1.8', '第二組有 1.8% 比較高', 'p 值是 1.8'], why: 'log 尺度上的差，換回原尺度就是比值（倍數），而且是幾何平均數的比值。' },
+      { q: '資料中有一個特別大的值。最恰當的處理是？', o: ['先確認是不是錯誤；不是的話保留，並做有無此值的敏感度分析', '直接刪除，因為它是極端值', '一律用中位數取代', '重新收集資料直到沒有極端值'], why: '只因極端就刪除會讓結果偏差；檢查錯誤並報告敏感度分析才是正確做法。' },
+      { q: '兩組標準差差了 2.5 倍。使用 Welch t 檢定前，需要先證明變異數相等嗎？', o: ['不需要：Welch t 檢定本來就不要求變異數相等', '需要，先做 F 檢定', '需要，否則不能比較', '要改用卡方檢定'], why: '只有傳統的 Student t 檢定才假設變異數相等。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -2712,8 +2741,13 @@ const GLOSS = [
   ["Cohen's d", [], '兩組平均差 ÷ 標準差：差距是幾個標準差。', 'c2-4'],
   ['t 檢定', ['t 統計量', 't 值'], '比較平均數的檢定；t = 差異 ÷ 標準誤。', 'c3-1'],
   ['訊號與雜訊', ['訊號', '雜訊'], 't 檢定的比喻：訊號是差異的大小，雜訊是差異的不確定性（標準誤）。', 'c3-1'],
+  ['平均差', [], '兩組平均數相減的差。', 'c3-1'],
   ['配對 t 檢定', ['配對'], '同一個體測兩次時，分析「每個人的變化量」的 t 檢定。', 'c3-1'],
   ['Welch', [], '不假設兩組變異數相等的 t 檢定版本。', 'c3-1'],
+  ['F 檢定（變異數）', ['F 檢定', 'var.test'], '以兩組變異數的比值 s₁² ÷ s₂² 檢定變異數是否相等；對非常態敏感。', 'two-assume'],
+  ['幾何平均數', [], '取對數後平均再換回原尺度的平均；右偏資料常用。', 'two-assume'],
+  ['平方根轉換', [], '把資料開根號後再分析，常用於計數資料。', 'two-assume'],
+  ['敏感度分析', [], '改變某個分析選擇（例如是否納入極端值），看結論是否改變。', 'two-assume'],
   ['ANOVA', ['變異數分析'], '一次比較三組以上平均數的方法。', 'c3-2'],
   ['F 值', ['F ='], '組間均方 ÷ 組內均方。', 'c3-2'],
   ['平方和', ['SS'], '把距離平方後加總。ANOVA 把總平方和拆成組間平方和與組內平方和。', 'c3-2'],
@@ -2775,7 +2809,7 @@ const ORDER = [
   ['c1-1', 'c1-2', 'c1-3', 'c1-4', 'c1-5'],
   ['prob-rules', 'c2-1', 'roc', 'rv', 'binom', 'poisson'],
   ['c2-2', 'c2-3', 'tdist', 'prop-ci', 'c2-4', 'one-t', 'binom-test', 'gof', 'boot', 'c4-5', 'c5-1'],
-  ['c3-1', 'c3-3', 'c3-5'],
+  ['c3-1', 'two-assume', 'c3-3', 'c3-5'],
   ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff', 'ancova'],
   ['c3-4', 'c4-1', 'c4-2'],
   ['c4-3'],
@@ -2788,7 +2822,7 @@ const REFS = {
   'c1-3': 'Whitlock 第 3 章；Rosner 2.4–2.5；Kirkwood 第 4 章', 'c1-4': 'Whitlock 第 10 章；Rosner 第 5 章；Kirkwood 第 5 章', 'c1-5': 'Kirkwood 第 34 章',
   'prob-rules': 'Whitlock 第 5 章；Rosner 3.2–3.6', 'roc': 'Rosner 3.9；UTHealth GSBS 課綱第 10 週', 'rv': 'Rosner 4.2–4.6', 'binom': 'Whitlock 7.1；Rosner 4.7–4.9、5.7；Kirkwood 第 15 章', 'poisson': 'Whitlock 8.4；Rosner 4.10–4.13；Kirkwood 第 22 章', 'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'tdist': 'Whitlock 11.1；Rosner 6.5', 'prop-ci': 'Whitlock 7.3；Rosner 6.8；Kirkwood 第 15 章', 'binom-test': 'Whitlock 7.2；Rosner 7.9', 'gof': 'Whitlock 8.1–8.3；Rosner 10.7', 'boot': 'Whitlock 13.8、第 19 章；Rosner 6.11、9.6', 'one-t': 'Whitlock 11.2；Rosner 7.3–7.5；UTHealth GSBS 課綱第 2 週', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
   'c2-4': 'Whitlock 第 6 章；Rosner 7.1–7.5；Kirkwood 第 8 章', 'c4-5': 'Whitlock 14.6；Rosner 7.6–7.7、8.9；Kirkwood 第 35 章', 'c5-1': 'Rosner 13.2；Kirkwood 第 34 章',
-  'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
+  'two-assume': 'Whitlock 13.1–13.3；Rosner 8.6、8.10；Kirkwood 第 13 章', 'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
   'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
   'c4-2': 'Rosner 13.7–13.8；Kirkwood 第 19–20 章', 'c4-3': 'Whitlock 第 21 章；Rosner 14.8–14.11；Kirkwood 第 26–27 章', 'c4-4': 'Benjamini & Hochberg (1995), J R Stat Soc B 57:289–300',
   'c4-6': 'Rosner 12.10、13.13–13.14；Kirkwood 第 31 章', 'c5-2': 'Kirkwood 第 38 章；EQUATOR Network', 'c5-3': 'Kirkwood 第 38 章', 'c5-4': 'Kirkwood 第 34、38 章',
@@ -2920,6 +2954,7 @@ function ensureSel() {
   spec.fields.forEach(f => {
     if (f.t === 'value') { if (sel[f.k] === undefined || sel[f.k] === '') sel[f.k] = f.def; return; }
     if (f.t === 'text') { if (sel[f.k] === undefined) sel[f.k] = f.def || ''; return; }
+    if (f.t === 'check') { if (sel[f.k] === undefined) sel[f.k] = !!f.def; return; }
     const el = eligible(ds, f);
     if (f.multi) { if (!sel[f.k]) sel[f.k] = f.def === 'all' ? el.filter(n => !used.has(n)) : f.def === 'some' ? el.filter(n => !used.has(n)).slice(0, 8) : []; sel[f.k] = sel[f.k].filter(n => el.includes(n)); }
     else { if (!el.includes(sel[f.k])) sel[f.k] = f.opt ? '' : el.find(n => !used.has(n)) || ''; if (sel[f.k]) used.add(sel[f.k]); }
@@ -2953,6 +2988,7 @@ function renderForm() {
   $('#runBtn').hidden = false;
   $('#form').innerHTML = spec.fields.map(f => {
     if (f.t === 'value') return `<label class="fld"><span>${f.label}</span><input id="f-${f.k}" data-k="${f.k}" type="number" inputmode="decimal" step="any" value="${esc(sel[f.k])}"></label>`;
+    if (f.t === 'check') return `<label class="tog"><input id="f-${f.k}" data-k="${f.k}" type="checkbox" ${sel[f.k] ? 'checked' : ''}> ${f.label}</label>`;
     if (f.t === 'text') return `<label class="fld"><span>${f.label}</span><input id="f-${f.k}" data-k="${f.k}" type="text" value="${esc(sel[f.k] ?? '')}" placeholder="${esc(f.ph || '')}"></label>`;
     const el = eligible(ds, f);
     if (f.multi) {
@@ -2963,7 +2999,8 @@ function renderForm() {
   }).join('');
   $$('#form select').forEach(s => { s.onchange = () => { sel[s.dataset.k] = s.value; }; });
   $$('#form input[type=number], #form input[type=text]').forEach(s => { s.onchange = () => { sel[s.dataset.k] = s.value; }; });
-  $$('#form input[type=checkbox]').forEach(cb => { cb.onchange = () => { const a = sel[cb.dataset.k] || (sel[cb.dataset.k] = []); if (cb.checked) { if (!a.includes(cb.value)) a.push(cb.value); } else a.splice(a.indexOf(cb.value), 1); renderForm(); const n = $('#' + cb.id); if (n) n.focus(); }; });
+  $$('#form input[type=checkbox][id^="f-"]').forEach(s => { if (!s.dataset.k || spec.fields.find(f => f.k === s.dataset.k && f.t === 'check')) s.onchange = () => { sel[s.dataset.k] = s.checked; }; });
+  $$('#form .checks input[type=checkbox]').forEach(cb => { cb.onchange = () => { const a = sel[cb.dataset.k] || (sel[cb.dataset.k] = []); if (cb.checked) { if (!a.includes(cb.value)) a.push(cb.value); } else a.splice(a.indexOf(cb.value), 1); renderForm(); const n = $('#' + cb.id); if (n) n.focus(); }; });
   $$('[data-all]').forEach(b => { b.onclick = () => { const f = spec.fields.find(x => x.k === b.dataset.all); sel[f.k] = eligible(ds, f); renderForm(); }; });
   $$('[data-none]').forEach(b => { b.onclick = () => { sel[b.dataset.none] = []; renderForm(); }; });
 }
@@ -3004,7 +3041,7 @@ function runAnalysis(scroll) {
   }
   if (res.tables && res.tables.length) h += `<details class="more"><summary>完整統計表</summary>${res.tables.map(t => tableHTML(t)).join('')}</details>`;
   const defs = [...new Set((res.cards || []).map(c => c.d).filter(Boolean))];
-  if (defs.length) h += `<details class="more"><summary>每個數字怎麼算</summary><dl class="defs">${defs.map(d => `<div><dt>${{ mean: '平均', sd: '標準差', median: '中位數', iqr: '四分位距', diff: '平均差', ci: '95% 信賴區間', t: 't', p: 'p 值', d: "Cohen's d", U: 'Mann–Whitney', V: 'Wilcoxon 符號等級', F: 'F', eta2: 'η²', H: 'Kruskal–Wallis', welchF: 'Welch ANOVA', levene: 'Levene 檢定與 Q-Q 圖', cldDef: 'Tukey 字母標記', mainEff: '主效果', interEff: '交互作用', blockDef: '區集 ANOVA', rmDef: '重複測量 ANOVA', ggDef: 'Greenhouse–Geisser 校正', friedDef: 'Friedman 檢定', adjMean: '校正後平均', parallel: '斜率平行性檢定', chi2: 'χ²', minexp: '期望次數', cv: "Cramér's V", or: '勝算比', rr: '風險比', prop: '比例', fisher: 'Fisher 精確檢定', r: 'Pearson r', rho: 'Spearman ρ', r2: 'R²', slope: '斜率', sigma: '殘差標準誤', beta: '迴歸係數 β', OR: '勝算比（模型）', auc: 'AUC', lr: '概似比 χ²', hr: '危險比', medsurv: '中位存活時間', surv: '存活率', logrank: 'Log-rank χ²', sig: '未校正', q: 'BH q 值', bonf: 'Bonferroni' }[d] || d}</dt><dd>${DEF[d]}</dd></div>`).join('')}</dl></details>`;
+  if (defs.length) h += `<details class="more"><summary>每個數字怎麼算</summary><dl class="defs">${defs.map(d => `<div><dt>${{ mean: '平均', sd: '標準差', median: '中位數', iqr: '四分位距', diff: '平均差', ci: '95% 信賴區間', t: 't', p: 'p 值', d: "Cohen's d", U: 'Mann–Whitney', V: 'Wilcoxon 符號等級', F: 'F', eta2: 'η²', H: 'Kruskal–Wallis', welchF: 'Welch ANOVA', levene: 'Levene 檢定與 Q-Q 圖', cldDef: 'Tukey 字母標記', mainEff: '主效果', interEff: '交互作用', blockDef: '區集 ANOVA', rmDef: '重複測量 ANOVA', ggDef: 'Greenhouse–Geisser 校正', friedDef: 'Friedman 檢定', adjMean: '校正後平均', gmr: '幾何平均數比', parallel: '斜率平行性檢定', chi2: 'χ²', minexp: '期望次數', cv: "Cramér's V", or: '勝算比', rr: '風險比', prop: '比例', fisher: 'Fisher 精確檢定', r: 'Pearson r', rho: 'Spearman ρ', r2: 'R²', slope: '斜率', sigma: '殘差標準誤', beta: '迴歸係數 β', OR: '勝算比（模型）', auc: 'AUC', lr: '概似比 χ²', hr: '危險比', medsurv: '中位存活時間', surv: '存活率', logrank: 'Log-rank χ²', sig: '未校正', q: 'BH q 值', bonf: 'Bonferroni' }[d] || d}</dt><dd>${DEF[d]}</dd></div>`).join('')}</dl></details>`;
   out.innerHTML = h + '</div>';
   const root = $('#res-root'); linkify(root, res.table1 && res.picks.length ? res.picks[0].k : null);
   if (scroll === true && innerWidth < 960) out.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -3891,6 +3928,22 @@ Object.assign(W, {
     $('#wbo-0', el).onclick = () => { res = []; last = null; draw(); };
     draw();
   },
+  twoassume(el) {
+    const za = std(Array.from({ length: 30 }, normOf(rngOf(301)))), zb = std(Array.from({ length: 30 }, normOf(rngOf(302))));
+    el.innerHTML = `<p class="w-cap">兩組右偏的濃度資料（處理組約為對照組的 1.8 倍）。切換是否取對數、是否加入一個極端值。</p>
+<div class="w-row">${slider('wta-n', '每組人數', 5, 30, 1, 12)}${slider('wta-s', '右偏程度', 0.2, 1.2, 0.1, 0.8)}</div>
+<div class="w-row"><label class="tog"><input type="checkbox" id="wta-l"> 先取自然對數</label><label class="tog"><input type="checkbox" id="wta-o"> 對照組加入一個極端值</label></div>
+<div class="w-cols"><figure class="fig"><figcaption>兩組資料</figcaption><div class="chart-wrap" id="wta-b"></div></figure><figure class="fig"><figcaption>殘差的 Q-Q 圖</figcaption><div class="chart-wrap" id="wta-q"></div></figure></div><div class="kv" id="wta-k"></div>`;
+    const up = () => {
+      const n = sv('wta-n'), sg = sv('wta-s', v => v.toFixed(1)), lg = $('#wta-l').checked, out = $('#wta-o').checked;
+      let A = za.slice(0, n).map(z => 10 * Math.exp(sg * z)), B = zb.slice(0, n).map(z => 18 * Math.exp(sg * z)); if (out) A = [...A, 10 * Math.exp(sg * 4)];
+      const a = lg ? A.map(Math.log) : A, b = lg ? B.map(Math.log) : B, w = S.welch(a, b), mw = S.mannWhitney(a, b), L = S.levene([a, b]), vt = S.varTest(a, b);
+      $('#wta-b').innerHTML = boxStrip([{ label: '對照', v: a }, { label: '處理', v: b }], lg ? 'ln(濃度)' : '濃度');
+      $('#wta-q').innerHTML = qqChart([...a.map(v => v - S.mean(a)), ...b.map(v => v - S.mean(b))]);
+      $('#wta-k').innerHTML = kvs([['Welch t 檢定 p 值', F.p(w.p), 'mean0'], ['Mann–Whitney p 值', F.p(mw.p), 'rank'], ['Levene 檢定 p 值', F.p(L.p), 'sd0'], ['F 檢定（變異數）p 值', F.p(vt.p), 'sd1'], [lg ? '幾何平均數比（處理 ÷ 對照）' : '平均差（處理 − 對照）', lg ? `${F.n(Math.exp(w.diff), 2)}（${F.ci(Math.exp(w.ci[0]), Math.exp(w.ci[1]), 2)}）` : `${F.n(w.diff, 1)}（${F.ci(...w.ci, 1)}）`, 'diff']]);
+    };
+    el.addEventListener('input', up); el.addEventListener('change', up); up();
+  },
   mosaic(el) {
     el.innerHTML = `<p class="w-cap">正方形代表全部的人（面積 = 1）。左右寬度是吸菸與不吸菸的比例；每一欄內，紅色的高度是該群中有高血壓的比例。</p>
 <div class="w-row">${slider('wm2-a', 'P(吸菸)', 5, 95, 5, 30, '%')}${slider('wm2-ba', 'P(高血壓 | 吸菸)', 0, 100, 5, 30, '%')}${slider('wm2-bn', 'P(高血壓 | 不吸菸)', 0, 100, 5, 15, '%')}</div>
@@ -3908,13 +3961,18 @@ Object.assign(W, {
   },
 });
 
-const WMAP = { 'boot': ['bootw', '重抽 2000 次'], 'gof': ['gofw', '孟德爾的豌豆'], 'binom-test': ['binomtestw', '二項檢定'], 'one-t': ['onetw', '單一樣本 t 檢定'], 'prop-ci': ['propciw', '三種比例信賴區間'], 'tdist': ['tdistw', 't 分佈與常態分佈'], 'poisson': ['poissonw', 'Poisson 分佈與培養皿'], 'binom': ['binomw', '二項分佈'], 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
+const WMAP = { 'two-assume': ['twoassume', '轉換與極端值'], 'boot': ['bootw', '重抽 2000 次'], 'gof': ['gofw', '孟德爾的豌豆'], 'binom-test': ['binomtestw', '二項檢定'], 'one-t': ['onetw', '單一樣本 t 檢定'], 'prop-ci': ['propciw', '三種比例信賴區間'], 'tdist': ['tdistw', 't 分佈與常態分佈'], 'poisson': ['poissonw', 'Poisson 分佈與培養皿'], 'binom': ['binomw', '二項分佈'], 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
 for (const [id, [w, t]] of Object.entries(WMAP)) { const c = CH.find(x => x.id === id); c.widget = w; c.wtitle = t; }
 
 /* ---------- 練習題示範：把題目情境帶入同一章的互動圖 ----------
    每題的 demo：set = 設定輸入元件（id → 值）；click = 依序點擊的按鈕；custom = 交給互動圖自己的 _demo()；look = 示範時的觀察提示。
    有 q 的項目會整題替換（原題無法在圖上示範時）。 */
 const QD = {
+  'two-assume': [
+    { demo: { set: { 'wta-n': 15, 'wta-s': 0.8, 'wta-l': true, 'wta-o': false }, look: '取對數後兩組都變得對稱。點最後一張卡：幾何平均數比約 1.8，代表處理組約是對照組的 1.8 倍。' } },
+    { demo: { set: { 'wta-n': 12, 'wta-s': 0.8, 'wta-l': false, 'wta-o': true }, look: '對照組多了一個極端值：比較 Welch t 與 Mann–Whitney 的 p 值，再勾選「先取自然對數」比較。這就是敏感度分析。' } },
+    { demo: { set: { 'wta-n': 12, 'wta-s': 1.0, 'wta-l': false, 'wta-o': false }, look: '原始尺度下兩組標準差差很多（看箱型圖的高度）；Welch t 檢定不需要先證明變異數相等。' } },
+  ],
   'boot': [
     { demo: { click: ['#wbo-m [data-m="perm"]', '#wbo-0', '#wbo-1'], look: '上圖：標籤被打亂後的兩組。按「重抽 1 次」幾次，每次的平均差都不同；按「重抽 2000 次」得到虛無分佈。' } },
     { demo: { click: ['#wbo-m [data-m="boot"]', '#wbo-0', '#wbo-1'], look: '重抽的樣本中，有些值出現兩次以上、有些值沒出現：這就是放回抽樣。' } },

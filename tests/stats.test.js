@@ -118,6 +118,9 @@ near('卡方適合度 p', S.gof([315, 108, 101, 32], [9, 3, 3, 1]).p, 0.9254);
 near('卡方適合度 χ²（20, 15, 25 均等）', S.gof([20, 15, 25], [1, 1, 1]).chi2, 2.5);
 near('卡方適合度 p（均等）', S.gof([20, 15, 25], [1, 1, 1]).p, 0.2865);
 
+near('var.test F (sleep)', S.varTest(g1, g2).F, 0.7983);
+near('var.test p', S.varTest(g1, g2).p, 0.7427);
+
 const DS = {};
 for (const m of DATASETS) { const d = m.gen(); DS[m.id] = makeDS({ ...m, head: d.head, rows: d.rows }); }
 const runs = [

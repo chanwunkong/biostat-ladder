@@ -2,6 +2,11 @@
    每題的 demo：set = 設定輸入元件（id → 值）；click = 依序點擊的按鈕；custom = 交給互動圖自己的 _demo()；look = 示範時的觀察提示。
    有 q 的項目會整題替換（原題無法在圖上示範時）。 */
 const QD = {
+  'two-assume': [
+    { demo: { set: { 'wta-n': 15, 'wta-s': 0.8, 'wta-l': true, 'wta-o': false }, look: '取對數後兩組都變得對稱。點最後一張卡：幾何平均數比約 1.8，代表處理組約是對照組的 1.8 倍。' } },
+    { demo: { set: { 'wta-n': 12, 'wta-s': 0.8, 'wta-l': false, 'wta-o': true }, look: '對照組多了一個極端值：比較 Welch t 與 Mann–Whitney 的 p 值，再勾選「先取自然對數」比較。這就是敏感度分析。' } },
+    { demo: { set: { 'wta-n': 12, 'wta-s': 1.0, 'wta-l': false, 'wta-o': false }, look: '原始尺度下兩組標準差差很多（看箱型圖的高度）；Welch t 檢定不需要先證明變異數相等。' } },
+  ],
   'boot': [
     { demo: { click: ['#wbo-m [data-m="perm"]', '#wbo-0', '#wbo-1'], look: '上圖：標籤被打亂後的兩組。按「重抽 1 次」幾次，每次的平均差都不同；按「重抽 2000 次」得到虛無分佈。' } },
     { demo: { click: ['#wbo-m [data-m="boot"]', '#wbo-0', '#wbo-1'], look: '重抽的樣本中，有些值出現兩次以上、有些值沒出現：這就是放回抽樣。' } },

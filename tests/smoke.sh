@@ -59,7 +59,7 @@ run_page() {
 }
 export -f run_page 2>/dev/null
 CHAPTERS=$(node -e "const fs=require('fs');const r=f=>fs.readFileSync('src/'+f,'utf8');console.log(new Function(r('core.js')+r('content.js')+';return CH;')().map(c=>c.id).join(' '))")
-OUT=$(printf '%s\n' home $CHAPTERS lab data | xargs -P 8 -I{} bash -c 'run_page {}')
+OUT=$(printf '%s\n' home $CHAPTERS lab data | xargs -P ${SMOKE_JOBS:-4} -I{} bash -c 'run_page {}')
 echo "$OUT" | sort -k2
 case "$OUT" in *FAIL*) fail=1 ;; *) fail=0 ;; esac
 rm -rf "$TMP"

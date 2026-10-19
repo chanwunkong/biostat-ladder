@@ -67,6 +67,8 @@ const S = (() => {
     const tc = qt(0.975, df), sp = Math.sqrt(((n1 - 1) * v1 + (n2 - 1) * v2) / (n1 + n2 - 2));
     return { n1, n2, m1, m2, s1: Math.sqrt(v1), s2: Math.sqrt(v2), diff, se, t, df, p: se > 0 ? pt2(t, df) : NaN, ci: [diff - tc * se, diff + tc * se], d: diff / sp };
   }
+  // 兩組變異數的 F 檢定（R 的 var.test）：F = s₁² ÷ s₂²
+  function varTest(a, b) { const F = variance(a) / variance(b), d1 = a.length - 1, d2 = b.length - 1, lo = 1 - pf(F, d1, d2); return { F, df1: d1, df2: d2, p: Math.min(1, 2 * Math.min(lo, 1 - lo)) }; }
   function mannWhitney(a, b) {
     const n1 = a.length, n2 = b.length, N = n1 + n2; const { r, ties } = rank([...a, ...b]);
     let R2 = 0; for (let i = n1; i < N; i++) R2 += r[i];
@@ -339,7 +341,7 @@ const S = (() => {
   const nProps = (p1, p2, alpha, power) => { const za = qnorm(1 - alpha / 2), zb = qnorm(power), pb = (p1 + p2) / 2; return Math.ceil((za * Math.sqrt(2 * pb * (1 - pb)) + zb * Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))) ** 2 / ((p1 - p2) ** 2)); };
   const powerProps = (p1, p2, n, alpha) => { const za = qnorm(1 - alpha / 2), pb = (p1 + p2) / 2; return pnorm((Math.abs(p1 - p2) * Math.sqrt(n) - za * Math.sqrt(2 * pb * (1 - pb))) / Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))); };
 
-  return { dbinom, pbinom, dpois, ppois, propCI, binomTest, gof, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, mannWhitney, oneT, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
+  return { dbinom, pbinom, dpois, ppois, propCI, binomTest, gof, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, varTest, mannWhitney, oneT, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
 })();
 
 /* ---------- 格式 ---------- */
@@ -513,6 +515,7 @@ const DEF = {
   blockDef: '區集 ANOVA 先扣除區集之間的差異，再比較處理；區集解釋掉的變異越多，殘差均方越小。最後一張卡是忽略區集、直接做單因子 ANOVA 的結果，供比較。',
   rmDef: '重複測量 ANOVA：把每個個體當成區集，扣除個體之間的差異後，比較各時間點的平均。', ggDef: 'Greenhouse–Geisser ε：用各時間點的共變異數矩陣估計違反球形假設的程度，介於 1/(時間點數 − 1) 與 1；自由度乘上 ε 後重新計算 p 值。', friedDef: 'Friedman 檢定：在每個個體內把各時間點的值排名，再比較各時間點的名次總和。',
   adjMean: '校正後平均：用 ANCOVA 模型預測「共變數等於全體平均時」各組的平均；括號內是未校正的原始平均。', parallel: '斜率平行性檢定：在模型中加入「組別 × 共變數」交互作用，檢定各組的迴歸斜率是否相同；ANCOVA 假設斜率相同。',
+  gmr: '幾何平均數比：取對數後的平均差，再取 e 的次方換回原尺度，代表第二組的幾何平均數是第一組的幾倍。',
   n: '分析使用的觀察數。', ev: '結果為事件（編碼 1）的人數。',
 };
 const cd = (k, l, v, d) => ({ k, l, v, d });
@@ -751,24 +754,26 @@ const AN = {
   },
   ttest: {
     name: '兩組比較', when: 'Welch t 檢定與 Mann–Whitney：兩組的數值結果',
-    fields: [{ k: 'y', label: '結果變數（數值）', t: 'num' }, { k: 'g', label: '分組變數（兩組）', t: 'cat' }],
+    fields: [{ k: 'y', label: '結果變數（數值）', t: 'num' }, { k: 'g', label: '分組變數（兩組）', t: 'cat' }, { k: 'log', label: '先取自然對數（右偏資料；結果以幾何平均數的比值表示）', t: 'check' }],
     run(ds, s) {
       const yc = colOf(ds, s.y), gc = colOf(ds, s.g), { idx, dropped } = complete(ds, [s.y, s.g]), G = levelsOf(ds, gc, idx);
       if (G.length !== 2) throw new Error(`分組變數需要剛好兩組，「${s.g}」目前有 ${G.length} 組。三組以上請改用「多組比較」。`);
-      const [a, b] = G.map(l => idx.filter(i => lab(gc.values[i]) === l).map(i => yc.values[i]));
+      const tf = s.log ? Math.log : v => v;
+      if (s.log && idx.some(i => !(yc.values[i] > 0))) throw new Error('取對數需要所有值都大於 0。');
+      const [a, b] = G.map(l => idx.filter(i => lab(gc.values[i]) === l).map(i => tf(yc.values[i])));
       if (a.length < 2 || b.length < 2) throw new Error('每組至少需要 2 筆資料。');
-      const w = S.welch(a, b), mw = S.mannWhitney(a, b), m0 = w.m1, m1 = w.m2;
-      const box = boxStrip([{ label: G[0], v: a }, { label: G[1], v: b }], s.y, (X, Y, { bw }) => {
+      const w = S.welch(a, b), mw = S.mannWhitney(a, b), m0 = w.m1, m1 = w.m2, Lv = S.levene([a, b]), ylab2 = s.log ? `ln(${s.y})` : s.y;
+      const box = boxStrip([{ label: G[0], v: a }, { label: G[1], v: b }], ylab2, (X, Y, { bw }) => {
         const x0 = X(0), x1 = X(1), xm = (x0 + x1) / 2, cx = x1 + bw / 2 + 30;
         return `<g class="hlx" data-k="diff d"><line x1="${x0}" x2="${x1}" y1="${Y(m0)}" y2="${Y(m0)}" style="stroke:var(--c1);stroke-dasharray:5 4;stroke-width:1.5"/><line x1="${xm}" x2="${xm}" y1="${Y(m0)}" y2="${Y(m1)}" style="stroke:var(--c2);stroke-width:3"/><text x="${xm + 6}" y="${(Y(m0) + Y(m1)) / 2}" dy=".32em" style="fill:var(--c2)">${F.n(w.diff)}</text></g>`
           + `<g class="hlx" data-k="ci"><line x1="${x0}" x2="${cx}" y1="${Y(m0)}" y2="${Y(m0)}" style="stroke:var(--c1);stroke-dasharray:5 4;stroke-width:1.5"/><line x1="${cx}" x2="${cx}" y1="${Y(m0 + w.ci[0])}" y2="${Y(m0 + w.ci[1])}" style="stroke:var(--c2);stroke-width:4"/><circle cx="${cx}" cy="${Y(m1)}" r="4" style="fill:var(--c2)"/></g>`;
       });
       return {
-        title: `${esc(s.y)}：${esc(G[1])} vs ${esc(G[0])}`, meta: meta(idx.length, dropped), facts: [],
-        charts: [{ svg: box, cap: boxCap }, { svg: distChart('t', w.t, w.df, `t（自由度 ${F.n(w.df, 1)}）`), cap: distCap.t }],
+        title: `${esc(s.y)}${s.log ? '（取自然對數）' : ''}：${esc(G[1])} vs ${esc(G[0])}`, meta: meta(idx.length, dropped), facts: s.log ? [`已取自然對數；平均差換算回原尺度為幾何平均數比 ${F.n(Math.exp(w.diff), 3)}（95% CI ${F.ci(Math.exp(w.ci[0]), Math.exp(w.ci[1]), 3)}）`] : [],
+        charts: [{ svg: box, cap: boxCap }, { svg: distChart('t', w.t, w.df, `t（自由度 ${F.n(w.df, 1)}）`), cap: distCap.t }, { svg: qqChart([...a.map(v => v - m0), ...b.map(v => v - m1)]), cap: '殘差（每個值 − 自己那組的平均）的 Q-Q 圖。' }],
         cards: [cd('mean0', `${esc(G[0])} 平均`, F.n(m0), 'mean'), cd('mean1', `${esc(G[1])} 平均`, F.n(m1), 'mean'), cd('sd0', `${esc(G[0])} SD`, F.n(w.s1), 'sd'), cd('sd1', `${esc(G[1])} SD`, F.n(w.s2), 'sd'),
           cd('med0', `${esc(G[0])} 中位數`, F.n(S.median(a)), 'median'), cd('med1', `${esc(G[1])} 中位數`, F.n(S.median(b)), 'median'), cd('diff', `平均差（${esc(G[1])} − ${esc(G[0])}）`, F.n(w.diff), 'diff'), cd('ci', '平均差 95% CI', F.ci(...w.ci), 'ci'),
-          cd('t', 'Welch t', `${F.n(w.t, 2)}（df ${F.n(w.df, 1)}）`, 't'), cd('p', 'p 值（Welch）', F.p(w.p), 'p'), cd('d', "Cohen's d", F.n(w.d, 2), 'd'), cd('rank', 'p 值（Mann–Whitney）', F.p(mw.p), 'U')],
+          cd('t', 'Welch t', `${F.n(w.t, 2)}（df ${F.n(w.df, 1)}）`, 't'), cd('p', 'p 值（Welch）', F.p(w.p), 'p'), cd('d', "Cohen's d", F.n(w.d, 2), 'd'), cd('rank', 'p 值（Mann–Whitney）', F.p(mw.p), 'U'), cd('qq', 'p 值（Levene）', F.p(Lv.p), 'levene'), ...(s.log ? [cd('diff', `幾何平均數比（${esc(G[1])} ÷ ${esc(G[0])}）`, `${F.n(Math.exp(w.diff), 3)}（${F.ci(Math.exp(w.ci[0]), Math.exp(w.ci[1]), 3)}）`, 'gmr')] : [])],
         tables: [{ head: ['', `${esc(G[0])}`, `${esc(G[1])}`], rows: descRows(G, [a, b]) }, { head: ['檢定', '估計值', '95% CI', '統計量', 'p 值'], rows: [[`Welch t<br><span class="mut">平均差（${esc(G[1])} − ${esc(G[0])}）</span>`, F.n(w.diff), F.ci(...w.ci), `t(${F.n(w.df, 1)}) = ${F.n(w.t, 2)}`, F.p(w.p)], ['Mann–Whitney U', '—', '—', `U = ${F.n(mw.U, 1)}，z = ${F.n(mw.z, 2)}`, F.p(mw.p)], ["Cohen's d", F.n(w.d, 2), '—', '—', '—']] }],
         write: W2(`${s.y} 的兩組比較使用 Welch t 檢定（不假設變異數相等）與 Mann–Whitney U 檢定；效果量為 Cohen's d。檢定皆為雙尾。`,
           `${G[1]} 組（n = ${b.length}）${s.y} ${F.n(m1)} ± ${F.n(w.s2)}；${G[0]} 組（n = ${a.length}）${F.n(m0)} ± ${F.n(w.s1)}；平均差 ${F.n(w.diff)}（95% CI ${F.ci(...w.ci)}；Welch t(${F.n(w.df, 1)}) = ${F.n(w.t, 2)}，${F.peq(w.p)}；Cohen's d = ${F.n(w.d, 2)}）。Mann–Whitney U = ${F.n(mw.U, 1)}，${F.peq(mw.p)}。`,

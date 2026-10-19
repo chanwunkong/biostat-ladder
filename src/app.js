@@ -116,6 +116,7 @@ function ensureSel() {
   spec.fields.forEach(f => {
     if (f.t === 'value') { if (sel[f.k] === undefined || sel[f.k] === '') sel[f.k] = f.def; return; }
     if (f.t === 'text') { if (sel[f.k] === undefined) sel[f.k] = f.def || ''; return; }
+    if (f.t === 'check') { if (sel[f.k] === undefined) sel[f.k] = !!f.def; return; }
     const el = eligible(ds, f);
     if (f.multi) { if (!sel[f.k]) sel[f.k] = f.def === 'all' ? el.filter(n => !used.has(n)) : f.def === 'some' ? el.filter(n => !used.has(n)).slice(0, 8) : []; sel[f.k] = sel[f.k].filter(n => el.includes(n)); }
     else { if (!el.includes(sel[f.k])) sel[f.k] = f.opt ? '' : el.find(n => !used.has(n)) || ''; if (sel[f.k]) used.add(sel[f.k]); }
@@ -149,6 +150,7 @@ function renderForm() {
   $('#runBtn').hidden = false;
   $('#form').innerHTML = spec.fields.map(f => {
     if (f.t === 'value') return `<label class="fld"><span>${f.label}</span><input id="f-${f.k}" data-k="${f.k}" type="number" inputmode="decimal" step="any" value="${esc(sel[f.k])}"></label>`;
+    if (f.t === 'check') return `<label class="tog"><input id="f-${f.k}" data-k="${f.k}" type="checkbox" ${sel[f.k] ? 'checked' : ''}> ${f.label}</label>`;
     if (f.t === 'text') return `<label class="fld"><span>${f.label}</span><input id="f-${f.k}" data-k="${f.k}" type="text" value="${esc(sel[f.k] ?? '')}" placeholder="${esc(f.ph || '')}"></label>`;
     const el = eligible(ds, f);
     if (f.multi) {
@@ -159,7 +161,8 @@ function renderForm() {
   }).join('');
   $$('#form select').forEach(s => { s.onchange = () => { sel[s.dataset.k] = s.value; }; });
   $$('#form input[type=number], #form input[type=text]').forEach(s => { s.onchange = () => { sel[s.dataset.k] = s.value; }; });
-  $$('#form input[type=checkbox]').forEach(cb => { cb.onchange = () => { const a = sel[cb.dataset.k] || (sel[cb.dataset.k] = []); if (cb.checked) { if (!a.includes(cb.value)) a.push(cb.value); } else a.splice(a.indexOf(cb.value), 1); renderForm(); const n = $('#' + cb.id); if (n) n.focus(); }; });
+  $$('#form input[type=checkbox][id^="f-"]').forEach(s => { if (!s.dataset.k || spec.fields.find(f => f.k === s.dataset.k && f.t === 'check')) s.onchange = () => { sel[s.dataset.k] = s.checked; }; });
+  $$('#form .checks input[type=checkbox]').forEach(cb => { cb.onchange = () => { const a = sel[cb.dataset.k] || (sel[cb.dataset.k] = []); if (cb.checked) { if (!a.includes(cb.value)) a.push(cb.value); } else a.splice(a.indexOf(cb.value), 1); renderForm(); const n = $('#' + cb.id); if (n) n.focus(); }; });
   $$('[data-all]').forEach(b => { b.onclick = () => { const f = spec.fields.find(x => x.k === b.dataset.all); sel[f.k] = eligible(ds, f); renderForm(); }; });
   $$('[data-none]').forEach(b => { b.onclick = () => { sel[b.dataset.none] = []; renderForm(); }; });
 }
@@ -200,7 +203,7 @@ function runAnalysis(scroll) {
   }
   if (res.tables && res.tables.length) h += `<details class="more"><summary>完整統計表</summary>${res.tables.map(t => tableHTML(t)).join('')}</details>`;
   const defs = [...new Set((res.cards || []).map(c => c.d).filter(Boolean))];
-  if (defs.length) h += `<details class="more"><summary>每個數字怎麼算</summary><dl class="defs">${defs.map(d => `<div><dt>${{ mean: '平均', sd: '標準差', median: '中位數', iqr: '四分位距', diff: '平均差', ci: '95% 信賴區間', t: 't', p: 'p 值', d: "Cohen's d", U: 'Mann–Whitney', V: 'Wilcoxon 符號等級', F: 'F', eta2: 'η²', H: 'Kruskal–Wallis', welchF: 'Welch ANOVA', levene: 'Levene 檢定與 Q-Q 圖', cldDef: 'Tukey 字母標記', mainEff: '主效果', interEff: '交互作用', blockDef: '區集 ANOVA', rmDef: '重複測量 ANOVA', ggDef: 'Greenhouse–Geisser 校正', friedDef: 'Friedman 檢定', adjMean: '校正後平均', parallel: '斜率平行性檢定', chi2: 'χ²', minexp: '期望次數', cv: "Cramér's V", or: '勝算比', rr: '風險比', prop: '比例', fisher: 'Fisher 精確檢定', r: 'Pearson r', rho: 'Spearman ρ', r2: 'R²', slope: '斜率', sigma: '殘差標準誤', beta: '迴歸係數 β', OR: '勝算比（模型）', auc: 'AUC', lr: '概似比 χ²', hr: '危險比', medsurv: '中位存活時間', surv: '存活率', logrank: 'Log-rank χ²', sig: '未校正', q: 'BH q 值', bonf: 'Bonferroni' }[d] || d}</dt><dd>${DEF[d]}</dd></div>`).join('')}</dl></details>`;
+  if (defs.length) h += `<details class="more"><summary>每個數字怎麼算</summary><dl class="defs">${defs.map(d => `<div><dt>${{ mean: '平均', sd: '標準差', median: '中位數', iqr: '四分位距', diff: '平均差', ci: '95% 信賴區間', t: 't', p: 'p 值', d: "Cohen's d", U: 'Mann–Whitney', V: 'Wilcoxon 符號等級', F: 'F', eta2: 'η²', H: 'Kruskal–Wallis', welchF: 'Welch ANOVA', levene: 'Levene 檢定與 Q-Q 圖', cldDef: 'Tukey 字母標記', mainEff: '主效果', interEff: '交互作用', blockDef: '區集 ANOVA', rmDef: '重複測量 ANOVA', ggDef: 'Greenhouse–Geisser 校正', friedDef: 'Friedman 檢定', adjMean: '校正後平均', gmr: '幾何平均數比', parallel: '斜率平行性檢定', chi2: 'χ²', minexp: '期望次數', cv: "Cramér's V", or: '勝算比', rr: '風險比', prop: '比例', fisher: 'Fisher 精確檢定', r: 'Pearson r', rho: 'Spearman ρ', r2: 'R²', slope: '斜率', sigma: '殘差標準誤', beta: '迴歸係數 β', OR: '勝算比（模型）', auc: 'AUC', lr: '概似比 χ²', hr: '危險比', medsurv: '中位存活時間', surv: '存活率', logrank: 'Log-rank χ²', sig: '未校正', q: 'BH q 值', bonf: 'Bonferroni' }[d] || d}</dt><dd>${DEF[d]}</dd></div>`).join('')}</dl></details>`;
   out.innerHTML = h + '</div>';
   const root = $('#res-root'); linkify(root, res.table1 && res.picks.length ? res.picks[0].k : null);
   if (scroll === true && innerWidth < 960) out.scrollIntoView({ behavior: 'smooth', block: 'start' });

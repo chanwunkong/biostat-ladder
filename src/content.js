@@ -849,6 +849,30 @@ const CH = [
       { q: '想估計一組偏態資料「中位數」的 95% 信賴區間，最方便的方法是？', o: ['Bootstrap：重抽幾千次，取中位數分佈的第 2.5 與第 97.5 百分位', '平均 ± 1.96 × SD', '卡方檢定', '中位數 ± 1.96'], why: '中位數的標準誤沒有簡單公式；Bootstrap 直接從資料估計它的分佈。' },
     ],
   },
+  {
+    id: 'two-assume', title: '兩組比較的前提、資料轉換與極端值',
+    body: `<p>兩組 t 檢定（{{c3-1}} 章）的 p 值要可靠，需要三個前提：觀察值<b>獨立</b>、每組資料（或樣本夠大時的平均數）<b>接近常態</b>，以及只有傳統 Student t 檢定才需要的<b>兩組變異數相等</b>。</p>
+<h3>檢查常態性</h3>
+<p>最有用的是看圖：直方圖、箱型圖，以及每組的 Q-Q 圖（{{anova-assume}} 章）。也有形式上的常態性檢定（例如 Shapiro–Wilk），但它在樣本小時檢定力很低、樣本大時連微小的偏離都會顯著，所以不建議用它機械式地決定方法。</p>
+<h3>變異數相等嗎？</h3>
+<p>比較兩組變異數的傳統方法是 <b>F 檢定</b>（F = s₁² ÷ s₂²），但它對非常態非常敏感，不建議使用；Levene 檢定比較穩健。實務上更簡單的做法是：<b>預設使用 Welch t 檢定</b>，它本來就不要求變異數相等，變異數真的相等時也幾乎沒有損失。</p>
+<h3>資料轉換</h3>
+<p>生物資料常常右偏：濃度、細胞數、酵素活性、基因表現量。這類資料通常是「乘法」的關係（處理讓數值變成幾倍），標準差也會隨平均變大。</p>
+<ul><li><b>對數轉換</b>：取 log 後常變得對稱、兩組變異數也較接近。對 log 資料做 t 檢定，平均差取 e 的次方換回原尺度，得到兩組<b>幾何平均數</b>的比值，例如「處理組是對照組的 1.8 倍（95% CI 1.3–2.5）」。資料中有 0 時不能直接取 log。</li>
+<li><b>平方根轉換</b>：常用於計數資料。</li></ul>
+<p>轉換後的結果要用原尺度的意義來報告，並在方法中寫明使用了哪一種轉換。</p>
+<h3>極端值</h3>
+<p>遇到特別大或特別小的值，處理順序是：</p>
+<ol><li>先檢查是不是登錄或測量錯誤；確定是錯誤才更正或排除，並在論文中說明。</li>
+<li>不能只因為它「太極端」或「讓結果不顯著」就刪除，這會造成偏差。</li>
+<li>做<b>敏感度分析</b>：比較有、沒有這個值的結果，或改用受極端值影響較小的方法（中位數、Mann–Whitney 等無母數方法，下一章介紹），看結論是否改變。</li></ol>`,
+    labs: [{ label: '兩組比較：試試「先取對數」', ds: 'diet_geno', an: 'ttest', sel: { y: 'liver_fat_pct', g: 'diet', log: true } }],
+    quiz: [
+      { q: '兩組右偏的濃度資料取自然對數後做 t 檢定，平均差 = 0.59。e^0.59 ≈ 1.8 代表什麼？', o: ['第二組的幾何平均數約是第一組的 1.8 倍', '兩組平均差 1.8', '第二組有 1.8% 比較高', 'p 值是 1.8'], why: 'log 尺度上的差，換回原尺度就是比值（倍數），而且是幾何平均數的比值。' },
+      { q: '資料中有一個特別大的值。最恰當的處理是？', o: ['先確認是不是錯誤；不是的話保留，並做有無此值的敏感度分析', '直接刪除，因為它是極端值', '一律用中位數取代', '重新收集資料直到沒有極端值'], why: '只因極端就刪除會讓結果偏差；檢查錯誤並報告敏感度分析才是正確做法。' },
+      { q: '兩組標準差差了 2.5 倍。使用 Welch t 檢定前，需要先證明變異數相等嗎？', o: ['不需要：Welch t 檢定本來就不要求變異數相等', '需要，先做 F 檢定', '需要，否則不能比較', '要改用卡方檢定'], why: '只有傳統的 Student t 檢定才假設變異數相等。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -1009,8 +1033,13 @@ const GLOSS = [
   ["Cohen's d", [], '兩組平均差 ÷ 標準差：差距是幾個標準差。', 'c2-4'],
   ['t 檢定', ['t 統計量', 't 值'], '比較平均數的檢定；t = 差異 ÷ 標準誤。', 'c3-1'],
   ['訊號與雜訊', ['訊號', '雜訊'], 't 檢定的比喻：訊號是差異的大小，雜訊是差異的不確定性（標準誤）。', 'c3-1'],
+  ['平均差', [], '兩組平均數相減的差。', 'c3-1'],
   ['配對 t 檢定', ['配對'], '同一個體測兩次時，分析「每個人的變化量」的 t 檢定。', 'c3-1'],
   ['Welch', [], '不假設兩組變異數相等的 t 檢定版本。', 'c3-1'],
+  ['F 檢定（變異數）', ['F 檢定', 'var.test'], '以兩組變異數的比值 s₁² ÷ s₂² 檢定變異數是否相等；對非常態敏感。', 'two-assume'],
+  ['幾何平均數', [], '取對數後平均再換回原尺度的平均；右偏資料常用。', 'two-assume'],
+  ['平方根轉換', [], '把資料開根號後再分析，常用於計數資料。', 'two-assume'],
+  ['敏感度分析', [], '改變某個分析選擇（例如是否納入極端值），看結論是否改變。', 'two-assume'],
   ['ANOVA', ['變異數分析'], '一次比較三組以上平均數的方法。', 'c3-2'],
   ['F 值', ['F ='], '組間均方 ÷ 組內均方。', 'c3-2'],
   ['平方和', ['SS'], '把距離平方後加總。ANOVA 把總平方和拆成組間平方和與組內平方和。', 'c3-2'],
@@ -1072,7 +1101,7 @@ const ORDER = [
   ['c1-1', 'c1-2', 'c1-3', 'c1-4', 'c1-5'],
   ['prob-rules', 'c2-1', 'roc', 'rv', 'binom', 'poisson'],
   ['c2-2', 'c2-3', 'tdist', 'prop-ci', 'c2-4', 'one-t', 'binom-test', 'gof', 'boot', 'c4-5', 'c5-1'],
-  ['c3-1', 'c3-3', 'c3-5'],
+  ['c3-1', 'two-assume', 'c3-3', 'c3-5'],
   ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff', 'ancova'],
   ['c3-4', 'c4-1', 'c4-2'],
   ['c4-3'],
@@ -1085,7 +1114,7 @@ const REFS = {
   'c1-3': 'Whitlock 第 3 章；Rosner 2.4–2.5；Kirkwood 第 4 章', 'c1-4': 'Whitlock 第 10 章；Rosner 第 5 章；Kirkwood 第 5 章', 'c1-5': 'Kirkwood 第 34 章',
   'prob-rules': 'Whitlock 第 5 章；Rosner 3.2–3.6', 'roc': 'Rosner 3.9；UTHealth GSBS 課綱第 10 週', 'rv': 'Rosner 4.2–4.6', 'binom': 'Whitlock 7.1；Rosner 4.7–4.9、5.7；Kirkwood 第 15 章', 'poisson': 'Whitlock 8.4；Rosner 4.10–4.13；Kirkwood 第 22 章', 'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'tdist': 'Whitlock 11.1；Rosner 6.5', 'prop-ci': 'Whitlock 7.3；Rosner 6.8；Kirkwood 第 15 章', 'binom-test': 'Whitlock 7.2；Rosner 7.9', 'gof': 'Whitlock 8.1–8.3；Rosner 10.7', 'boot': 'Whitlock 13.8、第 19 章；Rosner 6.11、9.6', 'one-t': 'Whitlock 11.2；Rosner 7.3–7.5；UTHealth GSBS 課綱第 2 週', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
   'c2-4': 'Whitlock 第 6 章；Rosner 7.1–7.5；Kirkwood 第 8 章', 'c4-5': 'Whitlock 14.6；Rosner 7.6–7.7、8.9；Kirkwood 第 35 章', 'c5-1': 'Rosner 13.2；Kirkwood 第 34 章',
-  'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
+  'two-assume': 'Whitlock 13.1–13.3；Rosner 8.6、8.10；Kirkwood 第 13 章', 'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
   'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
   'c4-2': 'Rosner 13.7–13.8；Kirkwood 第 19–20 章', 'c4-3': 'Whitlock 第 21 章；Rosner 14.8–14.11；Kirkwood 第 26–27 章', 'c4-4': 'Benjamini & Hochberg (1995), J R Stat Soc B 57:289–300',
   'c4-6': 'Rosner 12.10、13.13–13.14；Kirkwood 第 31 章', 'c5-2': 'Kirkwood 第 38 章；EQUATOR Network', 'c5-3': 'Kirkwood 第 38 章', 'c5-4': 'Kirkwood 第 34、38 章',
