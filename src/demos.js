@@ -2,6 +2,11 @@
    每題的 demo：set = 設定輸入元件（id → 值）；click = 依序點擊的按鈕；custom = 交給互動圖自己的 _demo()；look = 示範時的觀察提示。
    有 q 的項目會整題替換（原題無法在圖上示範時）。 */
 const QD = {
+  'anova-assume': [
+    { demo: { click: ['#wq-s [data-s="norm"]'], set: { 'wq-r': 1, 'wq-n': 30, 'wq-u': false }, look: '常態資料、每組 30 人：右邊 Q-Q 圖的點大致沿著虛線。再切到「右偏」比較兩端的彎曲。' } },
+    { demo: { click: ['#wq-s [data-s="norm"]'], set: { 'wq-r': 4, 'wq-n': 20, 'wq-u': true }, then: ['#wq-go'], look: '模擬結果：一般 ANOVA 的偽陽性率超過 5% 的虛線，Welch ANOVA 接近 5%。' } },
+    { demo: { click: ['#wq-s [data-s="skew"]'], set: { 'wq-r': 2, 'wq-n': 12, 'wq-u': false }, look: '右偏資料：箱型圖上方有長尾巴，Q-Q 圖右端往上翹。' } },
+  ],
   'exp-design': [
     { demo: { click: ['#wx-a [data-a="pick"]'], set: { 'wx-b': true, 'wx-e': 0, 'wx-n': 10 }, look: '藥效設為 0、改成研究者挑選。看橘色虛線（估計值的平均）離黑線（真值）多遠，以及紅色（p < 0.05）的比例。' } },
     { demo: { click: ['#wx-a [data-a="pick"]'], set: { 'wx-b': true, 'wx-e': 0, 'wx-n': 40 }, look: '每組 40 隻：分佈變窄了，但仍然整個偏離黑線。再切回「隨機分派」比較。' } },
@@ -131,7 +136,7 @@ function applyDemo(el, d) {
     if (n.type === 'checkbox') n.checked = !!v; else n.value = v;
     n.dispatchEvent(new Event('input', { bubbles: true })); n.dispatchEvent(new Event('change', { bubbles: true }));
   }
-  for (const s of d.click || []) { const b = $(s, el); if (b) b.click(); }
+  for (const s of [...(d.click || []), ...(d.then || [])]) { const b = $(s, el); if (b) b.click(); }
   if (d.focus) { const f = $(d.focus, el); if (f) { const l = f.closest('label') || f; l.classList.add('flash'); setTimeout(() => l.classList.remove('flash'), 1600); } }
 }
 function bindDemos(c) {

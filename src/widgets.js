@@ -436,6 +436,41 @@ Object.assign(W, {
 
 /* ---------- 第 5 階段：ANOVA 與實驗設計 ---------- */
 Object.assign(W, {
+  anovaassume(el) {
+    const base = [0, 1, 2].map(k => std(Array.from({ length: 60 }, normOf(rngOf(31 + k)))));
+    el.innerHTML = `<p class="w-cap">三組資料，真實平均都相同。調整分佈形狀與變異數，看 Q-Q 圖和各種檢定的反應。</p>
+<div class="seg wrap" id="wq-s"><button type="button" data-s="norm" aria-selected="true">常態</button><button type="button" data-s="skew" aria-selected="false">右偏</button></div>
+<div class="w-row">${slider('wq-r', 'C 組標準差是 A 組的幾倍', 1, 5, 0.5, 1)}${slider('wq-n', '每組人數', 5, 40, 1, 12)}</div>
+<label class="tog"><input type="checkbox" id="wq-u"> C 組人數只有一半</label>
+<div class="w-cols"><figure class="fig"><figcaption>各組資料</figcaption><div class="chart-wrap" id="wq-b"></div></figure><figure class="fig"><figcaption>殘差的 Q-Q 圖</figcaption><div class="chart-wrap" id="wq-q"></div></figure></div>
+<div class="kv" id="wq-k"></div>
+<div class="w-row"><button class="btn" type="button" id="wq-go">模擬 500 次：真實無差異時的偽陽性率</button></div><div class="chart-wrap" id="wq-sim"></div>`;
+    let shape = 'norm', sim = null;
+    const make = (r, n, unb, shp, zs) => zs.map((z, k) => { const m = k === 2 && unb ? Math.max(3, Math.round(n / 2)) : n, sd = k === 2 ? r : 1; return z.slice(0, m).map(x => (shp === 'skew' ? 10 * Math.exp(0.6 * sd * x - 0.18 * sd * sd) : 10 + 2 * sd * x)); });
+    const up = () => {
+      const r = sv('wq-r', v => v.toFixed(1)), n = sv('wq-n'), unb = $('#wq-u').checked, gv = make(r, n, unb, shape, base);
+      const A = S.anova(gv), Wl = S.welchAnova(gv), L = S.levene(gv), K = S.kruskal(gv), sds = gv.map(S.sd), ratio = Math.max(...sds) / Math.min(...sds);
+      $('#wq-b').innerHTML = boxStrip(gv.map((v, k) => ({ label: 'ABC'[k], v })), '測量值', (X, Y, { bw }) => gv.map((g, k) => { const m = S.mean(g), sd = S.sd(g), x = X(k) - bw / 2 - 10; return `<line class="hlx" data-k="spread" x1="${x}" x2="${x}" y1="${Y(m - sd)}" y2="${Y(m + sd)}" style="stroke:var(--c2);stroke-width:4"/><line class="hlx" data-k="means" x1="${X(k) - bw}" x2="${X(k) + bw}" y1="${Y(m)}" y2="${Y(m)}" style="stroke:var(--c4);stroke-width:3"/>`; }).join(''));
+      const res = gv.flatMap(g => { const m = S.mean(g); return g.map(v => v - m); }), sr = Float64Array.from(res).sort(), sdr = S.sd(res), nn = sr.length, th = Array.from(sr, (_, i) => S.qnorm((i + 0.5) / nn) * sdr);
+      const [lo, hi] = S.minmax([...sr, ...th]);
+      $('#wq-q').innerHTML = chart({ x: [lo, hi], y: [lo, hi], h: 260, xlab: '常態分佈的理論位置', ylab: '殘差（排序後）' }, (X, Y) => `<line class="keep" x1="${X(lo)}" y1="${Y(lo)}" x2="${X(hi)}" y2="${Y(hi)}" style="stroke:var(--muted);stroke-dasharray:5 4"/>` + Array.from(sr, (v, i) => `<circle data-k="qq" cx="${X(th[i]).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="3" style="fill:var(--c1);fill-opacity:.7"/>`).join(''));
+      $('#wq-k').innerHTML = kvs([['標準差 最大 ÷ 最小', F.n(ratio, 2), 'spread'], ['Levene 檢定 p', F.p(L.p), 'spread'], ['一般 ANOVA p', F.p(A.p), 'means'], ['Welch ANOVA p', F.p(Wl.p), 'means'], ['Kruskal–Wallis p', F.p(K.p), 'rank']]);
+      if (sim) drawSim();
+    };
+    const drawSim = () => {
+      const rows = [['一般 ANOVA', sim[0], 'var(--c2)', 'fa'], ['Welch ANOVA', sim[1], 'var(--c1)', 'fw'], ['Kruskal–Wallis', sim[2], 'var(--c3)', 'fk']];
+      $('#wq-sim').innerHTML = chart({ ycats: rows.map(r => r[0]), x: [0, Math.max(0.12, ...rows.map(r => r[1]))], h: 170, m: { l: 110 }, xlab: '偽陽性率（p < 0.05 的比例）' }, (X, Y, { M, ih }) => rows.map((r, i) => `<rect data-k="${r[3]}" x="${X(0)}" y="${Y(i) - ih / 8}" width="${X(r[1]) - X(0)}" height="${ih / 4}" style="fill:${r[2]}"/><text x="${X(r[1]) + 6}" y="${Y(i)}" dy=".32em" style="fill:var(--ink)">${F.n(100 * r[1], 1)}%</text>`).join('') + `<line class="keep" x1="${X(0.05)}" x2="${X(0.05)}" y1="${M.t}" y2="${M.t + ih}" style="stroke:var(--ink);stroke-dasharray:4 3"/>`);
+      $('#wq-sim').insertAdjacentHTML('beforeend', `<div class="kv">${kvs([['一般 ANOVA 偽陽性率', F.n(100 * sim[0], 1) + '%', 'fa'], ['Welch ANOVA 偽陽性率', F.n(100 * sim[1], 1) + '%', 'fw'], ['Kruskal–Wallis 偽陽性率', F.n(100 * sim[2], 1) + '%', 'fk']])}</div>`);
+    };
+    const runSim = () => {
+      const r = +$('#wq-r').value, n = +$('#wq-n').value, unb = $('#wq-u').checked, c = [0, 0, 0], R = 500;
+      for (let i = 0; i < R; i++) { const gv = make(r, n, unb, shape, [0, 1, 2].map(() => Array.from({ length: 60 }, rnorm))); if (S.anova(gv).p < 0.05) c[0]++; if (S.welchAnova(gv).p < 0.05) c[1]++; if (S.kruskal(gv).p < 0.05) c[2]++; }
+      sim = c.map(v => v / R); drawSim();
+    };
+    segBind(el, '#wq-s', b => { shape = b.dataset.s; sim = null; $('#wq-sim').innerHTML = ''; up(); });
+    const reset = () => { sim = null; $('#wq-sim').innerHTML = ''; up(); };
+    $('#wq-r').oninput = reset; $('#wq-n').oninput = reset; $('#wq-u').onchange = reset; $('#wq-go', el).onclick = runSim; up();
+  },
   expdesign(el) {
     el.innerHTML = `<p class="w-cap">情境：測試新藥能不能讓小鼠體重增加。每隻小鼠本來的健康狀況不同，健康的小鼠本來就長得比較好。下圖是把同一個實驗重做 400 次，每次估計的藥效（給藥組平均 − 對照組平均）。</p>
 <div class="seg wrap" id="wx-a"><button type="button" data-a="rand" aria-selected="true">隨機分派</button><button type="button" data-a="pick" aria-selected="false">研究者挑選（健康的給藥）</button></div>
@@ -471,5 +506,5 @@ Object.assign(W, {
   },
 });
 
-const WMAP = { 'exp-design': ['expdesign', '400 次小鼠實驗'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
+const WMAP = { 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
 for (const [id, [w, t]] of Object.entries(WMAP)) { const c = CH.find(x => x.id === id); c.widget = w; c.wtitle = t; }

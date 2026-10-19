@@ -605,6 +605,16 @@ const S = (() => {
     const df1 = k - 1, df2 = N - k, msb = ssb / df1, msw = ssw / df2, F = msb / msw;
     return { F, df1, df2, p: pf(F, df1, df2), ssb, ssw, msb, msw, eta2: ssb / (ssb + ssw) };
   }
+  // Welch ANOVA（不假設各組變異數相等；R 的 oneway.test(var.equal = FALSE)）
+  function welchAnova(groups) {
+    const k = groups.length, n = groups.map(g => g.length), m = groups.map(mean), w = groups.map((g, i) => n[i] / variance(g)), W = sum(w);
+    const mw = sum(w.map((wi, i) => wi * m[i])) / W, h = sum(w.map((wi, i) => (1 - wi / W) ** 2 / (n[i] - 1)));
+    const F = sum(w.map((wi, i) => wi * (m[i] - mw) ** 2)) / (k - 1) / (1 + 2 * (k - 2) / (k * k - 1) * h);
+    const df1 = k - 1, df2 = (k * k - 1) / (3 * h);
+    return { F, df1, df2, p: pf(F, df1, df2) };
+  }
+  // Levene 檢定（以中位數為中心，即 Brown–Forsythe 版本；R 的 car::leveneTest 預設）
+  function levene(groups) { const r = anova(groups.map(g => { const md = median(g); return g.map(v => Math.abs(v - md)); })); return { F: r.F, df1: r.df1, df2: r.df2, p: r.p }; }
   function kruskal(groups) {
     const all = groups.flat(), N = all.length; const { r, ties } = rank(all); let H = 0, off = 0;
     for (const g of groups) { let R = 0; for (let i = 0; i < g.length; i++) R += r[off + i]; off += g.length; H += R * R / g.length; }
@@ -753,7 +763,7 @@ const S = (() => {
   const nProps = (p1, p2, alpha, power) => { const za = qnorm(1 - alpha / 2), zb = qnorm(power), pb = (p1 + p2) / 2; return Math.ceil((za * Math.sqrt(2 * pb * (1 - pb)) + zb * Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))) ** 2 / ((p1 - p2) ** 2)); };
   const powerProps = (p1, p2, n, alpha) => { const za = qnorm(1 - alpha / 2), pb = (p1 + p2) / 2; return pnorm((Math.abs(p1 - p2) * Math.sqrt(n) - za * Math.sqrt(2 * pb * (1 - pb))) / Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))); };
 
-  return { lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, mannWhitney, pairedT, wilcoxonSR, anova, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
+  return { lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, mannWhitney, pairedT, wilcoxonSR, anova, welchAnova, levene, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
 })();
 
 /* ---------- 格式 ---------- */
@@ -872,6 +882,11 @@ function stackChart(R, C, tab, ylab, tag = () => '', extra) {
   });
 }
 
+// 常態 Q-Q 圖；data-k="qq" 為各點
+function qqChart(vals) {
+  const sr = Float64Array.from(vals).sort(), n = sr.length, sd = S.sd(vals), m = S.mean(vals), th = Array.from(sr, (_, i) => m + S.qnorm((i + 0.5) / n) * sd), [lo, hi] = S.minmax([...sr, ...th]);
+  return chart({ x: [lo, hi], y: [lo, hi], h: 260, xlab: '常態分佈的理論位置', ylab: '實際值（排序後）' }, (X, Y) => `<line class="keep" x1="${X(lo)}" y1="${Y(lo)}" x2="${X(hi)}" y2="${Y(hi)}" style="stroke:var(--muted);stroke-dasharray:5 4"/>` + Array.from(sr, (v, i) => `<circle data-k="qq" cx="${X(th[i]).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="3" style="fill:var(--c1);fill-opacity:.7"/>`).join(''));
+}
 // ROC 曲線；data-k="auc" 為曲線下面積
 function rocChart(score, y) {
   const idx = score.map((_, i) => i).sort((a, b) => score[b] - score[a]), P = S.sum(y), N = y.length - P; let tp = 0, fp = 0; const pts = [[0, 0]];
@@ -895,6 +910,7 @@ const DEF = {
   beta: '迴歸係數 β：其他變數固定時，該變數增加 1 單位（類別變數則為相對參考組），結果變數平均的變化量。', OR: '勝算比：e 的 β 次方，β 為邏輯斯迴歸係數。', auc: 'AUC：ROC 曲線下的面積。', lr: '概似比 χ²：2 ×（模型的對數概似 − 只有截距的對數概似）。',
   hr: '危險比：e 的 β 次方，β 為 Cox 模型係數。', medsurv: '中位存活時間：Kaplan–Meier 曲線第一次降到 0.5 以下的時間。', surv: '存活率：每個事件時間點乘上（1 − 事件數 ÷ 風險人數）的累積結果；括號為 95% CI。', logrank: 'Log-rank χ²：比較各組在每個事件時間點的觀察事件數與期望事件數。',
   sig: '未校正 p < 0.05 的變數數。', q: 'Benjamini–Hochberg：p 值由小到大排序，第 i 個乘上 m ÷ i，再由後往前取最小值，得到 q 值；這裡數 q < 0.05 的個數。', bonf: 'Bonferroni：p 值 × 檢定總數 m；這裡數校正後 < 0.05 的個數，等同 p < 0.05 ÷ m。',
+  welchF: 'Welch ANOVA：各組變異數分別估計、以各組人數 ÷ 變異數為權重的 F 檢定，不要求變異數相等。', levene: 'Levene 檢定：算出每個值與自己那組中位數的距離，再用 ANOVA 比較這些距離；p 值小代表各組變異數不同。Q-Q 圖則用來看殘差是否接近常態。',
   n: '分析使用的觀察數。', ev: '結果為事件（編碼 1）的人數。',
 };
 const cd = (k, l, v, d) => ({ k, l, v, d });
@@ -1168,10 +1184,10 @@ const AN = {
       const yc = colOf(ds, s.y), gc = colOf(ds, s.g), { idx, dropped } = complete(ds, [s.y, s.g]), G = levelsOf(ds, gc, idx);
       if (G.length < 2) throw new Error('分組變數至少需要兩組。'); if (G.length > 12) throw new Error('組數超過 12 組，請選擇類別較少的變數。');
       const gv = G.map(l => idx.filter(i => lab(gc.values[i]) === l).map(i => yc.values[i])); if (gv.some(a => a.length < 2)) throw new Error('每組至少需要 2 筆資料。');
-      const A = S.anova(gv), K = S.kruskal(gv), gm = S.mean(gv.flat()), tables = [];
-      const box = boxStrip(G.map((l, j) => ({ label: l, v: gv[j] })), s.y, (X, Y, { M, iw, bw }) => `<g class="hlx" data-k="gm eta F"><line x1="${M.l}" x2="${M.l + iw}" y1="${Y(gm)}" y2="${Y(gm)}" style="stroke:var(--muted);stroke-width:1.5;stroke-dasharray:6 4"/></g>` + gv.map((g, j) => `<line class="hlx" data-k="eta F" x1="${X(j) - bw / 2 - 8}" x2="${X(j) - bw / 2 - 8}" y1="${Y(gm)}" y2="${Y(S.mean(g))}" style="stroke:var(--c2);stroke-width:3"/>`).join(''));
+      const A = S.anova(gv), K = S.kruskal(gv), Wl = S.welchAnova(gv), Lv = S.levene(gv), gm = S.mean(gv.flat()), tables = [];
+      const box = boxStrip(G.map((l, j) => ({ label: l, v: gv[j] })), s.y, (X, Y, { M, iw, bw }) => gv.map((g, j) => `<line class="hlx" data-k="welch" x1="${X(j) - bw / 2}" x2="${X(j) + bw / 2}" y1="${Y(S.mean(g))}" y2="${Y(S.mean(g))}" style="stroke:var(--c4);stroke-width:3"/>`).join('') + `<g class="hlx" data-k="gm eta F"><line x1="${M.l}" x2="${M.l + iw}" y1="${Y(gm)}" y2="${Y(gm)}" style="stroke:var(--muted);stroke-width:1.5;stroke-dasharray:6 4"/></g>` + gv.map((g, j) => `<line class="hlx" data-k="eta F" x1="${X(j) - bw / 2 - 8}" x2="${X(j) - bw / 2 - 8}" y1="${Y(gm)}" y2="${Y(S.mean(g))}" style="stroke:var(--c2);stroke-width:3"/>`).join(''));
       tables.push({ head: ['組別', ...G.map(esc)], rows: descRows(G, gv) });
-      tables.push({ head: ['變異來源', 'SS', 'df', 'MS', '統計量', 'p 值'], rows: [['組間', F.n(A.ssb), A.df1, F.n(A.msb), `F = ${F.n(A.F, 2)}`, F.p(A.p)], ['組內', F.n(A.ssw), A.df2, F.n(A.msw), '', ''], ['Kruskal–Wallis', '', K.df, '', `H = ${F.n(K.H, 2)}`, F.p(K.p)]] });
+      tables.push({ head: ['變異來源', 'SS', 'df', 'MS', '統計量', 'p 值'], rows: [['組間', F.n(A.ssb), A.df1, F.n(A.msb), `F = ${F.n(A.F, 2)}`, F.p(A.p)], ['組內', F.n(A.ssw), A.df2, F.n(A.msw), '', ''], ['Kruskal–Wallis', '', K.df, '', `H = ${F.n(K.H, 2)}`, F.p(K.p)], ['Welch ANOVA', '', `${Wl.df1}, ${F.n(Wl.df2, 1)}`, '', `F = ${F.n(Wl.F, 2)}`, F.p(Wl.p)], ['Levene 檢定（變異數同質性）', '', `${Lv.df1}, ${Lv.df2}`, '', `F = ${F.n(Lv.F, 2)}`, F.p(Lv.p)]] });
       if (G.length > 2) {
         const pr = []; for (let i = 0; i < G.length; i++) for (let j = i + 1; j < G.length; j++) pr.push({ i, j, w: S.welch(gv[i], gv[j]) });
         const adj = S.holm(pr.map(x => x.w.p));
@@ -1179,13 +1195,13 @@ const AN = {
       }
       return {
         title: `${esc(s.y)}：依「${esc(s.g)}」${G.length} 組`, meta: meta(idx.length, dropped), facts: [],
-        charts: [{ svg: box, cap: boxCap + '亮起時：灰色虛線＝全體平均，紅線＝各組平均與全體平均的距離。' }, { svg: distChart('F', A.F, [A.df1, A.df2], `F（自由度 ${A.df1}, ${A.df2}）`), cap: distCap.F }],
-        cards: [...G.map((l, j) => cd('mean' + j, `${esc(l)} 平均`, F.n(S.mean(gv[j])), 'mean')), cd('gm', '全體平均', F.n(gm), 'mean'), cd('F', 'F', `${F.n(A.F, 2)}（df ${A.df1}, ${A.df2}）`, 'F'), cd('p', 'p 值（ANOVA）', F.p(A.p), 'p'), cd('eta', 'η²', F.n(A.eta2, 3), 'eta2'), cd('rank', 'p 值（Kruskal–Wallis）', F.p(K.p), 'H')],
+        charts: [{ svg: box, cap: boxCap + '亮起時：灰色虛線＝全體平均，紅線＝各組平均與全體平均的距離。' }, { svg: distChart('F', A.F, [A.df1, A.df2], `F（自由度 ${A.df1}, ${A.df2}）`), cap: distCap.F }, { svg: qqChart(gv.flatMap(g => { const m = S.mean(g); return g.map(v => v - m); })), cap: '殘差（每個值 − 自己那組的平均）的 Q-Q 圖；虛線為常態分佈的參考線。' }],
+        cards: [...G.map((l, j) => cd('mean' + j, `${esc(l)} 平均`, F.n(S.mean(gv[j])), 'mean')), cd('gm', '全體平均', F.n(gm), 'mean'), cd('F', 'F', `${F.n(A.F, 2)}（df ${A.df1}, ${A.df2}）`, 'F'), cd('p', 'p 值（ANOVA）', F.p(A.p), 'p'), cd('eta', 'η²', F.n(A.eta2, 3), 'eta2'), cd('rank', 'p 值（Kruskal–Wallis）', F.p(K.p), 'H'), cd('welch', 'p 值（Welch ANOVA）', F.p(Wl.p), 'welchF'), cd('qq', 'p 值（Levene）', F.p(Lv.p), 'levene')],
         tables,
-        write: W2(`${G.length} 組間 ${s.y} 的比較使用單因子變異數分析${G.length > 2 ? '，兩兩比較使用 Welch t 檢定並以 Holm 法校正' : ''}，另以 Kruskal–Wallis 檢定計算。`,
-          `F(${A.df1}, ${A.df2}) = ${F.n(A.F, 2)}，${F.peq(A.p)}，η² = ${F.n(A.eta2, 3)}；Kruskal–Wallis H = ${F.n(K.H, 2)}，${F.peq(K.p)}。各組：${G.map((l, j) => `${l} ${F.n(S.mean(gv[j]))} ± ${F.n(S.sd(gv[j]))}`).join('；')}。`,
-          `${s.y} was compared across ${G.length} groups using one-way analysis of variance${G.length > 2 ? ", with pairwise Welch's t tests adjusted by the Holm method" : ''}, and the Kruskal–Wallis test.`,
-          `F(${A.df1}, ${A.df2}) = ${F.n(A.F, 2)}, ${F.peq(A.p)}, η² = ${F.n(A.eta2, 3)}; Kruskal–Wallis H = ${F.n(K.H, 2)}, ${F.peq(K.p)}. Group means: ${G.map((l, j) => `${F.n(S.mean(gv[j]))} ± ${F.n(S.sd(gv[j]))} (${l})`).join(', ')}.`),
+        write: W2(`${G.length} 組間 ${s.y} 的比較使用單因子變異數分析${G.length > 2 ? '，兩兩比較使用 Welch t 檢定並以 Holm 法校正' : ''}，另以 Welch ANOVA（不假設變異數相等）與 Kruskal–Wallis 檢定計算，並以 Levene 檢定比較各組變異數。`,
+          `F(${A.df1}, ${A.df2}) = ${F.n(A.F, 2)}，${F.peq(A.p)}，η² = ${F.n(A.eta2, 3)}；Welch F(${Wl.df1}, ${F.n(Wl.df2, 1)}) = ${F.n(Wl.F, 2)}，${F.peq(Wl.p)}；Kruskal–Wallis H = ${F.n(K.H, 2)}，${F.peq(K.p)}；Levene F(${Lv.df1}, ${Lv.df2}) = ${F.n(Lv.F, 2)}，${F.peq(Lv.p)}。各組：${G.map((l, j) => `${l} ${F.n(S.mean(gv[j]))} ± ${F.n(S.sd(gv[j]))}`).join('；')}。`,
+          `${s.y} was compared across ${G.length} groups using one-way analysis of variance${G.length > 2 ? ", with pairwise Welch's t tests adjusted by the Holm method" : ''}, Welch's ANOVA (not assuming equal variances), and the Kruskal–Wallis test; homogeneity of variances was assessed with Levene's test.`,
+          `F(${A.df1}, ${A.df2}) = ${F.n(A.F, 2)}, ${F.peq(A.p)}, η² = ${F.n(A.eta2, 3)}; Welch's F(${Wl.df1}, ${F.n(Wl.df2, 1)}) = ${F.n(Wl.F, 2)}, ${F.peq(Wl.p)}; Kruskal–Wallis H = ${F.n(K.H, 2)}, ${F.peq(K.p)}; Levene's F(${Lv.df1}, ${Lv.df2}) = ${F.n(Lv.F, 2)}, ${F.peq(Lv.p)}. Group means: ${G.map((l, j) => `${F.n(S.mean(gv[j]))} ± ${F.n(S.sd(gv[j]))} (${l})`).join(', ')}.`),
       };
     },
   },
@@ -1882,6 +1898,31 @@ const CH = [
       { q: '藥物無效、而且有隨機分派，但量測者知道哪些小鼠有給藥。最可能的結果是？', o: ['量測值偏向預期，估計的藥效偏大', '隨機分派已經解決所有偏差', '只會影響對照組', '結果完全不受影響'], why: '隨機分派只處理「分組」造成的偏差；量測時的偏差要靠盲化。' },
     ],
   },
+  {
+    id: 'anova-assume', title: 'ANOVA 的前提假設與替代方法',
+    body: `<p>ANOVA 的 p 值要正確，需要三個前提。檢查它們不是為了「通過檢定」，而是確認這個方法適合你的資料。</p>
+<ol><li><b>獨立性</b>：每個觀察值來自不同的實驗單位，彼此不互相影響。這要靠實驗設計保證，資料本身檢查不出來；同一隻動物量很多次就違反了（見 {{c4-6}} 章）。</li>
+<li><b>常態性</b>：每組內的<b>殘差</b>（每個值 − 自己那組的平均）近似常態分佈。</li>
+<li><b>變異數同質性</b>：各組的變異數（標準差的平方）大致相同。</li></ol>
+<h3>檢查常態性：Q-Q 圖</h3>
+<p><b>Q-Q 圖</b>把殘差由小到大排序，和「如果是常態分佈，第 i 小的值應該在哪裡」對照著畫。點大致落在一條直線上，代表接近常態；兩端往上翹或往下彎，代表有長尾巴或偏態。小樣本時的 Q-Q 圖本來就會有些彎曲，要看的是明顯、有系統的偏離。</p>
+<p class="note">各組人數夠多時，ANOVA 對非常態相當耐受，因為它比較的是平均數，而平均數的分佈會因中央極限定理接近常態（{{c2-2}} 章）。真正需要擔心的是：樣本小、而且分佈很偏或有極端值。</p>
+<h3>檢查變異數：Levene 檢定</h3>
+<p><b>Levene 檢定</b>先算出每個值離自己那組中心（中位數）的距離，再用 ANOVA 比較這些距離在各組是否相同。p 值小，代表各組分散程度不一樣。也可以直接比較各組標準差：最大的除以最小的，比值越大，差距越明顯。</p>
+<p>變異數不相等時，最危險的情況是<b>變異大的那組人數比較少</b>：一般 ANOVA 的偽陽性率會明顯超過 5%。上方互動圖可以模擬這個情況。</p>
+<h3>前提不成立時怎麼辦</h3>
+<div class="tbl-wrap"><table class="st"><thead><tr><th>情況</th><th>做法</th></tr></thead><tbody>
+<tr><td>各組變異數不同</td><td><b>Welch ANOVA</b>：不要求變異數相等的 ANOVA 版本，和兩組時的 Welch t 檢定同一個想法</td></tr>
+<tr><td>資料右偏（濃度、細胞數、病毒量）</td><td><b>對數轉換</b>：先取 log 再做 ANOVA。右偏資料取 log 後常變得對稱，變異數也較相近；結果要解讀成「倍數」的差異</td></tr>
+<tr><td>小樣本、嚴重偏態或很多極端值</td><td><b>Kruskal–Wallis</b>：以名次比較各組，不需要常態假設（見 {{c3-5}} 章）</td></tr>
+<tr><td>觀察值不獨立（重複測量、群集）</td><td>重複測量 ANOVA 或混合模型，本階段後面會介紹</td></tr></tbody></table></div>
+<p class="warn">不要先做一堆前提檢定，再依結果挑「顯著」的那個方法。方法應該根據資料的性質和研究設計事先決定，寫在統計分析計畫裡。</p>`,
+    quiz: [
+      { q: '殘差的 Q-Q 圖上，點大致落在一條直線上，代表什麼？', o: ['殘差接近常態分佈', '各組平均相等', '各組變異數相等', '觀察值彼此獨立'], why: 'Q-Q 圖比較的是殘差和常態分佈的對應位置；它不檢查平均、變異數或獨立性。' },
+      { q: '各組變異數差很多，而且變異最大的那組人數最少。真實沒有差異時，一般 ANOVA 的偽陽性率會？', o: ['明顯超過 5%，應改用 Welch ANOVA', '剛好 5%', '低於 5%', '變成 0'], why: '一般 ANOVA 把各組變異數合在一起估計；人數少的組變異其實很大時，合併估計值偏小，F 偏大。Welch ANOVA 分別估計各組的變異數。' },
+      { q: '細胞濃度資料明顯右偏、各組標準差和平均一起變大。常見的處理方式是？', o: ['取對數後再做 ANOVA，或改用 Kruskal–Wallis', '刪除最大的幾個值', '不用處理，直接做 ANOVA', '改用卡方檢定'], why: '右偏資料取對數後常變得對稱、變異數相近；刪除資料不是正當的處理方式。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -1929,6 +1970,13 @@ const GLOSS = [
   ['百分位', [], '第 p 百分位：有 p% 的值小於或等於它。', 'c1-4'],
   ['P(X ≤ x)', ['P(X > x)', 'P(X >'], '機率的寫法：P(X ≤ x) 是「X 小於或等於 x 的機率」。', 'c1-4'],
   ['Table 1', [], '論文的第一個表格，列出研究對象的基本特徵。', 'c1-5'],
+  ['獨立性', [], '每個觀察值來自不同的實驗單位，彼此不互相影響。', 'anova-assume'],
+  ['常態性', [], '資料（或殘差）近似常態分佈。', 'anova-assume'],
+  ['變異數同質性', [], '各組的變異數大致相同。', 'anova-assume'],
+  ['Q-Q 圖', ['Q-Q'], '把排序後的資料和常態分佈的理論位置對照畫出；點落在直線上代表接近常態。', 'anova-assume'],
+  ['Levene 檢定', ['Levene'], '比較各組資料離中心的距離，檢查各組變異數是否相同。', 'anova-assume'],
+  ['Welch ANOVA', [], '不要求各組變異數相等的 ANOVA 版本。', 'anova-assume'],
+  ['對數轉換', ['取對數'], '把資料取 log 後再分析，常讓右偏資料變得對稱。', 'anova-assume'],
   ['實驗（experiment）', [], '由研究者決定誰接受哪一種處理的研究。', 'exp-design'],
   ['觀察研究', [], '只記錄自然發生的暴露、不由研究者指派處理的研究。', 'exp-design'],
   ['偏差', [], '估計值平均起來偏離真值的程度；重複再多次也不會消失。', 'exp-design'],
@@ -2027,7 +2075,7 @@ const ORDER = [
   ['c2-1'],
   ['c2-2', 'c2-3', 'c2-4', 'c4-5', 'c5-1'],
   ['c3-1', 'c3-3', 'c3-5'],
-  ['exp-design', 'c3-2'],
+  ['exp-design', 'c3-2', 'anova-assume'],
   ['c3-4', 'c4-1', 'c4-2'],
   ['c4-3'],
   ['c4-4', 'c4-6'],
@@ -2040,7 +2088,7 @@ const REFS = {
   'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
   'c2-4': 'Whitlock 第 6 章；Rosner 7.1–7.5；Kirkwood 第 8 章', 'c4-5': 'Whitlock 14.6；Rosner 7.6–7.7、8.9；Kirkwood 第 35 章', 'c5-1': 'Rosner 13.2；Kirkwood 第 34 章',
   'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
-  'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
+  'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
   'c4-2': 'Rosner 13.7–13.8；Kirkwood 第 19–20 章', 'c4-3': 'Whitlock 第 21 章；Rosner 14.8–14.11；Kirkwood 第 26–27 章', 'c4-4': 'Benjamini & Hochberg (1995), J R Stat Soc B 57:289–300',
   'c4-6': 'Rosner 12.10、13.13–13.14；Kirkwood 第 31 章', 'c5-2': 'Kirkwood 第 38 章；EQUATOR Network', 'c5-3': 'Kirkwood 第 38 章', 'c5-4': 'Kirkwood 第 34、38 章',
 };
@@ -2250,7 +2298,7 @@ function runAnalysis(scroll) {
   }
   if (res.tables && res.tables.length) h += `<details class="more"><summary>完整統計表</summary>${res.tables.map(t => tableHTML(t)).join('')}</details>`;
   const defs = [...new Set((res.cards || []).map(c => c.d).filter(Boolean))];
-  if (defs.length) h += `<details class="more"><summary>每個數字怎麼算</summary><dl class="defs">${defs.map(d => `<div><dt>${{ mean: '平均', sd: '標準差', median: '中位數', iqr: '四分位距', diff: '平均差', ci: '95% 信賴區間', t: 't', p: 'p 值', d: "Cohen's d", U: 'Mann–Whitney', V: 'Wilcoxon 符號等級', F: 'F', eta2: 'η²', H: 'Kruskal–Wallis', chi2: 'χ²', minexp: '期望次數', cv: "Cramér's V", or: '勝算比', rr: '風險比', prop: '比例', fisher: 'Fisher 精確檢定', r: 'Pearson r', rho: 'Spearman ρ', r2: 'R²', slope: '斜率', sigma: '殘差標準誤', beta: '迴歸係數 β', OR: '勝算比（模型）', auc: 'AUC', lr: '概似比 χ²', hr: '危險比', medsurv: '中位存活時間', surv: '存活率', logrank: 'Log-rank χ²', sig: '未校正', q: 'BH q 值', bonf: 'Bonferroni' }[d] || d}</dt><dd>${DEF[d]}</dd></div>`).join('')}</dl></details>`;
+  if (defs.length) h += `<details class="more"><summary>每個數字怎麼算</summary><dl class="defs">${defs.map(d => `<div><dt>${{ mean: '平均', sd: '標準差', median: '中位數', iqr: '四分位距', diff: '平均差', ci: '95% 信賴區間', t: 't', p: 'p 值', d: "Cohen's d", U: 'Mann–Whitney', V: 'Wilcoxon 符號等級', F: 'F', eta2: 'η²', H: 'Kruskal–Wallis', welchF: 'Welch ANOVA', levene: 'Levene 檢定與 Q-Q 圖', chi2: 'χ²', minexp: '期望次數', cv: "Cramér's V", or: '勝算比', rr: '風險比', prop: '比例', fisher: 'Fisher 精確檢定', r: 'Pearson r', rho: 'Spearman ρ', r2: 'R²', slope: '斜率', sigma: '殘差標準誤', beta: '迴歸係數 β', OR: '勝算比（模型）', auc: 'AUC', lr: '概似比 χ²', hr: '危險比', medsurv: '中位存活時間', surv: '存活率', logrank: 'Log-rank χ²', sig: '未校正', q: 'BH q 值', bonf: 'Bonferroni' }[d] || d}</dt><dd>${DEF[d]}</dd></div>`).join('')}</dl></details>`;
   out.innerHTML = h + '</div>';
   const root = $('#res-root'); linkify(root, res.table1 && res.picks.length ? res.picks[0].k : null);
   if (scroll === true && innerWidth < 960) out.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -2740,6 +2788,41 @@ Object.assign(W, {
 
 /* ---------- 第 5 階段：ANOVA 與實驗設計 ---------- */
 Object.assign(W, {
+  anovaassume(el) {
+    const base = [0, 1, 2].map(k => std(Array.from({ length: 60 }, normOf(rngOf(31 + k)))));
+    el.innerHTML = `<p class="w-cap">三組資料，真實平均都相同。調整分佈形狀與變異數，看 Q-Q 圖和各種檢定的反應。</p>
+<div class="seg wrap" id="wq-s"><button type="button" data-s="norm" aria-selected="true">常態</button><button type="button" data-s="skew" aria-selected="false">右偏</button></div>
+<div class="w-row">${slider('wq-r', 'C 組標準差是 A 組的幾倍', 1, 5, 0.5, 1)}${slider('wq-n', '每組人數', 5, 40, 1, 12)}</div>
+<label class="tog"><input type="checkbox" id="wq-u"> C 組人數只有一半</label>
+<div class="w-cols"><figure class="fig"><figcaption>各組資料</figcaption><div class="chart-wrap" id="wq-b"></div></figure><figure class="fig"><figcaption>殘差的 Q-Q 圖</figcaption><div class="chart-wrap" id="wq-q"></div></figure></div>
+<div class="kv" id="wq-k"></div>
+<div class="w-row"><button class="btn" type="button" id="wq-go">模擬 500 次：真實無差異時的偽陽性率</button></div><div class="chart-wrap" id="wq-sim"></div>`;
+    let shape = 'norm', sim = null;
+    const make = (r, n, unb, shp, zs) => zs.map((z, k) => { const m = k === 2 && unb ? Math.max(3, Math.round(n / 2)) : n, sd = k === 2 ? r : 1; return z.slice(0, m).map(x => (shp === 'skew' ? 10 * Math.exp(0.6 * sd * x - 0.18 * sd * sd) : 10 + 2 * sd * x)); });
+    const up = () => {
+      const r = sv('wq-r', v => v.toFixed(1)), n = sv('wq-n'), unb = $('#wq-u').checked, gv = make(r, n, unb, shape, base);
+      const A = S.anova(gv), Wl = S.welchAnova(gv), L = S.levene(gv), K = S.kruskal(gv), sds = gv.map(S.sd), ratio = Math.max(...sds) / Math.min(...sds);
+      $('#wq-b').innerHTML = boxStrip(gv.map((v, k) => ({ label: 'ABC'[k], v })), '測量值', (X, Y, { bw }) => gv.map((g, k) => { const m = S.mean(g), sd = S.sd(g), x = X(k) - bw / 2 - 10; return `<line class="hlx" data-k="spread" x1="${x}" x2="${x}" y1="${Y(m - sd)}" y2="${Y(m + sd)}" style="stroke:var(--c2);stroke-width:4"/><line class="hlx" data-k="means" x1="${X(k) - bw}" x2="${X(k) + bw}" y1="${Y(m)}" y2="${Y(m)}" style="stroke:var(--c4);stroke-width:3"/>`; }).join(''));
+      const res = gv.flatMap(g => { const m = S.mean(g); return g.map(v => v - m); }), sr = Float64Array.from(res).sort(), sdr = S.sd(res), nn = sr.length, th = Array.from(sr, (_, i) => S.qnorm((i + 0.5) / nn) * sdr);
+      const [lo, hi] = S.minmax([...sr, ...th]);
+      $('#wq-q').innerHTML = chart({ x: [lo, hi], y: [lo, hi], h: 260, xlab: '常態分佈的理論位置', ylab: '殘差（排序後）' }, (X, Y) => `<line class="keep" x1="${X(lo)}" y1="${Y(lo)}" x2="${X(hi)}" y2="${Y(hi)}" style="stroke:var(--muted);stroke-dasharray:5 4"/>` + Array.from(sr, (v, i) => `<circle data-k="qq" cx="${X(th[i]).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="3" style="fill:var(--c1);fill-opacity:.7"/>`).join(''));
+      $('#wq-k').innerHTML = kvs([['標準差 最大 ÷ 最小', F.n(ratio, 2), 'spread'], ['Levene 檢定 p', F.p(L.p), 'spread'], ['一般 ANOVA p', F.p(A.p), 'means'], ['Welch ANOVA p', F.p(Wl.p), 'means'], ['Kruskal–Wallis p', F.p(K.p), 'rank']]);
+      if (sim) drawSim();
+    };
+    const drawSim = () => {
+      const rows = [['一般 ANOVA', sim[0], 'var(--c2)', 'fa'], ['Welch ANOVA', sim[1], 'var(--c1)', 'fw'], ['Kruskal–Wallis', sim[2], 'var(--c3)', 'fk']];
+      $('#wq-sim').innerHTML = chart({ ycats: rows.map(r => r[0]), x: [0, Math.max(0.12, ...rows.map(r => r[1]))], h: 170, m: { l: 110 }, xlab: '偽陽性率（p < 0.05 的比例）' }, (X, Y, { M, ih }) => rows.map((r, i) => `<rect data-k="${r[3]}" x="${X(0)}" y="${Y(i) - ih / 8}" width="${X(r[1]) - X(0)}" height="${ih / 4}" style="fill:${r[2]}"/><text x="${X(r[1]) + 6}" y="${Y(i)}" dy=".32em" style="fill:var(--ink)">${F.n(100 * r[1], 1)}%</text>`).join('') + `<line class="keep" x1="${X(0.05)}" x2="${X(0.05)}" y1="${M.t}" y2="${M.t + ih}" style="stroke:var(--ink);stroke-dasharray:4 3"/>`);
+      $('#wq-sim').insertAdjacentHTML('beforeend', `<div class="kv">${kvs([['一般 ANOVA 偽陽性率', F.n(100 * sim[0], 1) + '%', 'fa'], ['Welch ANOVA 偽陽性率', F.n(100 * sim[1], 1) + '%', 'fw'], ['Kruskal–Wallis 偽陽性率', F.n(100 * sim[2], 1) + '%', 'fk']])}</div>`);
+    };
+    const runSim = () => {
+      const r = +$('#wq-r').value, n = +$('#wq-n').value, unb = $('#wq-u').checked, c = [0, 0, 0], R = 500;
+      for (let i = 0; i < R; i++) { const gv = make(r, n, unb, shape, [0, 1, 2].map(() => Array.from({ length: 60 }, rnorm))); if (S.anova(gv).p < 0.05) c[0]++; if (S.welchAnova(gv).p < 0.05) c[1]++; if (S.kruskal(gv).p < 0.05) c[2]++; }
+      sim = c.map(v => v / R); drawSim();
+    };
+    segBind(el, '#wq-s', b => { shape = b.dataset.s; sim = null; $('#wq-sim').innerHTML = ''; up(); });
+    const reset = () => { sim = null; $('#wq-sim').innerHTML = ''; up(); };
+    $('#wq-r').oninput = reset; $('#wq-n').oninput = reset; $('#wq-u').onchange = reset; $('#wq-go', el).onclick = runSim; up();
+  },
   expdesign(el) {
     el.innerHTML = `<p class="w-cap">情境：測試新藥能不能讓小鼠體重增加。每隻小鼠本來的健康狀況不同，健康的小鼠本來就長得比較好。下圖是把同一個實驗重做 400 次，每次估計的藥效（給藥組平均 − 對照組平均）。</p>
 <div class="seg wrap" id="wx-a"><button type="button" data-a="rand" aria-selected="true">隨機分派</button><button type="button" data-a="pick" aria-selected="false">研究者挑選（健康的給藥）</button></div>
@@ -2775,13 +2858,18 @@ Object.assign(W, {
   },
 });
 
-const WMAP = { 'exp-design': ['expdesign', '400 次小鼠實驗'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
+const WMAP = { 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
 for (const [id, [w, t]] of Object.entries(WMAP)) { const c = CH.find(x => x.id === id); c.widget = w; c.wtitle = t; }
 
 /* ---------- 練習題示範：把題目情境帶入同一章的互動圖 ----------
    每題的 demo：set = 設定輸入元件（id → 值）；click = 依序點擊的按鈕；custom = 交給互動圖自己的 _demo()；look = 示範時的觀察提示。
    有 q 的項目會整題替換（原題無法在圖上示範時）。 */
 const QD = {
+  'anova-assume': [
+    { demo: { click: ['#wq-s [data-s="norm"]'], set: { 'wq-r': 1, 'wq-n': 30, 'wq-u': false }, look: '常態資料、每組 30 人：右邊 Q-Q 圖的點大致沿著虛線。再切到「右偏」比較兩端的彎曲。' } },
+    { demo: { click: ['#wq-s [data-s="norm"]'], set: { 'wq-r': 4, 'wq-n': 20, 'wq-u': true }, then: ['#wq-go'], look: '模擬結果：一般 ANOVA 的偽陽性率超過 5% 的虛線，Welch ANOVA 接近 5%。' } },
+    { demo: { click: ['#wq-s [data-s="skew"]'], set: { 'wq-r': 2, 'wq-n': 12, 'wq-u': false }, look: '右偏資料：箱型圖上方有長尾巴，Q-Q 圖右端往上翹。' } },
+  ],
   'exp-design': [
     { demo: { click: ['#wx-a [data-a="pick"]'], set: { 'wx-b': true, 'wx-e': 0, 'wx-n': 10 }, look: '藥效設為 0、改成研究者挑選。看橘色虛線（估計值的平均）離黑線（真值）多遠，以及紅色（p < 0.05）的比例。' } },
     { demo: { click: ['#wx-a [data-a="pick"]'], set: { 'wx-b': true, 'wx-e': 0, 'wx-n': 40 }, look: '每組 40 隻：分佈變窄了，但仍然整個偏離黑線。再切回「隨機分派」比較。' } },
@@ -2911,7 +2999,7 @@ function applyDemo(el, d) {
     if (n.type === 'checkbox') n.checked = !!v; else n.value = v;
     n.dispatchEvent(new Event('input', { bubbles: true })); n.dispatchEvent(new Event('change', { bubbles: true }));
   }
-  for (const s of d.click || []) { const b = $(s, el); if (b) b.click(); }
+  for (const s of [...(d.click || []), ...(d.then || [])]) { const b = $(s, el); if (b) b.click(); }
   if (d.focus) { const f = $(d.focus, el); if (f) { const l = f.closest('label') || f; l.classList.add('flash'); setTimeout(() => l.classList.remove('flash'), 1600); } }
 }
 function bindDemos(c) {

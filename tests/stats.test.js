@@ -41,6 +41,16 @@ near('log-rank chi2 (aml)', S.logrank(t, s, g, 2).chi2, 3.396389, 2e-3);
 near('Cox coef, Breslow (aml)', S.cox(t, s, g.map(v => [v])).b[0], 0.9042, 2e-3);
 near('KM median (aml maintained)', S.km(t.slice(0, 11), s.slice(0, 11)).median, 31);
 
+// R: PlantGrowth
+const pg = [[4.17, 5.58, 5.18, 6.11, 4.50, 4.61, 5.17, 4.53, 5.33, 5.14], [4.81, 4.17, 4.41, 3.59, 5.87, 3.83, 6.03, 4.89, 4.32, 4.69], [6.31, 5.12, 5.54, 5.50, 5.37, 5.29, 4.92, 6.15, 5.80, 5.26]];
+near('ANOVA F (PlantGrowth)', S.anova(pg).F, 4.846088);
+near('ANOVA p (PlantGrowth)', S.anova(pg).p, 0.01591);
+near('Welch ANOVA F (oneway.test)', S.welchAnova(pg).F, 5.181);
+near('Welch ANOVA df2', S.welchAnova(pg).df2, 17.128);
+near('Welch ANOVA p', S.welchAnova(pg).p, 0.01739);
+near('Levene F (car, median)', S.levene(pg).F, 1.1192);
+near('Levene p', S.levene(pg).p, 0.3412);
+
 const DS = {};
 for (const m of DATASETS) { const d = m.gen(); DS[m.id] = makeDS({ ...m, head: d.head, rows: d.rows }); }
 const runs = [

@@ -92,6 +92,16 @@ const S = (() => {
     const df1 = k - 1, df2 = N - k, msb = ssb / df1, msw = ssw / df2, F = msb / msw;
     return { F, df1, df2, p: pf(F, df1, df2), ssb, ssw, msb, msw, eta2: ssb / (ssb + ssw) };
   }
+  // Welch ANOVA（不假設各組變異數相等；R 的 oneway.test(var.equal = FALSE)）
+  function welchAnova(groups) {
+    const k = groups.length, n = groups.map(g => g.length), m = groups.map(mean), w = groups.map((g, i) => n[i] / variance(g)), W = sum(w);
+    const mw = sum(w.map((wi, i) => wi * m[i])) / W, h = sum(w.map((wi, i) => (1 - wi / W) ** 2 / (n[i] - 1)));
+    const F = sum(w.map((wi, i) => wi * (m[i] - mw) ** 2)) / (k - 1) / (1 + 2 * (k - 2) / (k * k - 1) * h);
+    const df1 = k - 1, df2 = (k * k - 1) / (3 * h);
+    return { F, df1, df2, p: pf(F, df1, df2) };
+  }
+  // Levene 檢定（以中位數為中心，即 Brown–Forsythe 版本；R 的 car::leveneTest 預設）
+  function levene(groups) { const r = anova(groups.map(g => { const md = median(g); return g.map(v => Math.abs(v - md)); })); return { F: r.F, df1: r.df1, df2: r.df2, p: r.p }; }
   function kruskal(groups) {
     const all = groups.flat(), N = all.length; const { r, ties } = rank(all); let H = 0, off = 0;
     for (const g of groups) { let R = 0; for (let i = 0; i < g.length; i++) R += r[off + i]; off += g.length; H += R * R / g.length; }
@@ -240,7 +250,7 @@ const S = (() => {
   const nProps = (p1, p2, alpha, power) => { const za = qnorm(1 - alpha / 2), zb = qnorm(power), pb = (p1 + p2) / 2; return Math.ceil((za * Math.sqrt(2 * pb * (1 - pb)) + zb * Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))) ** 2 / ((p1 - p2) ** 2)); };
   const powerProps = (p1, p2, n, alpha) => { const za = qnorm(1 - alpha / 2), pb = (p1 + p2) / 2; return pnorm((Math.abs(p1 - p2) * Math.sqrt(n) - za * Math.sqrt(2 * pb * (1 - pb))) / Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))); };
 
-  return { lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, mannWhitney, pairedT, wilcoxonSR, anova, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
+  return { lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, mannWhitney, pairedT, wilcoxonSR, anova, welchAnova, levene, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
 })();
 
 /* ---------- 格式 ---------- */
@@ -359,6 +369,11 @@ function stackChart(R, C, tab, ylab, tag = () => '', extra) {
   });
 }
 
+// 常態 Q-Q 圖；data-k="qq" 為各點
+function qqChart(vals) {
+  const sr = Float64Array.from(vals).sort(), n = sr.length, sd = S.sd(vals), m = S.mean(vals), th = Array.from(sr, (_, i) => m + S.qnorm((i + 0.5) / n) * sd), [lo, hi] = S.minmax([...sr, ...th]);
+  return chart({ x: [lo, hi], y: [lo, hi], h: 260, xlab: '常態分佈的理論位置', ylab: '實際值（排序後）' }, (X, Y) => `<line class="keep" x1="${X(lo)}" y1="${Y(lo)}" x2="${X(hi)}" y2="${Y(hi)}" style="stroke:var(--muted);stroke-dasharray:5 4"/>` + Array.from(sr, (v, i) => `<circle data-k="qq" cx="${X(th[i]).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="3" style="fill:var(--c1);fill-opacity:.7"/>`).join(''));
+}
 // ROC 曲線；data-k="auc" 為曲線下面積
 function rocChart(score, y) {
   const idx = score.map((_, i) => i).sort((a, b) => score[b] - score[a]), P = S.sum(y), N = y.length - P; let tp = 0, fp = 0; const pts = [[0, 0]];
@@ -382,6 +397,7 @@ const DEF = {
   beta: '迴歸係數 β：其他變數固定時，該變數增加 1 單位（類別變數則為相對參考組），結果變數平均的變化量。', OR: '勝算比：e 的 β 次方，β 為邏輯斯迴歸係數。', auc: 'AUC：ROC 曲線下的面積。', lr: '概似比 χ²：2 ×（模型的對數概似 − 只有截距的對數概似）。',
   hr: '危險比：e 的 β 次方，β 為 Cox 模型係數。', medsurv: '中位存活時間：Kaplan–Meier 曲線第一次降到 0.5 以下的時間。', surv: '存活率：每個事件時間點乘上（1 − 事件數 ÷ 風險人數）的累積結果；括號為 95% CI。', logrank: 'Log-rank χ²：比較各組在每個事件時間點的觀察事件數與期望事件數。',
   sig: '未校正 p < 0.05 的變數數。', q: 'Benjamini–Hochberg：p 值由小到大排序，第 i 個乘上 m ÷ i，再由後往前取最小值，得到 q 值；這裡數 q < 0.05 的個數。', bonf: 'Bonferroni：p 值 × 檢定總數 m；這裡數校正後 < 0.05 的個數，等同 p < 0.05 ÷ m。',
+  welchF: 'Welch ANOVA：各組變異數分別估計、以各組人數 ÷ 變異數為權重的 F 檢定，不要求變異數相等。', levene: 'Levene 檢定：算出每個值與自己那組中位數的距離，再用 ANOVA 比較這些距離；p 值小代表各組變異數不同。Q-Q 圖則用來看殘差是否接近常態。',
   n: '分析使用的觀察數。', ev: '結果為事件（編碼 1）的人數。',
 };
 const cd = (k, l, v, d) => ({ k, l, v, d });
@@ -655,10 +671,10 @@ const AN = {
       const yc = colOf(ds, s.y), gc = colOf(ds, s.g), { idx, dropped } = complete(ds, [s.y, s.g]), G = levelsOf(ds, gc, idx);
       if (G.length < 2) throw new Error('分組變數至少需要兩組。'); if (G.length > 12) throw new Error('組數超過 12 組，請選擇類別較少的變數。');
       const gv = G.map(l => idx.filter(i => lab(gc.values[i]) === l).map(i => yc.values[i])); if (gv.some(a => a.length < 2)) throw new Error('每組至少需要 2 筆資料。');
-      const A = S.anova(gv), K = S.kruskal(gv), gm = S.mean(gv.flat()), tables = [];
-      const box = boxStrip(G.map((l, j) => ({ label: l, v: gv[j] })), s.y, (X, Y, { M, iw, bw }) => `<g class="hlx" data-k="gm eta F"><line x1="${M.l}" x2="${M.l + iw}" y1="${Y(gm)}" y2="${Y(gm)}" style="stroke:var(--muted);stroke-width:1.5;stroke-dasharray:6 4"/></g>` + gv.map((g, j) => `<line class="hlx" data-k="eta F" x1="${X(j) - bw / 2 - 8}" x2="${X(j) - bw / 2 - 8}" y1="${Y(gm)}" y2="${Y(S.mean(g))}" style="stroke:var(--c2);stroke-width:3"/>`).join(''));
+      const A = S.anova(gv), K = S.kruskal(gv), Wl = S.welchAnova(gv), Lv = S.levene(gv), gm = S.mean(gv.flat()), tables = [];
+      const box = boxStrip(G.map((l, j) => ({ label: l, v: gv[j] })), s.y, (X, Y, { M, iw, bw }) => gv.map((g, j) => `<line class="hlx" data-k="welch" x1="${X(j) - bw / 2}" x2="${X(j) + bw / 2}" y1="${Y(S.mean(g))}" y2="${Y(S.mean(g))}" style="stroke:var(--c4);stroke-width:3"/>`).join('') + `<g class="hlx" data-k="gm eta F"><line x1="${M.l}" x2="${M.l + iw}" y1="${Y(gm)}" y2="${Y(gm)}" style="stroke:var(--muted);stroke-width:1.5;stroke-dasharray:6 4"/></g>` + gv.map((g, j) => `<line class="hlx" data-k="eta F" x1="${X(j) - bw / 2 - 8}" x2="${X(j) - bw / 2 - 8}" y1="${Y(gm)}" y2="${Y(S.mean(g))}" style="stroke:var(--c2);stroke-width:3"/>`).join(''));
       tables.push({ head: ['組別', ...G.map(esc)], rows: descRows(G, gv) });
-      tables.push({ head: ['變異來源', 'SS', 'df', 'MS', '統計量', 'p 值'], rows: [['組間', F.n(A.ssb), A.df1, F.n(A.msb), `F = ${F.n(A.F, 2)}`, F.p(A.p)], ['組內', F.n(A.ssw), A.df2, F.n(A.msw), '', ''], ['Kruskal–Wallis', '', K.df, '', `H = ${F.n(K.H, 2)}`, F.p(K.p)]] });
+      tables.push({ head: ['變異來源', 'SS', 'df', 'MS', '統計量', 'p 值'], rows: [['組間', F.n(A.ssb), A.df1, F.n(A.msb), `F = ${F.n(A.F, 2)}`, F.p(A.p)], ['組內', F.n(A.ssw), A.df2, F.n(A.msw), '', ''], ['Kruskal–Wallis', '', K.df, '', `H = ${F.n(K.H, 2)}`, F.p(K.p)], ['Welch ANOVA', '', `${Wl.df1}, ${F.n(Wl.df2, 1)}`, '', `F = ${F.n(Wl.F, 2)}`, F.p(Wl.p)], ['Levene 檢定（變異數同質性）', '', `${Lv.df1}, ${Lv.df2}`, '', `F = ${F.n(Lv.F, 2)}`, F.p(Lv.p)]] });
       if (G.length > 2) {
         const pr = []; for (let i = 0; i < G.length; i++) for (let j = i + 1; j < G.length; j++) pr.push({ i, j, w: S.welch(gv[i], gv[j]) });
         const adj = S.holm(pr.map(x => x.w.p));
@@ -666,13 +682,13 @@ const AN = {
       }
       return {
         title: `${esc(s.y)}：依「${esc(s.g)}」${G.length} 組`, meta: meta(idx.length, dropped), facts: [],
-        charts: [{ svg: box, cap: boxCap + '亮起時：灰色虛線＝全體平均，紅線＝各組平均與全體平均的距離。' }, { svg: distChart('F', A.F, [A.df1, A.df2], `F（自由度 ${A.df1}, ${A.df2}）`), cap: distCap.F }],
-        cards: [...G.map((l, j) => cd('mean' + j, `${esc(l)} 平均`, F.n(S.mean(gv[j])), 'mean')), cd('gm', '全體平均', F.n(gm), 'mean'), cd('F', 'F', `${F.n(A.F, 2)}（df ${A.df1}, ${A.df2}）`, 'F'), cd('p', 'p 值（ANOVA）', F.p(A.p), 'p'), cd('eta', 'η²', F.n(A.eta2, 3), 'eta2'), cd('rank', 'p 值（Kruskal–Wallis）', F.p(K.p), 'H')],
+        charts: [{ svg: box, cap: boxCap + '亮起時：灰色虛線＝全體平均，紅線＝各組平均與全體平均的距離。' }, { svg: distChart('F', A.F, [A.df1, A.df2], `F（自由度 ${A.df1}, ${A.df2}）`), cap: distCap.F }, { svg: qqChart(gv.flatMap(g => { const m = S.mean(g); return g.map(v => v - m); })), cap: '殘差（每個值 − 自己那組的平均）的 Q-Q 圖；虛線為常態分佈的參考線。' }],
+        cards: [...G.map((l, j) => cd('mean' + j, `${esc(l)} 平均`, F.n(S.mean(gv[j])), 'mean')), cd('gm', '全體平均', F.n(gm), 'mean'), cd('F', 'F', `${F.n(A.F, 2)}（df ${A.df1}, ${A.df2}）`, 'F'), cd('p', 'p 值（ANOVA）', F.p(A.p), 'p'), cd('eta', 'η²', F.n(A.eta2, 3), 'eta2'), cd('rank', 'p 值（Kruskal–Wallis）', F.p(K.p), 'H'), cd('welch', 'p 值（Welch ANOVA）', F.p(Wl.p), 'welchF'), cd('qq', 'p 值（Levene）', F.p(Lv.p), 'levene')],
         tables,
-        write: W2(`${G.length} 組間 ${s.y} 的比較使用單因子變異數分析${G.length > 2 ? '，兩兩比較使用 Welch t 檢定並以 Holm 法校正' : ''}，另以 Kruskal–Wallis 檢定計算。`,
-          `F(${A.df1}, ${A.df2}) = ${F.n(A.F, 2)}，${F.peq(A.p)}，η² = ${F.n(A.eta2, 3)}；Kruskal–Wallis H = ${F.n(K.H, 2)}，${F.peq(K.p)}。各組：${G.map((l, j) => `${l} ${F.n(S.mean(gv[j]))} ± ${F.n(S.sd(gv[j]))}`).join('；')}。`,
-          `${s.y} was compared across ${G.length} groups using one-way analysis of variance${G.length > 2 ? ", with pairwise Welch's t tests adjusted by the Holm method" : ''}, and the Kruskal–Wallis test.`,
-          `F(${A.df1}, ${A.df2}) = ${F.n(A.F, 2)}, ${F.peq(A.p)}, η² = ${F.n(A.eta2, 3)}; Kruskal–Wallis H = ${F.n(K.H, 2)}, ${F.peq(K.p)}. Group means: ${G.map((l, j) => `${F.n(S.mean(gv[j]))} ± ${F.n(S.sd(gv[j]))} (${l})`).join(', ')}.`),
+        write: W2(`${G.length} 組間 ${s.y} 的比較使用單因子變異數分析${G.length > 2 ? '，兩兩比較使用 Welch t 檢定並以 Holm 法校正' : ''}，另以 Welch ANOVA（不假設變異數相等）與 Kruskal–Wallis 檢定計算，並以 Levene 檢定比較各組變異數。`,
+          `F(${A.df1}, ${A.df2}) = ${F.n(A.F, 2)}，${F.peq(A.p)}，η² = ${F.n(A.eta2, 3)}；Welch F(${Wl.df1}, ${F.n(Wl.df2, 1)}) = ${F.n(Wl.F, 2)}，${F.peq(Wl.p)}；Kruskal–Wallis H = ${F.n(K.H, 2)}，${F.peq(K.p)}；Levene F(${Lv.df1}, ${Lv.df2}) = ${F.n(Lv.F, 2)}，${F.peq(Lv.p)}。各組：${G.map((l, j) => `${l} ${F.n(S.mean(gv[j]))} ± ${F.n(S.sd(gv[j]))}`).join('；')}。`,
+          `${s.y} was compared across ${G.length} groups using one-way analysis of variance${G.length > 2 ? ", with pairwise Welch's t tests adjusted by the Holm method" : ''}, Welch's ANOVA (not assuming equal variances), and the Kruskal–Wallis test; homogeneity of variances was assessed with Levene's test.`,
+          `F(${A.df1}, ${A.df2}) = ${F.n(A.F, 2)}, ${F.peq(A.p)}, η² = ${F.n(A.eta2, 3)}; Welch's F(${Wl.df1}, ${F.n(Wl.df2, 1)}) = ${F.n(Wl.F, 2)}, ${F.peq(Wl.p)}; Kruskal–Wallis H = ${F.n(K.H, 2)}, ${F.peq(K.p)}; Levene's F(${Lv.df1}, ${Lv.df2}) = ${F.n(Lv.F, 2)}, ${F.peq(Lv.p)}. Group means: ${G.map((l, j) => `${F.n(S.mean(gv[j]))} ± ${F.n(S.sd(gv[j]))} (${l})`).join(', ')}.`),
       };
     },
   },
