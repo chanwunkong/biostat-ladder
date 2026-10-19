@@ -1800,6 +1800,10 @@ const AN = {
       const ticksIn = sc.ticks.filter(t => t <= maxT);
       const risk = `<div class="tbl-wrap"><table class="st risk"><thead><tr><th>風險人數</th>${ticksIn.map(t => `<th>${tickFmt(t, sc.step)}</th>`).join('')}</tr></thead><tbody>${curves.map((c, i) => `<tr><td><i class="sw" style="background:${col4(i)}"></i>${esc(c.label)}</td>${ticksIn.map(t => `<td>${c.tt.filter(x => x >= t).length}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
       const charts = [{ svg: km, legend: legend(curves.map((c, i) => [col4(i), esc(c.label)])), cap: '短直線＝設限時間點；下方為各時間點的風險人數。', after: risk }];
+      if (G.length >= 2) {
+        const ll = curves.map(cv => cv.steps.slice(1).filter(p => p.S > 0 && p.S < 1 && p.t > 0).map(p => [Math.log(p.t), Math.log(-Math.log(p.S))])), flat = ll.flat();
+        if (flat.length > 2) { const [lx0, lx1] = S.minmax(flat.map(p => p[0])), [ly0, ly1] = S.minmax(flat.map(p => p[1])); charts.push({ svg: chart({ x: [lx0, lx1], y: [ly0, ly1], xlab: `log(${s.time})`, ylab: 'log(−log S(t))', h: 260 }, (X, Y) => ll.map((pts, i) => `<path data-k="ph" d="${pts.map(([a, b], j) => `${j ? 'L' : 'M'}${X(a).toFixed(1)} ${Y(b).toFixed(1)}`).join('')}" style="fill:none;stroke:${col4(i)};stroke-width:2"/>`).join('')), legend: legend(curves.map((cv, i) => [col4(i), esc(cv.label)])), cap: 'log(−log) 圖：比例風險成立時，各組曲線大致平行；交叉或越靠越近，代表危險比隨時間改變。' }); }
+      }
       const sAt = (c, T) => { const x = c.at(T); return `${F.n(100 * x.S, 1)}%（${F.n(100 * x.lo, 1)}–${F.n(100 * x.hi, 1)}）`; };
       const cards = curves.flatMap((c, i) => [cd('med' + i, `${esc(c.label)} 中位存活`, Number.isFinite(c.median) ? F.n(c.median) : '未降到 0.5', 'medsurv'), cd('s1_' + i, `${esc(c.label)} 存活率 @ ${t1}`, sAt(c, t1), 'surv'), cd('s2_' + i, `${esc(c.label)} 存活率 @ ${t2}`, sAt(c, t2), 'surv')]);
       const tables = [{ head: ['組別', 'n', '事件', '中位存活', `存活率 @ ${t1}`, `存活率 @ ${t2}`], rows: curves.map(c => [`<b>${esc(c.label)}</b>`, c.n, c.events, Number.isFinite(c.median) ? F.n(c.median) : '—', sAt(c, t1), sAt(c, t2)]), foot: '存活率括號為 95% CI（log(−log) 轉換）。' }];
@@ -2974,6 +2978,28 @@ const CH = [
       { q: '吸菸盛行率 30%、吸菸的相對風險 RR = 2。族群歸因分率約是多少？', o: ['約 23%', '50%', '30%', '約 60%'], why: '0.3 × (2 − 1) ÷ [1 + 0.3 × (2 − 1)] = 0.3 ÷ 1.3 ≈ 0.23。50% 是暴露組歸因分率 (RR − 1) ÷ RR。' },
     ],
   },
+  {
+    id: 'ph-check', title: 'Cox 模型的檢查：比例風險假設',
+    body: `<p>Cox 模型（{{c4-3}} 章）用一個危險比（HR）概括兩組的差異，背後的前提是<b>比例風險假設</b>：在整個追蹤期間，兩組事件瞬間發生率的比值固定不變。例如 HR = 0.6 代表不論第 1 個月還是第 3 年，新療法組的風險都是標準組的 60%。</p>
+<h3>什麼時候會不成立</h3>
+<ul><li><b>早期風險、晚期好處</b>：手術組術後初期死亡率較高，但存活下來的人長期較好。前期 HR &gt; 1、後期 HR &lt; 1。</li>
+<li><b>效果逐漸消失</b>：治療只在前幾個月有效，之後兩組一樣。</li></ul>
+<p>這時單一個 HR 是前後期效果的某種平均，可能接近 1，讓人誤以為「沒有差異」，或掩蓋早期的危險。</p>
+<h3>怎麼檢查</h3>
+<ul><li><b>看 Kaplan–Meier 曲線</b>：兩組曲線明顯交叉，通常代表比例風險不成立。</li>
+<li><b>log(−log) 圖</b>：把每組的 log(−log S(t)) 對 log(時間) 作圖。比例風險成立時，兩條曲線大致<b>平行</b>（距離就是 log HR）；交叉或越靠越近則代表不成立。</li>
+<li><b>Schoenfeld 殘差檢定</b>：統計軟體（例如 R 的 cox.zph）以殘差是否隨時間變化，檢定每個變數是否違反假設。這是論文中最常報告的方法。</li></ul>
+<h3>不成立時怎麼辦</h3>
+<ul><li><b>分段報告</b>：把追蹤時間切成幾段（例如前 6 個月、6 個月以後），分別估計 HR。</li>
+<li><b>分層 Cox 模型</b>：違反假設的是一個不需要估計效果的干擾變數（例如中心）時，依它分層，每層有自己的基準風險。</li>
+<li>加入變數與時間的交互作用，或改報告某些時間點的存活率差異、限制平均存活時間（RMST）。</li></ul>`,
+    labs: [{ label: '依分期的 log(−log) 圖', ds: 'lung_surv', an: 'surv', sel: { time: 'time_months', status: 'status', g: 'stage', xs: [] } }],
+    quiz: [
+      { q: '兩組的 Kaplan–Meier 曲線在第 12 個月明顯交叉。這代表什麼？', o: ['比例風險假設可能不成立，單一的危險比會誤導', 'Cox 模型一定正確', '兩組完全沒有差異', '樣本數太少'], why: '曲線交叉代表前後期哪一組較好的方向改變，HR 不是常數。' },
+      { q: 'log(−log S(t)) 對 log(時間) 的圖上，兩組曲線大致平行。這代表什麼？', o: ['比例風險假設大致成立', '兩組存活率相同', '沒有設限', '必須改用 log-rank'], why: '兩條線之間的垂直距離是 log HR；平行代表 HR 固定。' },
+      { q: '手術組前 3 個月風險較高、之後風險較低。較好的報告方式是？', o: ['分段報告前 3 個月與之後的危險比', '只報告整體的單一危險比', '刪掉前 3 個月死亡的病人', '改用 t 檢定比較存活時間'], why: '分段估計能呈現危險比隨時間的變化。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -3222,6 +3248,10 @@ const GLOSS = [
   ['Kaplan–Meier', ['KM'], '能正確處理設限的存活曲線估計法。', 'c4-3'],
   ['中位存活時間', ['中位存活'], '存活曲線降到 0.5（一半的人發生事件）的時間。', 'c4-3'],
   ['危險比', ['HR'], '兩組在同一時間點事件瞬間發生率的比值。', 'c4-3'],
+  ['比例風險假設', ['比例風險'], 'Cox 模型的前提：兩組事件瞬間發生率的比值（HR）在整個追蹤期間固定。', 'ph-check'],
+  ['log(−log) 圖', ['log(−log'], '把 log(−log S(t)) 對 log(時間) 作圖；比例風險成立時各組曲線平行。', 'ph-check'],
+  ['Schoenfeld 殘差', ['Schoenfeld'], '檢查 Cox 模型比例風險假設的殘差；隨時間變化代表假設不成立。', 'ph-check'],
+  ['分層 Cox 模型', [], '依某個變數分層、每層有自己基準風險的 Cox 模型。', 'ph-check'],
   ['多重檢定', [], '一次做很多個檢定時，偽陽性會累積的問題。', 'c4-4'],
   ['偽發現率', ['FDR', '偽發現'], '被判定顯著的結果中，偽陽性所占的比例。', 'c4-4'],
   ['Bonferroni', [], '把門檻改成 0.05 ÷ 檢定數，控制「至少一個偽陽性」的機率。', 'c4-4'],
@@ -3251,7 +3281,7 @@ const ORDER = [
   ['c3-1', 'two-assume', 'nonpar', 'c3-3', 'two-prop', 'mcnemar', 'kappa', 'c3-5'],
   ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff', 'ancova'],
   ['c3-4', 'simple-reg', 'c4-1', 'reg-diag', 'c4-2', 'poisson-reg', 'bland-altman'],
-  ['mh', 'standardize', 'c4-3'],
+  ['mh', 'standardize', 'c4-3', 'ph-check'],
   ['c4-4', 'c4-6'],
   ['c5-2', 'c5-3', 'c5-4', 'c5-5'],
 ];
@@ -3263,7 +3293,7 @@ const REFS = {
   'c2-4': 'Whitlock 第 6 章；Rosner 7.1–7.5；Kirkwood 第 8 章', 'c4-5': 'Whitlock 14.6；Rosner 7.6–7.7、8.9；Kirkwood 第 35 章', 'c5-1': 'Rosner 13.2；Kirkwood 第 34 章',
   'nonpar': 'Whitlock 13.4–13.7；Rosner 9.2–9.4', 'two-prop': 'Rosner 10.2、10.5；Kirkwood 第 16 章', 'kappa': 'Rosner 10.8；Landis & Koch (1977) Biometrics 33:159', 'mcnemar': 'Rosner 10.4；Kirkwood 第 21 章；Agresti, Categorical Data Analysis', 'two-assume': 'Whitlock 13.1–13.3；Rosner 8.6、8.10；Kirkwood 第 13 章', 'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
   'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'bland-altman': 'Kirkwood 第 36 章；Bland & Altman (1986) Lancet 327:307', 'poisson-reg': 'Kirkwood 第 22–24 章；Rosner 14.1–14.3', 'reg-diag': 'Kirkwood 第 12–13 章；Rosner 11.6；Whitlock 17.5–17.6', 'simple-reg': 'Whitlock 第 17 章；Rosner 11.2–11.6；Kirkwood 第 10 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
-  'c4-2': 'Rosner 13.7–13.8；Kirkwood 第 19–20 章', 'standardize': 'Rosner 13.4–13.5；Kirkwood 第 25、37 章', 'mh': 'Rosner 13.5–13.6；Kirkwood 第 18 章；Bickel 等 (1975) Science 187:398', 'c4-3': 'Whitlock 第 21 章；Rosner 14.8–14.11；Kirkwood 第 26–27 章', 'c4-4': 'Benjamini & Hochberg (1995), J R Stat Soc B 57:289–300',
+  'c4-2': 'Rosner 13.7–13.8；Kirkwood 第 19–20 章', 'ph-check': 'Rosner 14.11；Kirkwood 第 27 章', 'standardize': 'Rosner 13.4–13.5；Kirkwood 第 25、37 章', 'mh': 'Rosner 13.5–13.6；Kirkwood 第 18 章；Bickel 等 (1975) Science 187:398', 'c4-3': 'Whitlock 第 21 章；Rosner 14.8–14.11；Kirkwood 第 26–27 章', 'c4-4': 'Benjamini & Hochberg (1995), J R Stat Soc B 57:289–300',
   'c4-6': 'Rosner 12.10、13.13–13.14；Kirkwood 第 31 章', 'c5-2': 'Kirkwood 第 38 章；EQUATOR Network', 'c5-3': 'Kirkwood 第 38 章', 'c5-4': 'Kirkwood 第 34、38 章',
 };
 (() => {
@@ -4571,6 +4601,27 @@ Object.assign(W, {
     segBind(el, '#wsd-m', b => { mode = b.dataset.m; draw(); });
     el.addEventListener('input', up); draw();
   },
+  phw(el) {
+    const u = Array.from({ length: 300 }, rngOf(601)), cens = Array.from({ length: 300 }, rngOf(602));
+    el.innerHTML = `<p class="w-cap">標準療法 vs 手術，各 150 人，追蹤 36 個月。設定手術組在「切點」前後的危險比。</p>
+<div class="w-row">${slider('wph-e', '前期的危險比（手術 ÷ 標準）', 0.3, 3, 0.1, 2)}${slider('wph-l', '後期的危險比', 0.3, 3, 0.1, 0.4)}${slider('wph-t', '切點（月）', 2, 24, 1, 6)}</div>
+<div class="w-cols"><figure class="fig"><figcaption>Kaplan–Meier 曲線</figcaption><div class="chart-wrap" id="wph-a"></div></figure><figure class="fig"><figcaption>log(−log) 圖</figcaption><div class="chart-wrap" id="wph-b"></div></figure></div>${legend([['var(--c1)', '標準療法'], ['var(--c2)', '手術']])}<div class="kv" id="wph-k"></div>`;
+    const up = () => {
+      const he = sv('wph-e', v => v.toFixed(1)), hl = sv('wph-l', v => v.toFixed(1)), tc = sv('wph-t'), base = 0.04;
+      const T = [], St = [], g = [];
+      for (let i = 0; i < 300; i++) {
+        const grp = i % 2, h1 = base * (grp ? he : 1), h2 = base * (grp ? hl : 1), e = -Math.log(1 - u[i]); let t = e / h1; if (t > tc) t = tc + (e - h1 * tc) / h2;
+        const c = 12 + 24 * cens[i]; T.push(Math.min(t, c, 36)); St.push(t <= Math.min(c, 36) ? 1 : 0); g.push(grp);
+      }
+      const ks = [0, 1].map(k => S.km(T.filter((_, i) => g[i] === k), St.filter((_, i) => g[i] === k))), cx = S.cox(T, St, g.map(v => [v])), hr = Math.exp(cx.b[0]);
+      const pr = (a, b) => { const ev = k => St.filter((s, i) => g[i] === k && s && T[i] > a && T[i] <= b).length, pt = k => S.sum(T.map((t, i) => (g[i] === k ? Math.max(0, Math.min(t, b) - a) : 0))); return (ev(1) / pt(1)) / (ev(0) / pt(0)); };
+      $('#wph-a').innerHTML = chart({ x: [0, 36], y: [0, 1], h: 240, xlab: '月', ylab: '存活機率' }, (X, Y) => `<line class="hlx" data-k="early late" x1="${X(tc)}" x2="${X(tc)}" y1="${Y(0)}" y2="${Y(1)}" style="stroke:var(--c4);stroke-width:2;stroke-dasharray:5 4"/>` + ks.map((k, i) => { let d = `M${X(0)} ${Y(1)}`; k.steps.slice(1).forEach(p => { d += `H${X(p.t).toFixed(1)}V${Y(p.S).toFixed(1)}`; }); return `<path data-k="hr" d="${d}H${X(k.end).toFixed(1)}" style="fill:none;stroke:${col4(i)};stroke-width:2.2"/>`; }).join(''));
+      const ll = ks.map(k => k.steps.slice(1).filter(p => p.S > 0 && p.S < 1 && p.t > 0.3).map(p => [Math.log(p.t), Math.log(-Math.log(p.S))])), fl = ll.flat(), [x0, x1] = S.minmax(fl.map(p => p[0])), [y0, y1] = S.minmax(fl.map(p => p[1]));
+      $('#wph-b').innerHTML = chart({ x: [x0, x1], y: [y0, y1], h: 240, xlab: 'log(月)', ylab: 'log(−log S)' }, (X, Y) => ll.map((pts, i) => `<path data-k="ll" d="${pts.map(([a, b], j) => `${j ? 'L' : 'M'}${X(a).toFixed(1)} ${Y(b).toFixed(1)}`).join('')}" style="fill:none;stroke:${col4(i)};stroke-width:2"/>`).join('') + `<line class="hlx" data-k="early late" x1="${X(Math.log(tc))}" x2="${X(Math.log(tc))}" y1="${Y(y0)}" y2="${Y(y1)}" style="stroke:var(--c4);stroke-width:2;stroke-dasharray:5 4"/>`);
+      $('#wph-k').innerHTML = kvs([['Cox 模型的單一危險比', F.n(hr, 2), 'hr'], [`切點前的率比（0–${tc} 月）`, F.n(pr(0, tc), 2), 'early'], [`切點後的率比（${tc}–36 月）`, F.n(pr(tc, 36), 2), 'late']]);
+    };
+    el.addEventListener('input', up); up();
+  },
   mosaic(el) {
     el.innerHTML = `<p class="w-cap">正方形代表全部的人（面積 = 1）。左右寬度是吸菸與不吸菸的比例；每一欄內，紅色的高度是該群中有高血壓的比例。</p>
 <div class="w-row">${slider('wm2-a', 'P(吸菸)', 5, 95, 5, 30, '%')}${slider('wm2-ba', 'P(高血壓 | 吸菸)', 0, 100, 5, 30, '%')}${slider('wm2-bn', 'P(高血壓 | 不吸菸)', 0, 100, 5, 15, '%')}</div>
@@ -4588,13 +4639,18 @@ Object.assign(W, {
   },
 });
 
-const WMAP = { 'standardize': ['stdw', '標準化與歸因分率'], 'mh': ['mhw', '辛普森悖論'], 'bland-altman': ['blandw', '兩台血糖儀'], 'poisson-reg': ['ratew', '發生率與率比'], 'reg-diag': ['regdiagw', '看殘差圖找問題'], 'simple-reg': ['simpleregw', '信賴帶與預測帶'], 'graphs': ['graphsw', '同一份資料，四種圖'], 'kappa': ['kappaw', '兩位病理師的一致性'], 'mcnemar': ['mcnemarw', '只看不一致的人'], 'two-prop': ['twopropw', '兩組反應率'], 'nonpar': ['nonparw', '用名次比較'], 'two-assume': ['twoassume', '轉換與極端值'], 'boot': ['bootw', '重抽 2000 次'], 'gof': ['gofw', '孟德爾的豌豆'], 'binom-test': ['binomtestw', '二項檢定'], 'one-t': ['onetw', '單一樣本 t 檢定'], 'prop-ci': ['propciw', '三種比例信賴區間'], 'tdist': ['tdistw', 't 分佈與常態分佈'], 'poisson': ['poissonw', 'Poisson 分佈與培養皿'], 'binom': ['binomw', '二項分佈'], 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
+const WMAP = { 'ph-check': ['phw', '危險比隨時間改變'], 'standardize': ['stdw', '標準化與歸因分率'], 'mh': ['mhw', '辛普森悖論'], 'bland-altman': ['blandw', '兩台血糖儀'], 'poisson-reg': ['ratew', '發生率與率比'], 'reg-diag': ['regdiagw', '看殘差圖找問題'], 'simple-reg': ['simpleregw', '信賴帶與預測帶'], 'graphs': ['graphsw', '同一份資料，四種圖'], 'kappa': ['kappaw', '兩位病理師的一致性'], 'mcnemar': ['mcnemarw', '只看不一致的人'], 'two-prop': ['twopropw', '兩組反應率'], 'nonpar': ['nonparw', '用名次比較'], 'two-assume': ['twoassume', '轉換與極端值'], 'boot': ['bootw', '重抽 2000 次'], 'gof': ['gofw', '孟德爾的豌豆'], 'binom-test': ['binomtestw', '二項檢定'], 'one-t': ['onetw', '單一樣本 t 檢定'], 'prop-ci': ['propciw', '三種比例信賴區間'], 'tdist': ['tdistw', 't 分佈與常態分佈'], 'poisson': ['poissonw', 'Poisson 分佈與培養皿'], 'binom': ['binomw', '二項分佈'], 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
 for (const [id, [w, t]] of Object.entries(WMAP)) { const c = CH.find(x => x.id === id); c.widget = w; c.wtitle = t; }
 
 /* ---------- 練習題示範：把題目情境帶入同一章的互動圖 ----------
    每題的 demo：set = 設定輸入元件（id → 值）；click = 依序點擊的按鈕；custom = 交給互動圖自己的 _demo()；look = 示範時的觀察提示。
    有 q 的項目會整題替換（原題無法在圖上示範時）。 */
 const QD = {
+  'ph-check': [
+    { demo: { set: { 'wph-e': 2.5, 'wph-l': 0.3, 'wph-t': 6 }, look: '手術組前期風險高、後期低：KM 曲線在中途交叉，單一的 Cox 危險比接近 1，看不出兩段的差異。' } },
+    { demo: { set: { 'wph-e': 0.5, 'wph-l': 0.5, 'wph-t': 6 }, look: '前後期危險比都是 0.5：右邊 log(−log) 圖的兩條線大致平行。' } },
+    { demo: { set: { 'wph-e': 2.5, 'wph-l': 0.3, 'wph-t': 6 }, look: '點兩張「率比」數字卡：分段後，前 6 個月與之後的效果方向完全相反。' } },
+  ],
   'standardize': [
     { demo: { click: ['#wsd-m [data-m="std"]'], set: { 'wsd-oa': 0.5, 'wsd-ob': 0.1, 'wsd-ya': 1.5, 'wsd-oa2': 40, 'wsd-yb': 2, 'wsd-ob2': 50 }, look: '甲鎮每個年齡層的死亡率都比乙鎮低，但老年人多一半：粗率甲鎮高，年齡標準化率甲鎮低。' } },
     { demo: { click: ['#wsd-m [data-m="std"]'], set: { 'wsd-oa': 0.3, 'wsd-ob': 0.3, 'wsd-ya': 3, 'wsd-oa2': 75, 'wsd-yb': 2, 'wsd-ob2': 50 }, look: '點「SMR」：甲鎮觀察到的死亡，是用乙鎮各年齡層死亡率預期的 1.5 倍。' } },

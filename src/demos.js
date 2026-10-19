@@ -2,6 +2,11 @@
    每題的 demo：set = 設定輸入元件（id → 值）；click = 依序點擊的按鈕；custom = 交給互動圖自己的 _demo()；look = 示範時的觀察提示。
    有 q 的項目會整題替換（原題無法在圖上示範時）。 */
 const QD = {
+  'ph-check': [
+    { demo: { set: { 'wph-e': 2.5, 'wph-l': 0.3, 'wph-t': 6 }, look: '手術組前期風險高、後期低：KM 曲線在中途交叉，單一的 Cox 危險比接近 1，看不出兩段的差異。' } },
+    { demo: { set: { 'wph-e': 0.5, 'wph-l': 0.5, 'wph-t': 6 }, look: '前後期危險比都是 0.5：右邊 log(−log) 圖的兩條線大致平行。' } },
+    { demo: { set: { 'wph-e': 2.5, 'wph-l': 0.3, 'wph-t': 6 }, look: '點兩張「率比」數字卡：分段後，前 6 個月與之後的效果方向完全相反。' } },
+  ],
   'standardize': [
     { demo: { click: ['#wsd-m [data-m="std"]'], set: { 'wsd-oa': 0.5, 'wsd-ob': 0.1, 'wsd-ya': 1.5, 'wsd-oa2': 40, 'wsd-yb': 2, 'wsd-ob2': 50 }, look: '甲鎮每個年齡層的死亡率都比乙鎮低，但老年人多一半：粗率甲鎮高，年齡標準化率甲鎮低。' } },
     { demo: { click: ['#wsd-m [data-m="std"]'], set: { 'wsd-oa': 0.3, 'wsd-ob': 0.3, 'wsd-ya': 3, 'wsd-oa2': 75, 'wsd-yb': 2, 'wsd-ob2': 50 }, look: '點「SMR」：甲鎮觀察到的死亡，是用乙鎮各年齡層死亡率預期的 1.5 倍。' } },

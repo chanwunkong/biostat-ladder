@@ -1287,6 +1287,10 @@ const AN = {
       const ticksIn = sc.ticks.filter(t => t <= maxT);
       const risk = `<div class="tbl-wrap"><table class="st risk"><thead><tr><th>風險人數</th>${ticksIn.map(t => `<th>${tickFmt(t, sc.step)}</th>`).join('')}</tr></thead><tbody>${curves.map((c, i) => `<tr><td><i class="sw" style="background:${col4(i)}"></i>${esc(c.label)}</td>${ticksIn.map(t => `<td>${c.tt.filter(x => x >= t).length}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
       const charts = [{ svg: km, legend: legend(curves.map((c, i) => [col4(i), esc(c.label)])), cap: '短直線＝設限時間點；下方為各時間點的風險人數。', after: risk }];
+      if (G.length >= 2) {
+        const ll = curves.map(cv => cv.steps.slice(1).filter(p => p.S > 0 && p.S < 1 && p.t > 0).map(p => [Math.log(p.t), Math.log(-Math.log(p.S))])), flat = ll.flat();
+        if (flat.length > 2) { const [lx0, lx1] = S.minmax(flat.map(p => p[0])), [ly0, ly1] = S.minmax(flat.map(p => p[1])); charts.push({ svg: chart({ x: [lx0, lx1], y: [ly0, ly1], xlab: `log(${s.time})`, ylab: 'log(−log S(t))', h: 260 }, (X, Y) => ll.map((pts, i) => `<path data-k="ph" d="${pts.map(([a, b], j) => `${j ? 'L' : 'M'}${X(a).toFixed(1)} ${Y(b).toFixed(1)}`).join('')}" style="fill:none;stroke:${col4(i)};stroke-width:2"/>`).join('')), legend: legend(curves.map((cv, i) => [col4(i), esc(cv.label)])), cap: 'log(−log) 圖：比例風險成立時，各組曲線大致平行；交叉或越靠越近，代表危險比隨時間改變。' }); }
+      }
       const sAt = (c, T) => { const x = c.at(T); return `${F.n(100 * x.S, 1)}%（${F.n(100 * x.lo, 1)}–${F.n(100 * x.hi, 1)}）`; };
       const cards = curves.flatMap((c, i) => [cd('med' + i, `${esc(c.label)} 中位存活`, Number.isFinite(c.median) ? F.n(c.median) : '未降到 0.5', 'medsurv'), cd('s1_' + i, `${esc(c.label)} 存活率 @ ${t1}`, sAt(c, t1), 'surv'), cd('s2_' + i, `${esc(c.label)} 存活率 @ ${t2}`, sAt(c, t2), 'surv')]);
       const tables = [{ head: ['組別', 'n', '事件', '中位存活', `存活率 @ ${t1}`, `存活率 @ ${t2}`], rows: curves.map(c => [`<b>${esc(c.label)}</b>`, c.n, c.events, Number.isFinite(c.median) ? F.n(c.median) : '—', sAt(c, t1), sAt(c, t2)]), foot: '存活率括號為 95% CI（log(−log) 轉換）。' }];

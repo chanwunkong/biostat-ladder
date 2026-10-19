@@ -1100,6 +1100,28 @@ const CH = [
       { q: '吸菸盛行率 30%、吸菸的相對風險 RR = 2。族群歸因分率約是多少？', o: ['約 23%', '50%', '30%', '約 60%'], why: '0.3 × (2 − 1) ÷ [1 + 0.3 × (2 − 1)] = 0.3 ÷ 1.3 ≈ 0.23。50% 是暴露組歸因分率 (RR − 1) ÷ RR。' },
     ],
   },
+  {
+    id: 'ph-check', title: 'Cox 模型的檢查：比例風險假設',
+    body: `<p>Cox 模型（{{c4-3}} 章）用一個危險比（HR）概括兩組的差異，背後的前提是<b>比例風險假設</b>：在整個追蹤期間，兩組事件瞬間發生率的比值固定不變。例如 HR = 0.6 代表不論第 1 個月還是第 3 年，新療法組的風險都是標準組的 60%。</p>
+<h3>什麼時候會不成立</h3>
+<ul><li><b>早期風險、晚期好處</b>：手術組術後初期死亡率較高，但存活下來的人長期較好。前期 HR &gt; 1、後期 HR &lt; 1。</li>
+<li><b>效果逐漸消失</b>：治療只在前幾個月有效，之後兩組一樣。</li></ul>
+<p>這時單一個 HR 是前後期效果的某種平均，可能接近 1，讓人誤以為「沒有差異」，或掩蓋早期的危險。</p>
+<h3>怎麼檢查</h3>
+<ul><li><b>看 Kaplan–Meier 曲線</b>：兩組曲線明顯交叉，通常代表比例風險不成立。</li>
+<li><b>log(−log) 圖</b>：把每組的 log(−log S(t)) 對 log(時間) 作圖。比例風險成立時，兩條曲線大致<b>平行</b>（距離就是 log HR）；交叉或越靠越近則代表不成立。</li>
+<li><b>Schoenfeld 殘差檢定</b>：統計軟體（例如 R 的 cox.zph）以殘差是否隨時間變化，檢定每個變數是否違反假設。這是論文中最常報告的方法。</li></ul>
+<h3>不成立時怎麼辦</h3>
+<ul><li><b>分段報告</b>：把追蹤時間切成幾段（例如前 6 個月、6 個月以後），分別估計 HR。</li>
+<li><b>分層 Cox 模型</b>：違反假設的是一個不需要估計效果的干擾變數（例如中心）時，依它分層，每層有自己的基準風險。</li>
+<li>加入變數與時間的交互作用，或改報告某些時間點的存活率差異、限制平均存活時間（RMST）。</li></ul>`,
+    labs: [{ label: '依分期的 log(−log) 圖', ds: 'lung_surv', an: 'surv', sel: { time: 'time_months', status: 'status', g: 'stage', xs: [] } }],
+    quiz: [
+      { q: '兩組的 Kaplan–Meier 曲線在第 12 個月明顯交叉。這代表什麼？', o: ['比例風險假設可能不成立，單一的危險比會誤導', 'Cox 模型一定正確', '兩組完全沒有差異', '樣本數太少'], why: '曲線交叉代表前後期哪一組較好的方向改變，HR 不是常數。' },
+      { q: 'log(−log S(t)) 對 log(時間) 的圖上，兩組曲線大致平行。這代表什麼？', o: ['比例風險假設大致成立', '兩組存活率相同', '沒有設限', '必須改用 log-rank'], why: '兩條線之間的垂直距離是 log HR；平行代表 HR 固定。' },
+      { q: '手術組前 3 個月風險較高、之後風險較低。較好的報告方式是？', o: ['分段報告前 3 個月與之後的危險比', '只報告整體的單一危險比', '刪掉前 3 個月死亡的病人', '改用 t 檢定比較存活時間'], why: '分段估計能呈現危險比隨時間的變化。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -1348,6 +1370,10 @@ const GLOSS = [
   ['Kaplan–Meier', ['KM'], '能正確處理設限的存活曲線估計法。', 'c4-3'],
   ['中位存活時間', ['中位存活'], '存活曲線降到 0.5（一半的人發生事件）的時間。', 'c4-3'],
   ['危險比', ['HR'], '兩組在同一時間點事件瞬間發生率的比值。', 'c4-3'],
+  ['比例風險假設', ['比例風險'], 'Cox 模型的前提：兩組事件瞬間發生率的比值（HR）在整個追蹤期間固定。', 'ph-check'],
+  ['log(−log) 圖', ['log(−log'], '把 log(−log S(t)) 對 log(時間) 作圖；比例風險成立時各組曲線平行。', 'ph-check'],
+  ['Schoenfeld 殘差', ['Schoenfeld'], '檢查 Cox 模型比例風險假設的殘差；隨時間變化代表假設不成立。', 'ph-check'],
+  ['分層 Cox 模型', [], '依某個變數分層、每層有自己基準風險的 Cox 模型。', 'ph-check'],
   ['多重檢定', [], '一次做很多個檢定時，偽陽性會累積的問題。', 'c4-4'],
   ['偽發現率', ['FDR', '偽發現'], '被判定顯著的結果中，偽陽性所占的比例。', 'c4-4'],
   ['Bonferroni', [], '把門檻改成 0.05 ÷ 檢定數，控制「至少一個偽陽性」的機率。', 'c4-4'],
@@ -1377,7 +1403,7 @@ const ORDER = [
   ['c3-1', 'two-assume', 'nonpar', 'c3-3', 'two-prop', 'mcnemar', 'kappa', 'c3-5'],
   ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff', 'ancova'],
   ['c3-4', 'simple-reg', 'c4-1', 'reg-diag', 'c4-2', 'poisson-reg', 'bland-altman'],
-  ['mh', 'standardize', 'c4-3'],
+  ['mh', 'standardize', 'c4-3', 'ph-check'],
   ['c4-4', 'c4-6'],
   ['c5-2', 'c5-3', 'c5-4', 'c5-5'],
 ];
@@ -1389,7 +1415,7 @@ const REFS = {
   'c2-4': 'Whitlock 第 6 章；Rosner 7.1–7.5；Kirkwood 第 8 章', 'c4-5': 'Whitlock 14.6；Rosner 7.6–7.7、8.9；Kirkwood 第 35 章', 'c5-1': 'Rosner 13.2；Kirkwood 第 34 章',
   'nonpar': 'Whitlock 13.4–13.7；Rosner 9.2–9.4', 'two-prop': 'Rosner 10.2、10.5；Kirkwood 第 16 章', 'kappa': 'Rosner 10.8；Landis & Koch (1977) Biometrics 33:159', 'mcnemar': 'Rosner 10.4；Kirkwood 第 21 章；Agresti, Categorical Data Analysis', 'two-assume': 'Whitlock 13.1–13.3；Rosner 8.6、8.10；Kirkwood 第 13 章', 'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
   'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'bland-altman': 'Kirkwood 第 36 章；Bland & Altman (1986) Lancet 327:307', 'poisson-reg': 'Kirkwood 第 22–24 章；Rosner 14.1–14.3', 'reg-diag': 'Kirkwood 第 12–13 章；Rosner 11.6；Whitlock 17.5–17.6', 'simple-reg': 'Whitlock 第 17 章；Rosner 11.2–11.6；Kirkwood 第 10 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
-  'c4-2': 'Rosner 13.7–13.8；Kirkwood 第 19–20 章', 'standardize': 'Rosner 13.4–13.5；Kirkwood 第 25、37 章', 'mh': 'Rosner 13.5–13.6；Kirkwood 第 18 章；Bickel 等 (1975) Science 187:398', 'c4-3': 'Whitlock 第 21 章；Rosner 14.8–14.11；Kirkwood 第 26–27 章', 'c4-4': 'Benjamini & Hochberg (1995), J R Stat Soc B 57:289–300',
+  'c4-2': 'Rosner 13.7–13.8；Kirkwood 第 19–20 章', 'ph-check': 'Rosner 14.11；Kirkwood 第 27 章', 'standardize': 'Rosner 13.4–13.5；Kirkwood 第 25、37 章', 'mh': 'Rosner 13.5–13.6；Kirkwood 第 18 章；Bickel 等 (1975) Science 187:398', 'c4-3': 'Whitlock 第 21 章；Rosner 14.8–14.11；Kirkwood 第 26–27 章', 'c4-4': 'Benjamini & Hochberg (1995), J R Stat Soc B 57:289–300',
   'c4-6': 'Rosner 12.10、13.13–13.14；Kirkwood 第 31 章', 'c5-2': 'Kirkwood 第 38 章；EQUATOR Network', 'c5-3': 'Kirkwood 第 38 章', 'c5-4': 'Kirkwood 第 34、38 章',
 };
 (() => {
