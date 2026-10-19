@@ -2321,11 +2321,24 @@ const CH = [
 <ul><li>同一位病人每月回診測量（重複測量）</li><li>同一間醫院的病人、同一窩小鼠、同一個培養皿的細胞（群集）</li><li>同一隻動物的左右眼</li></ul>
 <p>把它們當成獨立樣本，會<b>低估標準誤</b>、讓 p 值過小。這就是常見的「偽重複」（pseudoreplication）：一隻小鼠切 10 張切片，n 是 1 隻小鼠，不是 10。</p>
 <div class="formula">線性混合模型：y<sub>ij</sub> = β<sub>0</sub> + β<sub>1</sub>x<sub>ij</sub> + u<sub>j</sub> + ε<sub>ij</sub>　（u<sub>j</sub>：第 j 個群集的隨機效果）</div>
-<p>本站實驗室沒有實作混合模型。走到這一步時，建議使用 jamovi 或 JASP（免費、點選式介面），或 R 的 lme4、glmmTMB 套件，並請統計師一起檢視模型設定。</p>
+<p>這叫做<b>隨機截距</b>模型：每個群集有自己的基準高度 u<sub>j</sub>，u<sub>j</sub> 來自平均 0、標準差 τ 的常態分佈；ε<sub>ij</sub> 是群集內的個別差異（標準差 σ）。τ 與 σ 就是 {{random-eff}} 章 ICC 的兩個成分：ICC = τ² ÷ (τ² + σ²)。</p>
+<h3>部分匯集與縮減</h3>
+<p>估計每間醫院的平均時有三種做法：</p>
+<ul><li>完全匯集：不管醫院，全部病人一起平均。忽略了醫院之間的真實差異。</li>
+<li>不匯集：每間醫院各算各的平均。只有 5 位病人的小醫院，平均很不穩定。</li>
+<li><b>部分匯集</b>（混合模型的做法）：每間醫院的估計 = 自己的平均與整體平均的加權平均，自己的權重 = τ² ÷ (τ² + σ²/n<sub>j</sub>)。病人越多、醫院間差異 τ 越大，越相信自己的平均；病人越少，越被拉向整體平均。這個「拉回」稱為<b>縮減</b>（shrinkage）。</li></ul>
+<h3>隨機斜率</h3>
+<p>除了基準高度不同，每個群集對 x 的反應（斜率）也可以不同，例如每位病人血壓隨時間下降的速度不同。在模型中再加一項 v<sub>j</sub>x<sub>ij</sub>，就是<b>隨機斜率</b>。</p>
+<h3>另一條路：GEE 與穩健標準誤</h3>
+<p><b>廣義估計方程式</b>（GEE）不描述每個群集的隨機效果，只估計整個族群的平均關係，再用<b>穩健標準誤</b>（sandwich 標準誤）修正群集內相關造成的低估。混合模型回答「同一個群集內，x 增加時 y 怎麼變」；GEE 回答「整個族群平均而言，x 不同的人 y 差多少」。結果是連續變數時兩者係數相同；邏輯斯迴歸等非線性模型時兩者係數不同，報告時要說明用的是哪一種。</p>
+<h3>估計方法</h3>
+<p>混合模型的參數用 {{likelihood}} 章的最大概似估計；變異數成分通常用 REML（限制最大概似），因為一般的最大概似估計會低估變異數。比較固定效果不同的模型時，要用一般最大概似估計的對數概似做概似比檢定。</p>
+<p>本站實驗室沒有實作混合模型。走到這一步時，可以使用 jamovi 或 JASP（免費、點選式介面），或 R 的 lme4、glmmTMB 套件，並請統計師一起檢視模型設定。</p>
 <p class="note">一個簡單而正確的替代做法：先把每個群集摘要成一個數（例如每隻小鼠所有細胞的平均），再用一般的 t 檢定或 ANOVA 比較。</p>`,
     quiz: [
       { q: '處理組 3 隻小鼠、對照組 3 隻，每隻量 50 個細胞。做 t 檢定時，合理的 n 是？', o: ['每組 3（以小鼠為單位）', '每組 150', '每組 50', '總共 300'], why: '處理是施加在小鼠上的，獨立的實驗單位是小鼠。' },
       { q: '忽略群集結構，通常會使？', o: ['標準誤偏小、p 值偏小', '標準誤偏大', '效果量變成 0', '沒有影響'], why: '同一群集內的觀察彼此相似，提供的獨立資訊比表面上少。' },
+      { q: '在混合模型中，只有 5 位病人的小醫院，它的估計平均會？', o: ['被拉向所有醫院的整體平均（縮減）', '和它自己的原始平均完全一樣', '被設為 0', '被排除在分析之外'], why: '小醫院自己的平均不穩定，權重 τ² ÷ (τ² + σ²/n) 較小，估計更靠近整體平均。' },
     ],
   },
   /* ===== Level 5 ===== */
@@ -3433,6 +3446,14 @@ const GLOSS = [
   ['轉錄體', [], '一次測量樣本中幾乎所有基因表現量的研究。', 'c4-4'],
   ['事後檢定力', ['observed power'], '研究結束後用觀察到的效果回算檢定力；它只是 p 值的另一種寫法，沒有額外資訊。', 'c4-5'],
   ['單尾檢定', [], '只檢定一個方向（例如只看「變大」）的檢定。', 'c4-5'],
+  ['混合模型', ['線性混合模型'], '同時包含固定效果與隨機效果的迴歸模型，用來分析群集或重複測量資料。', 'c4-6'],
+  ['隨機截距', [], '混合模型中，每個群集有自己的基準高度 u_j，來自平均 0、標準差 τ 的常態分佈。', 'c4-6'],
+  ['隨機斜率', [], '混合模型中，每個群集對 x 的反應（斜率）也可以不同。', 'c4-6'],
+  ['部分匯集', [], '每個群集的估計是自己的平均與整體平均的加權平均。', 'c4-6'],
+  ['縮減', ['shrinkage'], '混合模型把資料少的群集估計拉向整體平均的現象。', 'c4-6'],
+  ['廣義估計方程式', ['GEE'], '估計族群平均關係、以穩健標準誤修正群集相關的方法。', 'c4-6'],
+  ['穩健標準誤', ['sandwich'], '不依賴相關結構假設是否正確、以資料本身估計的標準誤。', 'c4-6'],
+  ['REML', [], '限制最大概似：混合模型估計變異數成分的常用方法，比一般最大概似估計少低估。', 'c4-6'],
   ['群集', [], '彼此相關的一群觀察，例如同一隻小鼠的細胞、同一間醫院的病人。', 'c4-6'],
   ['偽重複', [], '把同一個實驗單位內的重複測量，誤當成獨立樣本。', 'c4-6'],
   ['概似函數', ['概似'], '把資料固定、讓參數變動時，觀察到這份資料的機率，是參數的函數。', 'likelihood'],
@@ -4964,6 +4985,20 @@ Object.assign(W, {
     };
     el.addEventListener('input', up); up();
   },
+  mixedw(el) {
+    el.innerHTML = `<div id="wmx-p"></div><h4>部分匯集：14 間醫院的平均收縮壓</h4><p class="w-cap">每間醫院的病人數不同（點的大小）。左邊是各醫院自己的平均，右邊是隨機截距模型的估計。</p><div class="w-row">${slider('wmx-t', '醫院之間的真實差異 τ', 0, 12, 0.5, 5)}</div><div class="chart-wrap" id="wmx-c"></div><div class="kv" id="wmx-k"></div>`;
+    W.pseudo($('#wmx-p', el));
+    const r = rngOf(1606), N = normOf(r), ns = [3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 35, 50, 70, 100], z = ns.map(() => N()), eps = ns.map(n => Array.from({ length: n }, () => N())), sig = 15, box = $('#wmx-c').parentNode;
+    const up = () => {
+      const tau = sv('wmx-t', v => F.n(v, 1)), G = ns.map((n, j) => eps[j].map(e => 135 + tau * z[j] + sig * e)), A = S.anova(G), N0 = S.sum(ns), n0 = (N0 - S.sum(ns.map(n => n * n)) / N0) / (ns.length - 1);
+      const s2 = A.msw, t2 = Math.max(0, (A.msb - A.msw) / n0), raw = G.map(S.mean), wj = ns.map(n => 1 / (t2 + s2 / n)), mu = S.sum(raw.map((m, j) => m * wj[j])) / S.sum(wj), lam = ns.map(n => (t2 + s2 / n) > 0 ? t2 / (t2 + s2 / n) : 0), bl = raw.map((m, j) => mu + lam[j] * (m - mu)), [lo, hi] = S.minmax(raw);
+      $('#wmx-c').innerHTML = chart({ xcats: ['各醫院自己的平均', '混合模型估計'], y: [Math.min(lo, mu - 2) - 3, Math.max(hi, mu + 2) + 3], h: 280, ylab: '收縮壓' }, (X, Y, { iw }) =>
+        `<rect class="hlx" data-k="tau" x="${X(0) - iw / 4}" y="${Y(mu + Math.sqrt(t2))}" width="${X(1) - X(0) + iw / 2}" height="${Y(mu - Math.sqrt(t2)) - Y(mu + Math.sqrt(t2))}" style="fill:var(--c1);fill-opacity:.15"/><line data-k="mu" x1="${X(0) - iw / 4}" x2="${X(1) + iw / 4}" y1="${Y(mu)}" y2="${Y(mu)}" style="stroke:var(--ink);stroke-dasharray:5 4;stroke-width:1.5"/>` +
+        ns.map((n, j) => `<g data-k="${j === 0 ? 'small' : j === ns.length - 1 ? 'big' : ''}"><line x1="${X(0)}" x2="${X(1)}" y1="${Y(raw[j])}" y2="${Y(bl[j])}" style="stroke:var(--muted);stroke-width:1.2"/><circle cx="${X(0)}" cy="${Y(raw[j])}" r="${2.5 + Math.sqrt(n) * 0.8}" style="fill:var(--c1);fill-opacity:.6"/><circle cx="${X(1)}" cy="${Y(bl[j])}" r="${2.5 + Math.sqrt(n) * 0.8}" style="fill:var(--c2);fill-opacity:.6"/></g>`).join(''));
+      $('#wmx-k').innerHTML = kvs([['整體平均 μ', F.n(mu, 1), 'mu'], ['估計的醫院間標準差 τ', F.n(Math.sqrt(t2), 2), 'tau'], ['ICC', F.n(t2 / (t2 + s2), 3), 'tau'], ['縮減：最小醫院（3 人）自身平均的權重', F.n(lam[0], 2), 'small'], ['縮減：最大醫院（100 人）自身平均的權重', F.n(lam[ns.length - 1], 2), 'big']]);
+    };
+    box.addEventListener('input', up); up();
+  },
   mosaic(el) {
     el.innerHTML = `<p class="w-cap">正方形代表全部的人（面積 = 1）。左右寬度是吸菸與不吸菸的比例；每一欄內，紅色的高度是該群中有高血壓的比例。</p>
 <div class="w-row">${slider('wm2-a', 'P(吸菸)', 5, 95, 5, 30, '%')}${slider('wm2-ba', 'P(高血壓 | 吸菸)', 0, 100, 5, 30, '%')}${slider('wm2-bn', 'P(高血壓 | 不吸菸)', 0, 100, 5, 15, '%')}</div>
@@ -4981,7 +5016,7 @@ Object.assign(W, {
   },
 });
 
-const WMAP = { 'likelihood': ['likew', '對數概似曲線'], 'pca': ['pcaw', '主成分方向與 k-means 分群'], 'equiv': ['equivw', '信賴區間與界限 Δ；交叉設計的人數'], 'meta': ['metaw', '森林圖與漏斗圖'], 'missing': ['missingw', '缺失機制與處理方法'], 'ph-check': ['phw', '危險比隨時間改變'], 'standardize': ['stdw', '標準化與歸因分率'], 'mh': ['mhw', '辛普森悖論'], 'bland-altman': ['blandw', '兩台血糖儀'], 'poisson-reg': ['ratew', '發生率與率比'], 'reg-diag': ['regdiagw', '看殘差圖找問題'], 'simple-reg': ['simpleregw', '信賴帶與預測帶'], 'graphs': ['graphsw', '同一份資料，四種圖'], 'kappa': ['kappaw', '兩位病理師的一致性'], 'mcnemar': ['mcnemarw', '只看不一致的人'], 'two-prop': ['twopropw', '兩組反應率'], 'nonpar': ['nonparw', '用名次比較'], 'two-assume': ['twoassume', '轉換與極端值'], 'boot': ['bootw', '重抽 2000 次'], 'gof': ['gofw', '孟德爾的豌豆'], 'binom-test': ['binomtestw', '二項檢定'], 'one-t': ['onetw', '單一樣本 t 檢定'], 'prop-ci': ['propciw', '三種比例信賴區間'], 'tdist': ['tdistw', 't 分佈與常態分佈'], 'poisson': ['poissonw', 'Poisson 分佈與培養皿'], 'binom': ['binomw', '二項分佈'], 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
+const WMAP = { 'likelihood': ['likew', '對數概似曲線'], 'pca': ['pcaw', '主成分方向與 k-means 分群'], 'equiv': ['equivw', '信賴區間與界限 Δ；交叉設計的人數'], 'meta': ['metaw', '森林圖與漏斗圖'], 'missing': ['missingw', '缺失機制與處理方法'], 'ph-check': ['phw', '危險比隨時間改變'], 'standardize': ['stdw', '標準化與歸因分率'], 'mh': ['mhw', '辛普森悖論'], 'bland-altman': ['blandw', '兩台血糖儀'], 'poisson-reg': ['ratew', '發生率與率比'], 'reg-diag': ['regdiagw', '看殘差圖找問題'], 'simple-reg': ['simpleregw', '信賴帶與預測帶'], 'graphs': ['graphsw', '同一份資料，四種圖'], 'kappa': ['kappaw', '兩位病理師的一致性'], 'mcnemar': ['mcnemarw', '只看不一致的人'], 'two-prop': ['twopropw', '兩組反應率'], 'nonpar': ['nonparw', '用名次比較'], 'two-assume': ['twoassume', '轉換與極端值'], 'boot': ['bootw', '重抽 2000 次'], 'gof': ['gofw', '孟德爾的豌豆'], 'binom-test': ['binomtestw', '二項檢定'], 'one-t': ['onetw', '單一樣本 t 檢定'], 'prop-ci': ['propciw', '三種比例信賴區間'], 'tdist': ['tdistw', 't 分佈與常態分佈'], 'poisson': ['poissonw', 'Poisson 分佈與培養皿'], 'binom': ['binomw', '二項分佈'], 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['mixedw', '偽重複與部分匯集'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
 for (const [id, [w, t]] of Object.entries(WMAP)) { const c = CH.find(x => x.id === id); c.widget = w; c.wtitle = t; }
 
 /* ---------- 練習題示範：把題目情境帶入同一章的互動圖 ----------
@@ -5249,6 +5284,7 @@ const QD = {
   'c4-6': [
     { demo: { set: { 'wps-m': 3, 'wps-c': 50, 'wps-b': 1 }, look: '每組只有 3 隻小鼠。看「細胞當 n」的偽陽性率遠超過 5%。' } },
     { demo: { set: { 'wps-m': 3, 'wps-c': 20, 'wps-b': 1.5 }, look: '小鼠之間差異越大，把細胞當獨立樣本的偽陽性率越高。' } },
+    { demo: { set: { 'wmx-t': 3 }, look: '醫院間差異小時，小醫院幾乎被拉到整體平均；比較兩張「縮減」數字卡：最小與最大醫院自身平均的權重。把 τ 拉大，縮減就變少。' } },
   ],
   'c5-1': [
     { demo: { set: { 'wdg-s': 0.4, 'wdg-t': 1 }, click: ['#wdg-m [data-m="1"]'], look: '吸菸同時指向咖啡與肺癌。校正吸菸之後，OR 回到 1 附近。' } },
