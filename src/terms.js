@@ -723,5 +723,12 @@ const WTERM = {
   'boot': { '排列檢定': 'pp obs', '虛無分佈': 'null pp', 'Bootstrap': 'bd bci', '放回抽樣': 'bd' },
   'c4-5': { '檢定力': 'n' },
   'c5-1': { '干擾因子': 'conf', '後門路徑': 'back', '校正': 'adj' },
+  'c3-1': { 't 檢定': 't', '訊號與雜訊': 'diff se', '平均差': 'diff', "Cohen's d": 'd', '效果量': 'd', 'p 值': 'p', '標準誤': 'se' },
+  'two-assume': { '幾何平均數': 'diff', 'F 檢定（變異數）': 'sd0 sd1', 'Q-Q 圖': 'qq', 'Levene 檢定': 'sd0 sd1', '常態性': 'qq', 'Mann–Whitney': 'rank', 'Welch': 'mean0 mean1' },
+  'nonpar': { 'Mann–Whitney': 'ra rb', '符號檢定': 'pos', 'Wilcoxon 符號等級檢定': 'pos neg', '名次': 'ra rb' },
+  'c3-3': { '2×2 表': 'or chi fis', '勝算比': 'or', '風險比': 'rr', '卡方檢定': 'chi', 'Fisher 精確檢定': 'fis' },
+  'two-prop': { '風險差': 'ci diff', '事件率': 'p1 p2' },
+  'mcnemar': { 'McNemar 檢定': 'b c', '不一致對': 'b c' },
+  'kappa': { '觀察一致率': 'po', '機遇一致率': 'pe', 'Kappa': 'kap' },
   'c0-4': { '斜率': 'b', '截距': 'a', '殘差': 'ssr', '殘差平方和': 'ssr', '最小平方法': 'best' },
 };
