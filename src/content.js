@@ -1017,6 +1017,25 @@ const CH = [
       { q: '刪掉某一個點後，斜率從 0.8 變成 0.2。這個點最可能是？', o: ['影響點：Cook 距離很大，應檢查資料並做敏感度分析', '普通的點，可以忽略', '一定是輸入錯誤，直接刪除', '它讓模型更準確，應該複製一份'], why: '影響點會大幅改變估計；先檢查是否有錯，再報告有無它的結果。' },
     ],
   },
+  {
+    id: 'poisson-reg', title: '率的比較與 Poisson 迴歸',
+    body: `<p>追蹤研究中，每個人被追蹤的時間常常不一樣：有人追蹤 5 年、有人 1 年就失聯。這時不能只比「多少人發生事件」，而要比<b>發生率</b>：事件數 ÷ <b>人時</b>（{{c0-1}} 章），例如每千人年幾例、每千住院人日幾件感染。</p>
+<h3>兩組率的比較</h3>
+<div class="formula">率比 = (a ÷ T₁) ÷ (b ÷ T₀)　　a、b 為兩組事件數，T₁、T₀ 為兩組人時<br>log(率比) 的標準誤 ≈ √(1/a + 1/b)　　95% CI = 率比 × e<sup>±1.96 × 標準誤</sup></div>
+<p>例：吸菸組 30 例 / 2,000 人年、不吸菸組 15 例 / 2,500 人年。發生率分別是每千人年 15 與 6 例，<b>率比</b> = 2.5。</p>
+<h3>Poisson 迴歸</h3>
+<p>要同時校正其他變數時，用 <b>Poisson 迴歸</b>。它假設事件數服從 Poisson 分佈（{{poisson}} 章），模型寫在對數尺度上：</p>
+<div class="formula">log(期望事件數) = log(人時) + β₀ + β₁x₁ + …　　率比 = e<sup>β</sup></div>
+<p>log(人時) 這一項的係數固定為 1，叫做<b>位移項</b>（offset），它讓模型描述的是「率」而不是「次數」。例：β = 0.693 代表率比 e<sup>0.693</sup> ≈ 2。</p>
+<h3>過度離散</h3>
+<p>Poisson 分佈假設變異數等於平均。實際資料常有過度離散（例如同一病房的感染彼此相關），這時 Poisson 迴歸的標準誤會太小、p 值太小。檢查方式是看離散度（Pearson χ² ÷ 自由度）是否明顯大於 1；處理方式包括負二項迴歸、穩健標準誤，或用混合模型處理群集（{{c4-6}} 章）。</p>`,
+    labs: [{ label: '洗手計畫前後的院內感染率', ds: 'ward_inf', an: 'poisreg', sel: { y: 'infections', xs: ['period', 'icu'], pt: 'patient_days' } }],
+    quiz: [
+      { q: '吸菸組 30 例 / 2,000 人年，不吸菸組 15 例 / 2,500 人年。率比是多少？', o: ['2.5', '2.0', '1.25', '0.4'], why: '(30 ÷ 2000) ÷ (15 ÷ 2500) = 0.015 ÷ 0.006 = 2.5。只比事件數（30 ÷ 15 = 2）會忽略追蹤時間的差異。' },
+      { q: '為什麼追蹤研究常用「人年」當分母，而不是人數？', o: ['每個人被追蹤的時間不同，人年把追蹤時間算進去', '因為人數不能當分母', '因為人年一定比較大', '為了讓 p 值變小'], why: '追蹤越久，越有機會發生事件；用人時才能公平比較。' },
+      { q: 'Poisson 迴歸中某變數的係數 β = 0.693。這代表什麼？', o: ['率比約為 2：其他變數固定時，發生率約為參考組的 2 倍', '發生率增加 0.693 例', '有 69.3% 的人發生事件', '勝算比為 0.693'], why: 'Poisson 迴歸在對數尺度上，e^0.693 ≈ 2。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -1235,6 +1254,11 @@ const GLOSS = [
   ['影響點', [], '刪除後會大幅改變迴歸結果的觀察值。', 'reg-diag'],
   ['Cook 距離', ['Cook'], '刪除某個觀察值後，所有預測值改變多少的綜合指標。', 'reg-diag'],
   ['二次項', ['x²'], '在迴歸中加入 x 的平方，用來描述彎曲的關係。', 'reg-diag'],
+  ['人時', ['人年', '人日'], '每個人被追蹤的時間加總，例如 100 人各追蹤 2 年 = 200 人年。', 'c0-1'],
+  ['率比', [], '兩組發生率的比值。', 'poisson-reg'],
+  ['Poisson 迴歸', [], '計數結果的迴歸，在對數尺度上建模；加上位移項時描述的是率，結果為率比 e^β。', 'poisson-reg'],
+  ['位移項', ['offset'], 'Poisson 迴歸中係數固定為 1 的 log(人時)，讓模型描述率。', 'poisson-reg'],
+  ['離散度', [], 'Pearson χ² ÷ 自由度；Poisson 模型假設約為 1。', 'poisson-reg'],
   ['迴歸係數', ['係數', 'β'], '其他變數固定時，某變數增加 1 單位，結果平均改變多少。', 'c4-1'],
   ['虛擬變數', [], '把類別變數轉成 0／1 的欄位，才能放進迴歸。', 'c4-1'],
   ['參考組', [], '類別變數中被拿來當比較基準的那一組。', 'c4-1'],
@@ -1273,7 +1297,7 @@ const ORDER = [
   ['c2-2', 'c2-3', 'tdist', 'prop-ci', 'c2-4', 'one-t', 'binom-test', 'gof', 'boot', 'c4-5', 'c5-1'],
   ['c3-1', 'two-assume', 'nonpar', 'c3-3', 'two-prop', 'mcnemar', 'kappa', 'c3-5'],
   ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff', 'ancova'],
-  ['c3-4', 'simple-reg', 'c4-1', 'reg-diag', 'c4-2'],
+  ['c3-4', 'simple-reg', 'c4-1', 'reg-diag', 'c4-2', 'poisson-reg'],
   ['c4-3'],
   ['c4-4', 'c4-6'],
   ['c5-2', 'c5-3', 'c5-4', 'c5-5'],
@@ -1285,7 +1309,7 @@ const REFS = {
   'prob-rules': 'Whitlock 第 5 章；Rosner 3.2–3.6', 'roc': 'Rosner 3.9；UTHealth GSBS 課綱第 10 週', 'rv': 'Rosner 4.2–4.6', 'binom': 'Whitlock 7.1；Rosner 4.7–4.9、5.7；Kirkwood 第 15 章', 'poisson': 'Whitlock 8.4；Rosner 4.10–4.13；Kirkwood 第 22 章', 'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'tdist': 'Whitlock 11.1；Rosner 6.5', 'prop-ci': 'Whitlock 7.3；Rosner 6.8；Kirkwood 第 15 章', 'binom-test': 'Whitlock 7.2；Rosner 7.9', 'gof': 'Whitlock 8.1–8.3；Rosner 10.7', 'boot': 'Whitlock 13.8、第 19 章；Rosner 6.11、9.6', 'one-t': 'Whitlock 11.2；Rosner 7.3–7.5；UTHealth GSBS 課綱第 2 週', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
   'c2-4': 'Whitlock 第 6 章；Rosner 7.1–7.5；Kirkwood 第 8 章', 'c4-5': 'Whitlock 14.6；Rosner 7.6–7.7、8.9；Kirkwood 第 35 章', 'c5-1': 'Rosner 13.2；Kirkwood 第 34 章',
   'nonpar': 'Whitlock 13.4–13.7；Rosner 9.2–9.4', 'two-prop': 'Rosner 10.2、10.5；Kirkwood 第 16 章', 'kappa': 'Rosner 10.8；Landis & Koch (1977) Biometrics 33:159', 'mcnemar': 'Rosner 10.4；Kirkwood 第 21 章；Agresti, Categorical Data Analysis', 'two-assume': 'Whitlock 13.1–13.3；Rosner 8.6、8.10；Kirkwood 第 13 章', 'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
-  'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'reg-diag': 'Kirkwood 第 12–13 章；Rosner 11.6；Whitlock 17.5–17.6', 'simple-reg': 'Whitlock 第 17 章；Rosner 11.2–11.6；Kirkwood 第 10 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
+  'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'poisson-reg': 'Kirkwood 第 22–24 章；Rosner 14.1–14.3', 'reg-diag': 'Kirkwood 第 12–13 章；Rosner 11.6；Whitlock 17.5–17.6', 'simple-reg': 'Whitlock 第 17 章；Rosner 11.2–11.6；Kirkwood 第 10 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
   'c4-2': 'Rosner 13.7–13.8；Kirkwood 第 19–20 章', 'c4-3': 'Whitlock 第 21 章；Rosner 14.8–14.11；Kirkwood 第 26–27 章', 'c4-4': 'Benjamini & Hochberg (1995), J R Stat Soc B 57:289–300',
   'c4-6': 'Rosner 12.10、13.13–13.14；Kirkwood 第 31 章', 'c5-2': 'Kirkwood 第 38 章；EQUATOR Network', 'c5-3': 'Kirkwood 第 38 章', 'c5-4': 'Kirkwood 第 34、38 章',
 };

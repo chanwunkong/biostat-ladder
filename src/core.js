@@ -289,6 +289,20 @@ const S = (() => {
     const z = b.map((v, j) => v / se[j]);
     return { b, se, z, p: z.map(pz2), ll, ll0, mu, conv, it };
   }
+  // Poisson 迴歸（log 連結，可加位移項 offset = log(人時)）：IRLS
+  function poisson(X, y, offset) {
+    const n = X.length, p = X[0].length, off = offset || new Array(n).fill(0); let b = new Array(p).fill(0), conv = false;
+    b[0] = Math.log(Math.max(1e-8, sum(y)) / sum(off.map(Math.exp)));
+    for (let it = 0; it < 100; it++) {
+      const mu = X.map((xi, i) => Math.exp(dot(xi, b) + off[i])), g = new Array(p).fill(0);
+      for (let i = 0; i < n; i++) for (let a = 0; a < p; a++) g[a] += X[i][a] * (y[i] - mu[i]);
+      const step = inv(crossprod(X, mu)).map(r => dot(r, g)); b = b.map((v, j) => v + step[j]);
+      if (Math.max(...step.map(Math.abs)) < 1e-10) { conv = true; break; }
+    }
+    const mu = X.map((xi, i) => Math.exp(dot(xi, b) + off[i])), V = inv(crossprod(X, mu)), se = V.map((r, j) => Math.sqrt(r[j])), z = b.map((v, j) => v / se[j]);
+    const dev = 2 * sum(y.map((v, i) => (v > 0 ? v * Math.log(v / mu[i]) : 0) - (v - mu[i]))), disp = sum(y.map((v, i) => (v - mu[i]) ** 2 / mu[i])) / (n - p);
+    return { b, se, z, p: z.map(pz2), mu, dev, disp, conv };
+  }
   function auc(score, y) {
     const { r } = rank(score); let R1 = 0, n1 = 0; y.forEach((v, i) => { if (v) { R1 += r[i]; n1++; } }); const n0 = y.length - n1;
     return (R1 - n1 * (n1 + 1) / 2) / (n1 * n0);
@@ -363,7 +377,7 @@ const S = (() => {
   const nProps = (p1, p2, alpha, power) => { const za = qnorm(1 - alpha / 2), zb = qnorm(power), pb = (p1 + p2) / 2; return Math.ceil((za * Math.sqrt(2 * pb * (1 - pb)) + zb * Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))) ** 2 / ((p1 - p2) ** 2)); };
   const powerProps = (p1, p2, n, alpha) => { const za = qnorm(1 - alpha / 2), pb = (p1 + p2) / 2; return pnorm((Math.abs(p1 - p2) * Math.sqrt(n) - za * Math.sqrt(2 * pb * (1 - pb))) / Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))); };
 
-  return { dbinom, pbinom, dpois, ppois, propCI, binomTest, gof, signTest, twoProp, mcnemar, kappa, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, varTest, mannWhitney, oneT, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, slrPredict, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
+  return { dbinom, pbinom, dpois, ppois, propCI, binomTest, gof, signTest, twoProp, mcnemar, kappa, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, varTest, mannWhitney, oneT, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, slrPredict, logistic, poisson, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
 })();
 
 /* ---------- 格式 ---------- */
@@ -542,6 +556,7 @@ const DEF = {
   mcDef: 'McNemar 檢定只用兩次結果不一致的人數 b、c：χ² = (b − c)² ÷ (b + c)。精確 p 值把 b 視為 b + c 次中、成功機率 0.5 的二項結果。',
   kapDef: 'Cohen κ：(觀察一致率 − 機遇一致率) ÷ (1 − 機遇一致率)。機遇一致率 = Σ(兩者各類比例的乘積)。信賴區間使用近似標準誤 √(po(1 − po) ÷ (n(1 − pe)²))。',
   cookDef: 'Cook 距離：刪除某個觀察值後，所有預測值會改變多少的綜合指標；結合殘差大小與槓桿值（x 離平均多遠）。',
+  rateRatio: '率比：e 的 β 次方，兩組發生率的比值（其他變數固定時）。', dispDef: '離散度：Pearson χ² 除以自由度；Poisson 模型假設約為 1，明顯大於 1 代表過度離散，標準誤會被低估。',
   n: '分析使用的觀察數。', ev: '結果為事件（編碼 1）的人數。',
 };
 const cd = (k, l, v, d) => ({ k, l, v, d });
@@ -654,6 +669,18 @@ const DATASETS = [
       const r = rngOf(1414), N = normOf(r), rows = [], mu = [50, 41, 28, 12];
       for (let i = 0; i < 12; i++) { const u = N(0, 5); let e = N(0, 3); rows.push(['W' + pad(i + 1, 2), ...mu.map((m, j) => { if (j) e = 0.6 * e + 0.8 * N(0, 3); return +Math.max(1, m + u * (1 - j * 0.15) + e).toFixed(1); })]); }
       return { head: ['id', 'day0', 'day3', 'day7', 'day14'], rows };
+    },
+  },
+  {
+    id: 'ward_inf', name: '病房院內感染', tag: '計數與人時', track: '臨床／流病',
+    desc: '8 個病房、各 12 個月的院內感染件數與住院人日。前 6 個月為推廣洗手計畫前，後 6 個月為推廣後；其中 2 個病房是加護病房。',
+    order: { period: ['before', 'after'], icu: ['no', 'yes'] },
+    codebook: { ward: '病房編號', month: '月份（1–12）', period: '洗手計畫：before = 推廣前，after = 推廣後', icu: '是否為加護病房：yes／no', patient_days: '該月住院人日', infections: '該月院內感染件數' },
+    uses: ['率的比較', 'Poisson 迴歸'],
+    gen() {
+      const r = rngOf(919), N = normOf(r), rows = [], rpois = lam => { const L = Math.exp(-lam); let k = 0, p = 1; do { k++; p *= r(); } while (p > L); return k - 1; };
+      for (let w = 1; w <= 8; w++) { const icu = w <= 2, wf = Math.exp(N(0, 0.2)); for (let m = 1; m <= 12; m++) { const after = m > 6, days = Math.round((icu ? 400 : 900) + N(0, 60)), lam = days / 1000 * 4 * (icu ? 2.2 : 1) * (after ? 0.6 : 1) * wf; rows.push(['W' + w, m, after ? 'after' : 'before', icu ? 'yes' : 'no', days, rpois(lam)]); } }
+      return { head: ['ward', 'month', 'period', 'icu', 'patient_days', 'infections'], rows };
     },
   },
 ];
@@ -1044,6 +1071,27 @@ const AN = {
           `校正 ${s.x} 後，${s.g}：F(${R.group.df1}, ${R.group.df2}) = ${F.n(R.group.F, 2)}，${F.peq(R.group.p)}；校正後平均：${G.map((l, j) => `${l} ${F.n(R.adj[j])}`).join('、')}；${s.x} 斜率 = ${F.n(sl)}；斜率平行性檢定 ${F.peq(R.inter.p)}。`,
           `${s.y} was compared across ${s.g} groups by analysis of covariance adjusting for ${s.x}; parallelism of slopes was tested with the ${s.g} × ${s.x} interaction.`,
           `After adjustment for ${s.x}, ${s.g}: F(${R.group.df1}, ${R.group.df2}) = ${F.n(R.group.F, 2)}, ${F.peq(R.group.p)}; adjusted means ${G.map((l, j) => `${F.n(R.adj[j])} (${l})`).join(', ')}; slope for ${s.x} = ${F.n(sl)}; test of parallel slopes ${F.peq(R.inter.p)}.`),
+      };
+    },
+  },
+  poisreg: {
+    name: 'Poisson 迴歸（率）', when: '計數結果（例如感染件數），可用人時當位移項，得到率比',
+    fields: [{ k: 'y', label: '計數結果（數值）', t: 'num' }, { k: 'xs', label: '預測變數', t: 'any', multi: true }, { k: 'pt', label: '人時（位移項，可留空）', t: 'num', opt: true }],
+    run(ds, s) {
+      const xs = (s.xs || []).filter(v => v !== s.y && v !== s.pt); if (!xs.length) throw new Error('請至少勾選一個預測變數。');
+      const { idx, dropped } = complete(ds, [s.y, ...xs, ...(s.pt ? [s.pt] : [])]), yc = colOf(ds, s.y), y = idx.map(i => yc.values[i]);
+      if (y.some(v => v < 0 || !Number.isInteger(v))) throw new Error('計數結果必須是 0 以上的整數。');
+      const off = s.pt ? idx.map(i => Math.log(colOf(ds, s.pt).values[i])) : null; if (off && off.some(v => !Number.isFinite(v))) throw new Error('人時必須大於 0。');
+      const D = design(ds, idx, xs), X = D.X.map(r => [1, ...r]); let m; try { m = S.poisson(X, y, off); } catch (e) { catFail(e); }
+      const rows = D.names.map((nm, i) => { const j = i + 1; return { k: 'r' + j, label: nm, est: Math.exp(m.b[j]), lo: Math.exp(m.b[j] - 1.96 * m.se[j]), hi: Math.exp(m.b[j] + 1.96 * m.se[j]), p: m.p[j] }; });
+      const facts = [...D.refs.map(esc), s.pt ? `位移項：log(${esc(s.pt)})；結果為率比` : '沒有位移項：結果為平均計數的比值', `離散度（Pearson χ² ÷ 自由度）= ${F.n(m.disp, 2)}`];
+      return {
+        title: `Poisson 迴歸：${esc(s.y)}${s.pt ? ` ÷ ${esc(s.pt)}` : ''}`, meta: meta(idx.length, dropped) + `；總計數 ${S.sum(y)}`, facts,
+        charts: [{ svg: forestChart(rows, '率比（對數尺度）'), cap: '方塊＝率比 e^β，橫線＝95% CI，虛線＝1。' }],
+        cards: [...rows.map(r => cd(r.k, `率比：${esc(r.label)}`, `${F.n(r.est, 2)}（${F.ci(r.lo, r.hi, 2)}）`, 'rateRatio')), cd(rows[0].k, '離散度', F.n(m.disp, 2), 'dispDef')],
+        tables: [{ head: ['變數', '率比', '95% CI', 'p 值'], rows: rows.map(r => [`<b>${esc(r.label)}</b>`, F.n(r.est, 2), F.ci(r.lo, r.hi, 2), F.p(r.p)]), foot: `殘差離差 = ${F.n(m.dev, 1)}；離散度 = ${F.n(m.disp, 2)}` }],
+        write: W2(`以 Poisson 迴歸分析 ${s.y}${s.pt ? `，以 log(${s.pt}) 為位移項` : ''}，模型納入 ${joinZh(xs)}；結果以率比及 95% 信賴區間表示。`, `${rows.map(r => `${r.label}：率比 = ${F.n(r.est, 2)}（95% CI ${F.ci(r.lo, r.hi, 2)}，${F.peq(r.p)}）`).join('；')}；離散度 ${F.n(m.disp, 2)}。`,
+          `${s.y} was analysed by Poisson regression${s.pt ? ` with log(${s.pt}) as an offset` : ''}, including ${joinEn(xs)}; results are reported as rate ratios with 95% confidence intervals.`, `${rows.map(r => `${r.label}: rate ratio ${F.n(r.est, 2)} (95% CI ${F.cien(r.lo, r.hi, 2)}, ${F.peq(r.p)})`).join('; ')}; dispersion ${F.n(m.disp, 2)}.`),
       };
     },
   },

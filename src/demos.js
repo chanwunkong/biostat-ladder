@@ -2,6 +2,11 @@
    每題的 demo：set = 設定輸入元件（id → 值）；click = 依序點擊的按鈕；custom = 交給互動圖自己的 _demo()；look = 示範時的觀察提示。
    有 q 的項目會整題替換（原題無法在圖上示範時）。 */
 const QD = {
+  'poisson-reg': [
+    { demo: { set: { 'wrt-a': 30, 'wrt-ta': 2000, 'wrt-b': 15, 'wrt-tb': 2500 }, look: '點「率比」：15 ÷ 6 = 2.5。比較最後一張卡：只比事件數會得到 2。' } },
+    { demo: { set: { 'wrt-a': 30, 'wrt-ta': 5000, 'wrt-b': 15, 'wrt-tb': 2500 }, look: '吸菸組追蹤了更久（5000 人年）：事件數仍是 30 對 15，但發生率一樣，率比是 1。' } },
+    { demo: { set: { 'wrt-a': 30, 'wrt-ta': 2500, 'wrt-b': 15, 'wrt-tb': 2500 }, look: '人年相同時，率比 = 2：Poisson 迴歸的 e^β 就是率比，β = log(2) ≈ 0.693。' } },
+  ],
   'reg-diag': [
     { demo: { click: ['#wrd-m [data-m="funnel"]', '#wrd-t [data-t="none"]'], look: '右邊殘差圖：預測值越大越分散（喇叭形）。再按「對 y 取對數」，看殘差變得平均。' } },
     { demo: { click: ['#wrd-m [data-m="curve"]', '#wrd-t [data-t="none"]'], look: '殘差圖呈 U 形：直線在中間高估、兩端低估。按「加入 x²」比較。' } },

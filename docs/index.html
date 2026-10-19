@@ -802,6 +802,20 @@ const S = (() => {
     const z = b.map((v, j) => v / se[j]);
     return { b, se, z, p: z.map(pz2), ll, ll0, mu, conv, it };
   }
+  // Poisson 迴歸（log 連結，可加位移項 offset = log(人時)）：IRLS
+  function poisson(X, y, offset) {
+    const n = X.length, p = X[0].length, off = offset || new Array(n).fill(0); let b = new Array(p).fill(0), conv = false;
+    b[0] = Math.log(Math.max(1e-8, sum(y)) / sum(off.map(Math.exp)));
+    for (let it = 0; it < 100; it++) {
+      const mu = X.map((xi, i) => Math.exp(dot(xi, b) + off[i])), g = new Array(p).fill(0);
+      for (let i = 0; i < n; i++) for (let a = 0; a < p; a++) g[a] += X[i][a] * (y[i] - mu[i]);
+      const step = inv(crossprod(X, mu)).map(r => dot(r, g)); b = b.map((v, j) => v + step[j]);
+      if (Math.max(...step.map(Math.abs)) < 1e-10) { conv = true; break; }
+    }
+    const mu = X.map((xi, i) => Math.exp(dot(xi, b) + off[i])), V = inv(crossprod(X, mu)), se = V.map((r, j) => Math.sqrt(r[j])), z = b.map((v, j) => v / se[j]);
+    const dev = 2 * sum(y.map((v, i) => (v > 0 ? v * Math.log(v / mu[i]) : 0) - (v - mu[i]))), disp = sum(y.map((v, i) => (v - mu[i]) ** 2 / mu[i])) / (n - p);
+    return { b, se, z, p: z.map(pz2), mu, dev, disp, conv };
+  }
   function auc(score, y) {
     const { r } = rank(score); let R1 = 0, n1 = 0; y.forEach((v, i) => { if (v) { R1 += r[i]; n1++; } }); const n0 = y.length - n1;
     return (R1 - n1 * (n1 + 1) / 2) / (n1 * n0);
@@ -876,7 +890,7 @@ const S = (() => {
   const nProps = (p1, p2, alpha, power) => { const za = qnorm(1 - alpha / 2), zb = qnorm(power), pb = (p1 + p2) / 2; return Math.ceil((za * Math.sqrt(2 * pb * (1 - pb)) + zb * Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))) ** 2 / ((p1 - p2) ** 2)); };
   const powerProps = (p1, p2, n, alpha) => { const za = qnorm(1 - alpha / 2), pb = (p1 + p2) / 2; return pnorm((Math.abs(p1 - p2) * Math.sqrt(n) - za * Math.sqrt(2 * pb * (1 - pb))) / Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))); };
 
-  return { dbinom, pbinom, dpois, ppois, propCI, binomTest, gof, signTest, twoProp, mcnemar, kappa, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, varTest, mannWhitney, oneT, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, slrPredict, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
+  return { dbinom, pbinom, dpois, ppois, propCI, binomTest, gof, signTest, twoProp, mcnemar, kappa, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, varTest, mannWhitney, oneT, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, slrPredict, logistic, poisson, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
 })();
 
 /* ---------- 格式 ---------- */
@@ -1055,6 +1069,7 @@ const DEF = {
   mcDef: 'McNemar 檢定只用兩次結果不一致的人數 b、c：χ² = (b − c)² ÷ (b + c)。精確 p 值把 b 視為 b + c 次中、成功機率 0.5 的二項結果。',
   kapDef: 'Cohen κ：(觀察一致率 − 機遇一致率) ÷ (1 − 機遇一致率)。機遇一致率 = Σ(兩者各類比例的乘積)。信賴區間使用近似標準誤 √(po(1 − po) ÷ (n(1 − pe)²))。',
   cookDef: 'Cook 距離：刪除某個觀察值後，所有預測值會改變多少的綜合指標；結合殘差大小與槓桿值（x 離平均多遠）。',
+  rateRatio: '率比：e 的 β 次方，兩組發生率的比值（其他變數固定時）。', dispDef: '離散度：Pearson χ² 除以自由度；Poisson 模型假設約為 1，明顯大於 1 代表過度離散，標準誤會被低估。',
   n: '分析使用的觀察數。', ev: '結果為事件（編碼 1）的人數。',
 };
 const cd = (k, l, v, d) => ({ k, l, v, d });
@@ -1167,6 +1182,18 @@ const DATASETS = [
       const r = rngOf(1414), N = normOf(r), rows = [], mu = [50, 41, 28, 12];
       for (let i = 0; i < 12; i++) { const u = N(0, 5); let e = N(0, 3); rows.push(['W' + pad(i + 1, 2), ...mu.map((m, j) => { if (j) e = 0.6 * e + 0.8 * N(0, 3); return +Math.max(1, m + u * (1 - j * 0.15) + e).toFixed(1); })]); }
       return { head: ['id', 'day0', 'day3', 'day7', 'day14'], rows };
+    },
+  },
+  {
+    id: 'ward_inf', name: '病房院內感染', tag: '計數與人時', track: '臨床／流病',
+    desc: '8 個病房、各 12 個月的院內感染件數與住院人日。前 6 個月為推廣洗手計畫前，後 6 個月為推廣後；其中 2 個病房是加護病房。',
+    order: { period: ['before', 'after'], icu: ['no', 'yes'] },
+    codebook: { ward: '病房編號', month: '月份（1–12）', period: '洗手計畫：before = 推廣前，after = 推廣後', icu: '是否為加護病房：yes／no', patient_days: '該月住院人日', infections: '該月院內感染件數' },
+    uses: ['率的比較', 'Poisson 迴歸'],
+    gen() {
+      const r = rngOf(919), N = normOf(r), rows = [], rpois = lam => { const L = Math.exp(-lam); let k = 0, p = 1; do { k++; p *= r(); } while (p > L); return k - 1; };
+      for (let w = 1; w <= 8; w++) { const icu = w <= 2, wf = Math.exp(N(0, 0.2)); for (let m = 1; m <= 12; m++) { const after = m > 6, days = Math.round((icu ? 400 : 900) + N(0, 60)), lam = days / 1000 * 4 * (icu ? 2.2 : 1) * (after ? 0.6 : 1) * wf; rows.push(['W' + w, m, after ? 'after' : 'before', icu ? 'yes' : 'no', days, rpois(lam)]); } }
+      return { head: ['ward', 'month', 'period', 'icu', 'patient_days', 'infections'], rows };
     },
   },
 ];
@@ -1557,6 +1584,27 @@ const AN = {
           `校正 ${s.x} 後，${s.g}：F(${R.group.df1}, ${R.group.df2}) = ${F.n(R.group.F, 2)}，${F.peq(R.group.p)}；校正後平均：${G.map((l, j) => `${l} ${F.n(R.adj[j])}`).join('、')}；${s.x} 斜率 = ${F.n(sl)}；斜率平行性檢定 ${F.peq(R.inter.p)}。`,
           `${s.y} was compared across ${s.g} groups by analysis of covariance adjusting for ${s.x}; parallelism of slopes was tested with the ${s.g} × ${s.x} interaction.`,
           `After adjustment for ${s.x}, ${s.g}: F(${R.group.df1}, ${R.group.df2}) = ${F.n(R.group.F, 2)}, ${F.peq(R.group.p)}; adjusted means ${G.map((l, j) => `${F.n(R.adj[j])} (${l})`).join(', ')}; slope for ${s.x} = ${F.n(sl)}; test of parallel slopes ${F.peq(R.inter.p)}.`),
+      };
+    },
+  },
+  poisreg: {
+    name: 'Poisson 迴歸（率）', when: '計數結果（例如感染件數），可用人時當位移項，得到率比',
+    fields: [{ k: 'y', label: '計數結果（數值）', t: 'num' }, { k: 'xs', label: '預測變數', t: 'any', multi: true }, { k: 'pt', label: '人時（位移項，可留空）', t: 'num', opt: true }],
+    run(ds, s) {
+      const xs = (s.xs || []).filter(v => v !== s.y && v !== s.pt); if (!xs.length) throw new Error('請至少勾選一個預測變數。');
+      const { idx, dropped } = complete(ds, [s.y, ...xs, ...(s.pt ? [s.pt] : [])]), yc = colOf(ds, s.y), y = idx.map(i => yc.values[i]);
+      if (y.some(v => v < 0 || !Number.isInteger(v))) throw new Error('計數結果必須是 0 以上的整數。');
+      const off = s.pt ? idx.map(i => Math.log(colOf(ds, s.pt).values[i])) : null; if (off && off.some(v => !Number.isFinite(v))) throw new Error('人時必須大於 0。');
+      const D = design(ds, idx, xs), X = D.X.map(r => [1, ...r]); let m; try { m = S.poisson(X, y, off); } catch (e) { catFail(e); }
+      const rows = D.names.map((nm, i) => { const j = i + 1; return { k: 'r' + j, label: nm, est: Math.exp(m.b[j]), lo: Math.exp(m.b[j] - 1.96 * m.se[j]), hi: Math.exp(m.b[j] + 1.96 * m.se[j]), p: m.p[j] }; });
+      const facts = [...D.refs.map(esc), s.pt ? `位移項：log(${esc(s.pt)})；結果為率比` : '沒有位移項：結果為平均計數的比值', `離散度（Pearson χ² ÷ 自由度）= ${F.n(m.disp, 2)}`];
+      return {
+        title: `Poisson 迴歸：${esc(s.y)}${s.pt ? ` ÷ ${esc(s.pt)}` : ''}`, meta: meta(idx.length, dropped) + `；總計數 ${S.sum(y)}`, facts,
+        charts: [{ svg: forestChart(rows, '率比（對數尺度）'), cap: '方塊＝率比 e^β，橫線＝95% CI，虛線＝1。' }],
+        cards: [...rows.map(r => cd(r.k, `率比：${esc(r.label)}`, `${F.n(r.est, 2)}（${F.ci(r.lo, r.hi, 2)}）`, 'rateRatio')), cd(rows[0].k, '離散度', F.n(m.disp, 2), 'dispDef')],
+        tables: [{ head: ['變數', '率比', '95% CI', 'p 值'], rows: rows.map(r => [`<b>${esc(r.label)}</b>`, F.n(r.est, 2), F.ci(r.lo, r.hi, 2), F.p(r.p)]), foot: `殘差離差 = ${F.n(m.dev, 1)}；離散度 = ${F.n(m.disp, 2)}` }],
+        write: W2(`以 Poisson 迴歸分析 ${s.y}${s.pt ? `，以 log(${s.pt}) 為位移項` : ''}，模型納入 ${joinZh(xs)}；結果以率比及 95% 信賴區間表示。`, `${rows.map(r => `${r.label}：率比 = ${F.n(r.est, 2)}（95% CI ${F.ci(r.lo, r.hi, 2)}，${F.peq(r.p)}）`).join('；')}；離散度 ${F.n(m.disp, 2)}。`,
+          `${s.y} was analysed by Poisson regression${s.pt ? ` with log(${s.pt}) as an offset` : ''}, including ${joinEn(xs)}; results are reported as rate ratios with 95% confidence intervals.`, `${rows.map(r => `${r.label}: rate ratio ${F.n(r.est, 2)} (95% CI ${F.cien(r.lo, r.hi, 2)}, ${F.peq(r.p)})`).join('; ')}; dispersion ${F.n(m.disp, 2)}.`),
       };
     },
   },
@@ -2790,6 +2838,25 @@ const CH = [
       { q: '刪掉某一個點後，斜率從 0.8 變成 0.2。這個點最可能是？', o: ['影響點：Cook 距離很大，應檢查資料並做敏感度分析', '普通的點，可以忽略', '一定是輸入錯誤，直接刪除', '它讓模型更準確，應該複製一份'], why: '影響點會大幅改變估計；先檢查是否有錯，再報告有無它的結果。' },
     ],
   },
+  {
+    id: 'poisson-reg', title: '率的比較與 Poisson 迴歸',
+    body: `<p>追蹤研究中，每個人被追蹤的時間常常不一樣：有人追蹤 5 年、有人 1 年就失聯。這時不能只比「多少人發生事件」，而要比<b>發生率</b>：事件數 ÷ <b>人時</b>（{{c0-1}} 章），例如每千人年幾例、每千住院人日幾件感染。</p>
+<h3>兩組率的比較</h3>
+<div class="formula">率比 = (a ÷ T₁) ÷ (b ÷ T₀)　　a、b 為兩組事件數，T₁、T₀ 為兩組人時<br>log(率比) 的標準誤 ≈ √(1/a + 1/b)　　95% CI = 率比 × e<sup>±1.96 × 標準誤</sup></div>
+<p>例：吸菸組 30 例 / 2,000 人年、不吸菸組 15 例 / 2,500 人年。發生率分別是每千人年 15 與 6 例，<b>率比</b> = 2.5。</p>
+<h3>Poisson 迴歸</h3>
+<p>要同時校正其他變數時，用 <b>Poisson 迴歸</b>。它假設事件數服從 Poisson 分佈（{{poisson}} 章），模型寫在對數尺度上：</p>
+<div class="formula">log(期望事件數) = log(人時) + β₀ + β₁x₁ + …　　率比 = e<sup>β</sup></div>
+<p>log(人時) 這一項的係數固定為 1，叫做<b>位移項</b>（offset），它讓模型描述的是「率」而不是「次數」。例：β = 0.693 代表率比 e<sup>0.693</sup> ≈ 2。</p>
+<h3>過度離散</h3>
+<p>Poisson 分佈假設變異數等於平均。實際資料常有過度離散（例如同一病房的感染彼此相關），這時 Poisson 迴歸的標準誤會太小、p 值太小。檢查方式是看離散度（Pearson χ² ÷ 自由度）是否明顯大於 1；處理方式包括負二項迴歸、穩健標準誤，或用混合模型處理群集（{{c4-6}} 章）。</p>`,
+    labs: [{ label: '洗手計畫前後的院內感染率', ds: 'ward_inf', an: 'poisreg', sel: { y: 'infections', xs: ['period', 'icu'], pt: 'patient_days' } }],
+    quiz: [
+      { q: '吸菸組 30 例 / 2,000 人年，不吸菸組 15 例 / 2,500 人年。率比是多少？', o: ['2.5', '2.0', '1.25', '0.4'], why: '(30 ÷ 2000) ÷ (15 ÷ 2500) = 0.015 ÷ 0.006 = 2.5。只比事件數（30 ÷ 15 = 2）會忽略追蹤時間的差異。' },
+      { q: '為什麼追蹤研究常用「人年」當分母，而不是人數？', o: ['每個人被追蹤的時間不同，人年把追蹤時間算進去', '因為人數不能當分母', '因為人年一定比較大', '為了讓 p 值變小'], why: '追蹤越久，越有機會發生事件；用人時才能公平比較。' },
+      { q: 'Poisson 迴歸中某變數的係數 β = 0.693。這代表什麼？', o: ['率比約為 2：其他變數固定時，發生率約為參考組的 2 倍', '發生率增加 0.693 例', '有 69.3% 的人發生事件', '勝算比為 0.693'], why: 'Poisson 迴歸在對數尺度上，e^0.693 ≈ 2。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -3008,6 +3075,11 @@ const GLOSS = [
   ['影響點', [], '刪除後會大幅改變迴歸結果的觀察值。', 'reg-diag'],
   ['Cook 距離', ['Cook'], '刪除某個觀察值後，所有預測值改變多少的綜合指標。', 'reg-diag'],
   ['二次項', ['x²'], '在迴歸中加入 x 的平方，用來描述彎曲的關係。', 'reg-diag'],
+  ['人時', ['人年', '人日'], '每個人被追蹤的時間加總，例如 100 人各追蹤 2 年 = 200 人年。', 'c0-1'],
+  ['率比', [], '兩組發生率的比值。', 'poisson-reg'],
+  ['Poisson 迴歸', [], '計數結果的迴歸，在對數尺度上建模；加上位移項時描述的是率，結果為率比 e^β。', 'poisson-reg'],
+  ['位移項', ['offset'], 'Poisson 迴歸中係數固定為 1 的 log(人時)，讓模型描述率。', 'poisson-reg'],
+  ['離散度', [], 'Pearson χ² ÷ 自由度；Poisson 模型假設約為 1。', 'poisson-reg'],
   ['迴歸係數', ['係數', 'β'], '其他變數固定時，某變數增加 1 單位，結果平均改變多少。', 'c4-1'],
   ['虛擬變數', [], '把類別變數轉成 0／1 的欄位，才能放進迴歸。', 'c4-1'],
   ['參考組', [], '類別變數中被拿來當比較基準的那一組。', 'c4-1'],
@@ -3046,7 +3118,7 @@ const ORDER = [
   ['c2-2', 'c2-3', 'tdist', 'prop-ci', 'c2-4', 'one-t', 'binom-test', 'gof', 'boot', 'c4-5', 'c5-1'],
   ['c3-1', 'two-assume', 'nonpar', 'c3-3', 'two-prop', 'mcnemar', 'kappa', 'c3-5'],
   ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff', 'ancova'],
-  ['c3-4', 'simple-reg', 'c4-1', 'reg-diag', 'c4-2'],
+  ['c3-4', 'simple-reg', 'c4-1', 'reg-diag', 'c4-2', 'poisson-reg'],
   ['c4-3'],
   ['c4-4', 'c4-6'],
   ['c5-2', 'c5-3', 'c5-4', 'c5-5'],
@@ -3058,7 +3130,7 @@ const REFS = {
   'prob-rules': 'Whitlock 第 5 章；Rosner 3.2–3.6', 'roc': 'Rosner 3.9；UTHealth GSBS 課綱第 10 週', 'rv': 'Rosner 4.2–4.6', 'binom': 'Whitlock 7.1；Rosner 4.7–4.9、5.7；Kirkwood 第 15 章', 'poisson': 'Whitlock 8.4；Rosner 4.10–4.13；Kirkwood 第 22 章', 'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'tdist': 'Whitlock 11.1；Rosner 6.5', 'prop-ci': 'Whitlock 7.3；Rosner 6.8；Kirkwood 第 15 章', 'binom-test': 'Whitlock 7.2；Rosner 7.9', 'gof': 'Whitlock 8.1–8.3；Rosner 10.7', 'boot': 'Whitlock 13.8、第 19 章；Rosner 6.11、9.6', 'one-t': 'Whitlock 11.2；Rosner 7.3–7.5；UTHealth GSBS 課綱第 2 週', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
   'c2-4': 'Whitlock 第 6 章；Rosner 7.1–7.5；Kirkwood 第 8 章', 'c4-5': 'Whitlock 14.6；Rosner 7.6–7.7、8.9；Kirkwood 第 35 章', 'c5-1': 'Rosner 13.2；Kirkwood 第 34 章',
   'nonpar': 'Whitlock 13.4–13.7；Rosner 9.2–9.4', 'two-prop': 'Rosner 10.2、10.5；Kirkwood 第 16 章', 'kappa': 'Rosner 10.8；Landis & Koch (1977) Biometrics 33:159', 'mcnemar': 'Rosner 10.4；Kirkwood 第 21 章；Agresti, Categorical Data Analysis', 'two-assume': 'Whitlock 13.1–13.3；Rosner 8.6、8.10；Kirkwood 第 13 章', 'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
-  'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'reg-diag': 'Kirkwood 第 12–13 章；Rosner 11.6；Whitlock 17.5–17.6', 'simple-reg': 'Whitlock 第 17 章；Rosner 11.2–11.6；Kirkwood 第 10 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
+  'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'poisson-reg': 'Kirkwood 第 22–24 章；Rosner 14.1–14.3', 'reg-diag': 'Kirkwood 第 12–13 章；Rosner 11.6；Whitlock 17.5–17.6', 'simple-reg': 'Whitlock 第 17 章；Rosner 11.2–11.6；Kirkwood 第 10 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
   'c4-2': 'Rosner 13.7–13.8；Kirkwood 第 19–20 章', 'c4-3': 'Whitlock 第 21 章；Rosner 14.8–14.11；Kirkwood 第 26–27 章', 'c4-4': 'Benjamini & Hochberg (1995), J R Stat Soc B 57:289–300',
   'c4-6': 'Rosner 12.10、13.13–13.14；Kirkwood 第 31 章', 'c5-2': 'Kirkwood 第 38 章；EQUATOR Network', 'c5-3': 'Kirkwood 第 38 章', 'c5-4': 'Kirkwood 第 34、38 章',
 };
@@ -3276,7 +3348,7 @@ function runAnalysis(scroll) {
   }
   if (res.tables && res.tables.length) h += `<details class="more"><summary>完整統計表</summary>${res.tables.map(t => tableHTML(t)).join('')}</details>`;
   const defs = [...new Set((res.cards || []).map(c => c.d).filter(Boolean))];
-  if (defs.length) h += `<details class="more"><summary>每個數字怎麼算</summary><dl class="defs">${defs.map(d => `<div><dt>${{ mean: '平均', sd: '標準差', median: '中位數', iqr: '四分位距', diff: '平均差', ci: '95% 信賴區間', t: 't', p: 'p 值', d: "Cohen's d", U: 'Mann–Whitney', V: 'Wilcoxon 符號等級', F: 'F', eta2: 'η²', H: 'Kruskal–Wallis', welchF: 'Welch ANOVA', levene: 'Levene 檢定與 Q-Q 圖', cldDef: 'Tukey 字母標記', mainEff: '主效果', interEff: '交互作用', blockDef: '區集 ANOVA', rmDef: '重複測量 ANOVA', ggDef: 'Greenhouse–Geisser 校正', friedDef: 'Friedman 檢定', adjMean: '校正後平均', gmr: '幾何平均數比', rdDef: '風險差', mcDef: 'McNemar 檢定', kapDef: 'Cohen κ', cookDef: 'Cook 距離', parallel: '斜率平行性檢定', chi2: 'χ²', minexp: '期望次數', cv: "Cramér's V", or: '勝算比', rr: '風險比', prop: '比例', fisher: 'Fisher 精確檢定', r: 'Pearson r', rho: 'Spearman ρ', r2: 'R²', slope: '斜率', sigma: '殘差標準誤', beta: '迴歸係數 β', OR: '勝算比（模型）', auc: 'AUC', lr: '概似比 χ²', hr: '危險比', medsurv: '中位存活時間', surv: '存活率', logrank: 'Log-rank χ²', sig: '未校正', q: 'BH q 值', bonf: 'Bonferroni' }[d] || d}</dt><dd>${DEF[d]}</dd></div>`).join('')}</dl></details>`;
+  if (defs.length) h += `<details class="more"><summary>每個數字怎麼算</summary><dl class="defs">${defs.map(d => `<div><dt>${{ mean: '平均', sd: '標準差', median: '中位數', iqr: '四分位距', diff: '平均差', ci: '95% 信賴區間', t: 't', p: 'p 值', d: "Cohen's d", U: 'Mann–Whitney', V: 'Wilcoxon 符號等級', F: 'F', eta2: 'η²', H: 'Kruskal–Wallis', welchF: 'Welch ANOVA', levene: 'Levene 檢定與 Q-Q 圖', cldDef: 'Tukey 字母標記', mainEff: '主效果', interEff: '交互作用', blockDef: '區集 ANOVA', rmDef: '重複測量 ANOVA', ggDef: 'Greenhouse–Geisser 校正', friedDef: 'Friedman 檢定', adjMean: '校正後平均', gmr: '幾何平均數比', rdDef: '風險差', mcDef: 'McNemar 檢定', kapDef: 'Cohen κ', cookDef: 'Cook 距離', rateRatio: '率比', dispDef: '離散度', parallel: '斜率平行性檢定', chi2: 'χ²', minexp: '期望次數', cv: "Cramér's V", or: '勝算比', rr: '風險比', prop: '比例', fisher: 'Fisher 精確檢定', r: 'Pearson r', rho: 'Spearman ρ', r2: 'R²', slope: '斜率', sigma: '殘差標準誤', beta: '迴歸係數 β', OR: '勝算比（模型）', auc: 'AUC', lr: '概似比 χ²', hr: '危險比', medsurv: '中位存活時間', surv: '存活率', logrank: 'Log-rank χ²', sig: '未校正', q: 'BH q 值', bonf: 'Bonferroni' }[d] || d}</dt><dd>${DEF[d]}</dd></div>`).join('')}</dl></details>`;
   out.innerHTML = h + '</div>';
   const root = $('#res-root'); linkify(root, res.table1 && res.picks.length ? res.picks[0].k : null);
   if (scroll === true && innerWidth < 960) out.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -4293,6 +4365,19 @@ Object.assign(W, {
     };
     segBind(el, '#wrd-m', b => { mode = b.dataset.m; up(); }); segBind(el, '#wrd-t', b => { tf = b.dataset.t; up(); }); up();
   },
+  ratew(el) {
+    el.innerHTML = `<p class="w-cap">兩組的事件數與追蹤人年。發生率 = 事件數 ÷ 人年。</p>
+<div class="w-row">${slider('wrt-a', '吸菸組事件數', 0, 100, 1, 30)}${slider('wrt-ta', '吸菸組人年', 200, 6000, 100, 2000)}${slider('wrt-b', '不吸菸組事件數', 0, 100, 1, 15)}${slider('wrt-tb', '不吸菸組人年', 200, 6000, 100, 2500)}</div>
+<div class="chart-wrap" id="wrt-c"></div><div class="kv" id="wrt-k"></div>`;
+    const up = () => {
+      const a = sv('wrt-a'), ta = sv('wrt-ta'), b = sv('wrt-b'), tb = sv('wrt-tb'); if (!a || !b) { $('#wrt-k').innerHTML = '<p class="w-out">兩組都至少需要 1 個事件。</p>'; return; }
+      const ra = 1000 * a / ta, rb = 1000 * b / tb, rr = (a / ta) / (b / tb), se = Math.sqrt(1 / a + 1 / b), ci = [rr * Math.exp(-1.96 * se), rr * Math.exp(1.96 * se)], m = S.poisson([[1, 0], [1, 1]], [b, a], [Math.log(tb), Math.log(ta)]);
+      const cia = [ra * Math.exp(-1.96 / Math.sqrt(a)), ra * Math.exp(1.96 / Math.sqrt(a))], cib = [rb * Math.exp(-1.96 / Math.sqrt(b)), rb * Math.exp(1.96 / Math.sqrt(b))], top = Math.max(cia[1], cib[1]) * 1.1;
+      $('#wrt-c').innerHTML = chart({ xcats: ['不吸菸', '吸菸'], y: [0, top], h: 240, ylab: '每千人年的發生率' }, (X, Y) => [[rb, cib, 'rb'], [ra, cia, 'ra']].map(([v, ci2, k], i) => `<g data-k="${k} rr"><rect x="${X(i) - 30}" y="${Y(v)}" width="60" height="${Y(0) - Y(v)}" style="fill:${col4(i)};fill-opacity:.75"/><line x1="${X(i)}" x2="${X(i)}" y1="${Y(ci2[0])}" y2="${Y(ci2[1])}" class="ink" style="stroke-width:2"/></g>`).join(''));
+      $('#wrt-k').innerHTML = kvs([['吸菸組發生率（每千人年）', F.n(ra, 1), 'ra'], ['不吸菸組發生率（每千人年）', F.n(rb, 1), 'rb'], ['率比（95% CI）', `${F.n(rr, 2)}（${F.ci(...ci, 2)}）`, 'rr'], ['Poisson 迴歸的 e^β', F.n(Math.exp(m.b[1]), 2), 'rr'], ['只比事件數的比值（錯誤）', F.n(a / b, 2)]]);
+    };
+    el.addEventListener('input', up); up();
+  },
   mosaic(el) {
     el.innerHTML = `<p class="w-cap">正方形代表全部的人（面積 = 1）。左右寬度是吸菸與不吸菸的比例；每一欄內，紅色的高度是該群中有高血壓的比例。</p>
 <div class="w-row">${slider('wm2-a', 'P(吸菸)', 5, 95, 5, 30, '%')}${slider('wm2-ba', 'P(高血壓 | 吸菸)', 0, 100, 5, 30, '%')}${slider('wm2-bn', 'P(高血壓 | 不吸菸)', 0, 100, 5, 15, '%')}</div>
@@ -4310,13 +4395,18 @@ Object.assign(W, {
   },
 });
 
-const WMAP = { 'reg-diag': ['regdiagw', '看殘差圖找問題'], 'simple-reg': ['simpleregw', '信賴帶與預測帶'], 'graphs': ['graphsw', '同一份資料，四種圖'], 'kappa': ['kappaw', '兩位病理師的一致性'], 'mcnemar': ['mcnemarw', '只看不一致的人'], 'two-prop': ['twopropw', '兩組反應率'], 'nonpar': ['nonparw', '用名次比較'], 'two-assume': ['twoassume', '轉換與極端值'], 'boot': ['bootw', '重抽 2000 次'], 'gof': ['gofw', '孟德爾的豌豆'], 'binom-test': ['binomtestw', '二項檢定'], 'one-t': ['onetw', '單一樣本 t 檢定'], 'prop-ci': ['propciw', '三種比例信賴區間'], 'tdist': ['tdistw', 't 分佈與常態分佈'], 'poisson': ['poissonw', 'Poisson 分佈與培養皿'], 'binom': ['binomw', '二項分佈'], 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
+const WMAP = { 'poisson-reg': ['ratew', '發生率與率比'], 'reg-diag': ['regdiagw', '看殘差圖找問題'], 'simple-reg': ['simpleregw', '信賴帶與預測帶'], 'graphs': ['graphsw', '同一份資料，四種圖'], 'kappa': ['kappaw', '兩位病理師的一致性'], 'mcnemar': ['mcnemarw', '只看不一致的人'], 'two-prop': ['twopropw', '兩組反應率'], 'nonpar': ['nonparw', '用名次比較'], 'two-assume': ['twoassume', '轉換與極端值'], 'boot': ['bootw', '重抽 2000 次'], 'gof': ['gofw', '孟德爾的豌豆'], 'binom-test': ['binomtestw', '二項檢定'], 'one-t': ['onetw', '單一樣本 t 檢定'], 'prop-ci': ['propciw', '三種比例信賴區間'], 'tdist': ['tdistw', 't 分佈與常態分佈'], 'poisson': ['poissonw', 'Poisson 分佈與培養皿'], 'binom': ['binomw', '二項分佈'], 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
 for (const [id, [w, t]] of Object.entries(WMAP)) { const c = CH.find(x => x.id === id); c.widget = w; c.wtitle = t; }
 
 /* ---------- 練習題示範：把題目情境帶入同一章的互動圖 ----------
    每題的 demo：set = 設定輸入元件（id → 值）；click = 依序點擊的按鈕；custom = 交給互動圖自己的 _demo()；look = 示範時的觀察提示。
    有 q 的項目會整題替換（原題無法在圖上示範時）。 */
 const QD = {
+  'poisson-reg': [
+    { demo: { set: { 'wrt-a': 30, 'wrt-ta': 2000, 'wrt-b': 15, 'wrt-tb': 2500 }, look: '點「率比」：15 ÷ 6 = 2.5。比較最後一張卡：只比事件數會得到 2。' } },
+    { demo: { set: { 'wrt-a': 30, 'wrt-ta': 5000, 'wrt-b': 15, 'wrt-tb': 2500 }, look: '吸菸組追蹤了更久（5000 人年）：事件數仍是 30 對 15，但發生率一樣，率比是 1。' } },
+    { demo: { set: { 'wrt-a': 30, 'wrt-ta': 2500, 'wrt-b': 15, 'wrt-tb': 2500 }, look: '人年相同時，率比 = 2：Poisson 迴歸的 e^β 就是率比，β = log(2) ≈ 0.693。' } },
+  ],
   'reg-diag': [
     { demo: { click: ['#wrd-m [data-m="funnel"]', '#wrd-t [data-t="none"]'], look: '右邊殘差圖：預測值越大越分散（喇叭形）。再按「對 y 取對數」，看殘差變得平均。' } },
     { demo: { click: ['#wrd-m [data-m="curve"]', '#wrd-t [data-t="none"]'], look: '殘差圖呈 U 形：直線在中間高估、兩端低估。按「加入 x²」比較。' } },

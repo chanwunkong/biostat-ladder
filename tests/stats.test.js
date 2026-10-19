@@ -148,6 +148,16 @@ near('簡單迴歸斜率標準誤 = lm', sp.seB, 0.4155);
 near('Cook 距離最大值 (cars 第 49 筆)', Math.max(...lmc.cook), 0.3403);
 if (lmc.cook.indexOf(Math.max(...lmc.cook)) !== 48) { fail++; console.log('FAIL Cook 距離最大的不是第 49 筆'); } else console.log('ok   Cook 距離最大的是第 49 筆');
 
+// R ?glm 範例（Dobson 1990）：glm(counts ~ outcome + treatment, family = poisson())
+const dc = [18, 17, 15, 20, 10, 20, 25, 13, 12], dX = dc.map((_, i) => [1, i % 3 === 1 ? 1 : 0, i % 3 === 2 ? 1 : 0, Math.floor(i / 3) === 1 ? 1 : 0, Math.floor(i / 3) === 2 ? 1 : 0]), pr = S.poisson(dX, dc);
+near('Poisson 迴歸截距 (Dobson)', pr.b[0], 3.045);
+near('Poisson 迴歸 outcome2', pr.b[1], -0.4543);
+near('Poisson 迴歸 outcome3', pr.b[2], -0.2930);
+near('Poisson 迴歸 outcome2 標準誤', pr.se[1], 0.2022);
+// 一個二元變數 + 位移項時，exp(β) 必須等於兩組發生率的比值
+const pr2 = S.poisson([[1, 0], [1, 1]], [15, 30], [Math.log(2500), Math.log(2000)]);
+near('Poisson 迴歸 exp(β) = 率比', Math.exp(pr2.b[1]), (30 / 2000) / (15 / 2500));
+
 const DS = {};
 for (const m of DATASETS) { const d = m.gen(); DS[m.id] = makeDS({ ...m, head: d.head, rows: d.rows }); }
 const runs = [
@@ -169,6 +179,7 @@ const runs = [
   ['plant_growth', 'block', { y: 'height_cm', tr: 'fertilizer', bk: 'block' }],
   ['wound', 'rm', { vars: ['day0', 'day3', 'day7', 'day14'] }],
   ['bp_trial', 'ancova', { y: 'sbp_wk12', g: 'group', x: 'sbp_base' }],
+  ['ward_inf', 'poisreg', { y: 'infections', xs: ['period', 'icu'], pt: 'patient_days' }],
   ['diet_geno', 'anova2', { y: 'weight_gain_g', a: 'diet', b: 'genotype' }],
 ];
 for (const [id, an, sel] of runs) {
