@@ -61,7 +61,7 @@ function termsOf(q) {
   GLOSS.forEach((g, gi) => { const pos = [g[0], ...g[1]].map(f => text.indexOf(f)).filter(i => i >= 0); if (pos.length) hits.push([Math.min(...pos), gi]); });
   return hits.sort((x, y) => x[0] - y[0]).map(h => h[1]);
 }
-const termsHTML = q => { const t = termsOf(q); return t.length ? `<div class="terms"><span class="lbl">這題的名詞（點一下看定義）</span><div class="tchips">${t.map(gi => `<button type="button" class="tchip" data-g="${gi}" aria-pressed="false">${esc(GLOSS[gi][0])}</button>`).join('')}</div><div class="tdef" hidden></div></div>` : ''; };
+const termsHTML = q => { const t = termsOf(q); return t.length ? `<div class="terms"><span class="lbl">這題的名詞（點一下看圖解）</span><div class="tchips">${t.map(gi => `<button type="button" class="tchip" data-g="${gi}" aria-pressed="false">${esc(GLOSS[gi][0])}</button>`).join('')}</div><div class="tdef" hidden></div></div>` : ''; };
 function bindTerms(c) {
   $$('.terms').forEach(box => {
     $$('.tchip', box).forEach(b => {
@@ -69,7 +69,7 @@ function bindTerms(c) {
         const on = b.getAttribute('aria-pressed') !== 'true', d = $('.tdef', box), [term, , def, ch] = GLOSS[+b.dataset.g], t = CH.find(x => x.id === ch);
         $$('.tchip', box).forEach(x => x.setAttribute('aria-pressed', String(x === b && on)));
         d.hidden = !on;
-        if (on) d.innerHTML = `<b>${esc(term)}</b>　${esc(def)}<span class="tsrc">${ch === c.id ? '本章內容有說明' : `<a href="#${ch}">${t.num} 章「${esc(t.title)}」</a>${CH.indexOf(t) > CH.indexOf(c) ? '會詳細說明' : '學過'}`}</span>`;
+        if (on) { d.innerHTML = (typeof TFIG !== 'undefined' ? TFIG.html(term, box.clientWidth - 24) : '') + `<p class="tline"><b>${esc(term)}</b>　${esc(def)}</p><span class="tsrc">${ch === c.id ? '本章內容有說明' : `<a href="#${ch}">${t.num} 章「${esc(t.title)}」</a>${CH.indexOf(t) > CH.indexOf(c) ? '會詳細說明' : '學過'}`}</span>`; if (typeof TFIG !== 'undefined') TFIG.mark(d); }
       };
     });
   });

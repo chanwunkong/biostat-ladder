@@ -27,6 +27,8 @@ setTimeout(() => {
     }
   } else {
     $$('[data-demo]').forEach(b => { try { b.click(); demos++; } catch (x) { __e.push(x.message); } });
+    // 名詞晶片：每個都要畫得出圖解
+    $$('.tchip').forEach(b => { try { b.click(); const d = b.closest('.terms').querySelector('.tdef'); if (!d.querySelector('.tfig svg')) __e.push('名詞沒有圖解：' + b.textContent); b.click(); } catch (x) { __e.push(b.textContent + ': ' + x.message); } });
     const w = $('#widget'); if (w) clickCards(w);
     // 數字卡上的名詞必須在本章或前面的章節教過（名詞表 GLOSS）
     const ci = CH.findIndex(c => c.id === location.hash.slice(1));

@@ -10,7 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).parent
 SRC = ROOT / "src"
 # 載入順序有相依性：core（統計、圖表、分析）→ content（課程）→ app（介面）→ widgets（互動圖）→ demos（練習題示範，最後啟動）
-SCRIPTS = ["core.js", "content.js", "app.js", "widgets.js", "demos.js"]
+SCRIPTS = ["core.js", "content.js", "app.js", "widgets.js", "terms.js", "demos.js"]
 
 HEAD = """<!doctype html>
 <html lang="zh-Hant">

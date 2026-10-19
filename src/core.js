@@ -632,6 +632,32 @@ const pad = (k, n) => String(k).padStart(n, '0');
 
 const DATASETS = [
   {
+    id: 'study', name: '貫穿課程的研究：多中心降血壓試驗（模擬）', tag: '全課程共用', track: '臨床／流病',
+    desc: '8 間醫院、400 位高血壓病人，隨機分派新藥或安慰劑，在第 0、4、8、12 週量收縮壓，並追蹤 36 個月的心血管事件。另有抽血、心電圖與心臟超音波、兩位醫師判讀、兩台血壓計、不良事件次數。部分病人中途退出（年紀越大越常退出）。資料由電腦依事先設定的真實關係產生，所以可以對照「估計值」與「真值」。',
+    order: { group: ['placebo', 'drug'], sex: ['F', 'M'], hospital: ['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'H7', 'H8'] },
+    codebook: { id: '病人編號', hospital: '收案醫院 H1–H8', group: '分派組別：drug = 新藥，placebo = 安慰劑', age: '年齡（歲）', sex: '性別：F = 女，M = 男', bmi: '身體質量指數（kg/m²）', smoker: '目前吸菸：1 = 是，0 = 否', diabetes: '糖尿病：1 = 是，0 = 否', sbp_0: '第 0 週（基線）收縮壓（mmHg），血壓計 A', sbp_4: '第 4 週收縮壓', sbp_8: '第 8 週收縮壓，退出者為缺失', sbp_12: '第 12 週收縮壓，退出者為缺失', sbp_devB: '基線時用血壓計 B 同時量的收縮壓', responder: '第 12 週比基線降 10 mmHg 以上：1 = 是，0 = 否；退出者為缺失', crp: 'C 反應蛋白（mg/L），右偏', chol: '總膽固醇（mmol/L）', ldl: '低密度脂蛋白膽固醇（mmol/L）', hdl: '高密度脂蛋白膽固醇（mmol/L）', tg: '三酸甘油脂（mmol/L）', glucose: '空腹血糖（mmol/L）', hba1c: '糖化血色素（%）', ecg_score: '心電圖左心室肥大分數（越高越可能）', lvh_echo: '心臟超音波診斷左心室肥大（黃金標準）：1 = 有，0 = 無', ecg_readA: '醫師 A 判讀心電圖為左心室肥大：1 = 是，0 = 否', ecg_readB: '醫師 B 判讀心電圖為左心室肥大：1 = 是，0 = 否', ae_count: '12 週內不良事件次數', fu_days: '藥物追蹤天數（不良事件的人時）', time_months: '追蹤到心血管事件或設限的月數', cvd_event: '心血管事件：1 = 發生，0 = 設限' },
+    uses: ['幾乎每一章', 'Table 1', 't 檢定', 'ANOVA（醫院）', '重複測量', '卡方', 'ROC', 'Kappa', 'Bland–Altman', '迴歸', '邏輯斯迴歸', 'Poisson 迴歸', '存活分析', '缺失值', 'PCA'],
+    truth: { '新藥第 12 週的收縮壓比安慰劑多降': '10 mmHg', '新藥對心血管事件的危險比': 0.7, '醫院之間收縮壓的標準差 τ': '5 mmHg', '退出機制': '隨機缺失（和年齡有關）' },
+    gen() {
+      const r = rngOf(3), N = normOf(r), sizes = [30, 38, 44, 50, 52, 56, 60, 70], hu = sizes.map(() => N(0, 5)), rows = [], cl = (v, a, b) => Math.min(b, Math.max(a, v)), lg = x => 1 / (1 + Math.exp(-x));
+      const pois = lam => { const L = Math.exp(-lam); let k = 0, p = 1; do { k++; p *= r(); } while (p > L); return k - 1; };
+      let id = 0;
+      sizes.forEach((sz, h) => { for (let i = 0; i < sz; i++) {
+        id++; const drug = (i % 4 === 0 || i % 4 === 3) !== (h % 2 === 1), age = Math.round(cl(N(60, 9), 40, 80)), male = r() < 0.52, bmi = +cl(N(27, 4), 17, 42).toFixed(1), smoker = r() < (male ? 0.35 : 0.15) ? 1 : 0;
+        const dm = r() < lg(-2.6 + 0.04 * (age - 60) + 0.12 * (bmi - 27)) ? 1 : 0, tr = 150 + hu[h] + 0.35 * (age - 60) + 0.6 * (bmi - 27) + N(0, 9), eff = [0, 5, 8, 10], drift = [0, 2, 3, 3];
+        const sb = eff.map((_, t) => Math.round(tr - drift[t] - (drug ? eff[t] : 0) + N(0, 6))), quit = r() < lg(-2.4 + 0.08 * (age - 60)) ? (r() < 0.5 ? 2 : 3) : 9;
+        const s = sb.map((v, t) => (t >= quit ? null : v)), devB = Math.round(sb[0] + 3 + 0.08 * (sb[0] - 150) + N(0, 4));
+        const crp = +Math.exp(N(0.7 + 0.4 * smoker + 0.03 * (bmi - 27), 0.8)).toFixed(1), chol = +N(5.2, 0.9).toFixed(1), ldl = +cl(0.65 * chol - 0.2 + N(0, 0.35), 0.8, 7).toFixed(1), hdl = +cl(N(1.45 - (male ? 0.2 : 0) - 0.12 * smoker - 0.02 * (bmi - 27), 0.28), 0.5, 2.8).toFixed(2);
+        const tg = +Math.exp(N(0.35 + 0.04 * (bmi - 27) + 0.2 * dm, 0.4)).toFixed(1), glu = +N(5.4 + 1.9 * dm + 0.04 * (bmi - 27), 0.55).toFixed(1), a1c = +(5.3 + 0.35 * (glu - 5.4) + 0.8 * dm + N(0, 0.25)).toFixed(1);
+        const lvh = r() < lg(-1.6 + 0.05 * (age - 60) + 0.04 * (sb[0] - 150)) ? 1 : 0, ecg = +(2 + 1.6 * lvh + 0.02 * (sb[0] - 150) + N(0, 1.25)).toFixed(2), rA = ecg + N(0, 0.45) > 3 ? 1 : 0, rB = ecg + N(0, 0.55) > 3.2 ? 1 : 0;
+        const days = quit === 2 ? 42 + Math.round(r() * 14) : quit === 3 ? 63 + Math.round(r() * 14) : 84, ae = pois(days / 100 * (drug ? 0.55 : 0.3) * (age > 70 ? 1.4 : 1));
+        const haz = 0.0075 * Math.exp(0.05 * (age - 60) + 0.5 * smoker + 0.6 * dm + 0.015 * (sb[0] - 150) + (drug ? Math.log(0.7) : 0)), tE = -Math.log(1 - r()) / haz, tC = 24 + 12 * r(), ev = tE <= tC ? 1 : 0;
+        rows.push(['S' + pad(id, 3), 'H' + (h + 1), drug ? 'drug' : 'placebo', age, male ? 'M' : 'F', bmi, smoker, dm, ...s, devB, s[3] == null ? null : (s[0] - s[3] >= 10 ? 1 : 0), crp, chol, ldl, hdl, tg, glu, a1c, ecg, lvh, rA, rB, ae, days, +Math.min(tE, tC).toFixed(1), ev]);
+      } });
+      return { head: ['id', 'hospital', 'group', 'age', 'sex', 'bmi', 'smoker', 'diabetes', 'sbp_0', 'sbp_4', 'sbp_8', 'sbp_12', 'sbp_devB', 'responder', 'crp', 'chol', 'ldl', 'hdl', 'tg', 'glucose', 'hba1c', 'ecg_score', 'lvh_echo', 'ecg_readA', 'ecg_readB', 'ae_count', 'fu_days', 'time_months', 'cvd_event'], rows };
+    },
+  },
+  {
     id: 'bp_trial', name: '降血壓藥隨機試驗', tag: '臨床試驗', track: '臨床／流病',
     desc: '120 位第一期高血壓患者隨機分派至新藥或安慰劑，追蹤 12 週收縮壓與不良事件。4 位受試者第 12 週失聯。',
     order: { group: ['placebo', 'drug'], sex: ['F', 'M'] },
@@ -751,6 +777,8 @@ const DATASETS = [
 
 const MISSING = new Set(['', 'na', 'n/a', 'nan', 'null', '.', '-', '#n/a', 'missing', '缺', '無']);
 const NUMRE = /^[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/;
+// 共用資料集的欄位：STUDY().sbp_0 等（陣列，缺失為 null）
+const STUDY = (() => { let c = null; return () => { if (!c) { const g = DATASETS[0].gen(); c = { n: g.rows.length }; g.head.forEach((h, j) => { c[h] = g.rows.map(r => r[j]); }); } return c; }; })();
 function makeDS({ id, name, head, rows, order = {}, codebook = {}, truth = null, desc = '' }) {
   const n = rows.length;
   const cols = head.map((h, j) => {
