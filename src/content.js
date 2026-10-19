@@ -1056,6 +1056,26 @@ const CH = [
       { q: 'Bland–Altman 圖上，差值隨兩方法的平均變大而變大。這代表什麼？', o: ['比例偏差：兩方法的差異隨數值大小改變', '沒有偏差', '樣本數太少', '兩方法完全一致'], why: '固定的一致性界限不適用；可改用百分比差或對數尺度。' },
     ],
   },
+  {
+    id: 'mh', title: '分層分析與 Mantel–Haenszel',
+    body: `<p>干擾因子（{{c5-1}} 章）會讓暴露和結果看起來有關、或掩蓋真正的關聯。在學迴歸之前，最直接的處理方法是<b>分層</b>：依干擾因子把資料分成幾層（例如男、女；年輕、年長），在每一層裡面分別看關聯。</p>
+<h3>辛普森悖論</h3>
+<p>1973 年柏克萊大學研究所的申請資料：合起來看，男性錄取率明顯高於女性（未分層勝算比約 1.8）。但分科系看，大部分科系女性的錄取率並不比男性低。原因是女性較常申請錄取率低的科系。「科系」同時影響「性別」（誰申請）和「錄取」，是干擾因子。這種「合起來和分開看方向相反」的現象，叫做<b>辛普森悖論</b>。</p>
+<h3>Mantel–Haenszel 合併勝算比</h3>
+<p>各層的勝算比如果差不多，可以合併成一個「校正分層變數後」的勝算比：</p>
+<div class="formula">MH 勝算比 = Σ(a × d ÷ n) ÷ Σ(b × c ÷ n)　　（每一層一個 2×2 表）</div>
+<p>它是各層勝算比的加權平均。<b>Cochran–Mantel–Haenszel 檢定</b>則檢定「校正分層後，是否仍有關聯」。UCB 資料依科系分層後，MH 勝算比為 0.90（95% CI 0.77–1.06）：和合起來的 1.8 完全不同。</p>
+<h3>干擾，還是效果修飾？</h3>
+<ul><li><b>干擾</b>：各層勝算比彼此相近，但和粗勝算比不同。報告 MH 合併的勝算比。</li>
+<li><b>效果修飾</b>：各層勝算比明顯不同（例如男性 3.0、女性 0.8），代表關聯的強弱取決於分層變數，也就是交互作用（{{twoway}} 章）。這時不該合併，要分層分別報告；可以用 Breslow–Day 檢定比較各層勝算比是否相同。</li></ul>
+<p class="note">分層只能處理少數幾個類別型干擾因子；要同時校正很多變數或連續變數時，用邏輯斯迴歸（{{c4-2}} 章）。</p>`,
+    labs: [{ label: '吸菸與心血管事件，依性別分層', ds: 'cvd_cohort', an: 'mh', sel: { r: 'smoker', c: 'cvd_10y', z: 'sex' } }],
+    quiz: [
+      { q: '男女合起來看，男性錄取的勝算比是女性的 1.8 倍；但每個科系內，勝算比都接近 1。最可能的解釋是？', o: ['科系是干擾因子：女性較常申請錄取率低的科系（辛普森悖論）', '分層的計算錯誤', '男性比較優秀', '樣本數太少'], why: '科系同時影響申請者的性別組成與錄取率，未分層的比較混進了科系的影響。' },
+      { q: 'Mantel–Haenszel 勝算比是什麼？', o: ['各層勝算比的加權平均，代表校正分層變數後的共同勝算比', '最大那一層的勝算比', '未分層的勝算比', '各層勝算比相乘'], why: '它把每一層的資訊合併起來，同時排除分層變數的干擾。' },
+      { q: '吸菸與疾病的勝算比在男性是 3.0、在女性是 0.8。應該怎麼報告？', o: ['分別報告兩性的勝算比：這是效果修飾（交互作用）', '只報告 Mantel–Haenszel 合併的勝算比', '取平均 1.9', '刪掉女性'], why: '各層效果明顯不同時，合併成一個數字會掩蓋差異。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -1291,6 +1311,11 @@ const GLOSS = [
   ['勝算', [], '發生的機率 ÷ 不發生的機率，即 p ÷ (1 − p)。', 'c4-2'],
   ['e^β', ['e^'], 'e（約 2.718）的 β 次方，把對數尺度的係數換回「倍數」。', 'c4-2'],
   ['對數概似', ['log-likelihood'], '在某組參數下觀察到這份資料的機率，取對數；越大代表模型越貼合資料。', 'c4-2'],
+  ['分層', ['分層分析'], '依某個變數把資料分成幾層，在每一層裡分別分析。', 'mh'],
+  ['辛普森悖論', [], '合起來看和分層後看，關聯的方向或大小完全不同的現象。', 'mh'],
+  ['Mantel–Haenszel 勝算比', ['Mantel–Haenszel', 'MH 勝算比'], '各層勝算比的加權平均，代表校正分層變數後的共同勝算比。', 'mh'],
+  ['粗勝算比', [], '沒有分層或校正時算出的勝算比。', 'mh'],
+  ['效果修飾', [], '暴露與結果的關聯強弱隨另一個變數而不同，也就是交互作用。', 'mh'],
   ['Kaplan–Meier', ['KM'], '能正確處理設限的存活曲線估計法。', 'c4-3'],
   ['中位存活時間', ['中位存活'], '存活曲線降到 0.5（一半的人發生事件）的時間。', 'c4-3'],
   ['危險比', ['HR'], '兩組在同一時間點事件瞬間發生率的比值。', 'c4-3'],
@@ -1323,7 +1348,7 @@ const ORDER = [
   ['c3-1', 'two-assume', 'nonpar', 'c3-3', 'two-prop', 'mcnemar', 'kappa', 'c3-5'],
   ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff', 'ancova'],
   ['c3-4', 'simple-reg', 'c4-1', 'reg-diag', 'c4-2', 'poisson-reg', 'bland-altman'],
-  ['c4-3'],
+  ['mh', 'c4-3'],
   ['c4-4', 'c4-6'],
   ['c5-2', 'c5-3', 'c5-4', 'c5-5'],
 ];
@@ -1335,7 +1360,7 @@ const REFS = {
   'c2-4': 'Whitlock 第 6 章；Rosner 7.1–7.5；Kirkwood 第 8 章', 'c4-5': 'Whitlock 14.6；Rosner 7.6–7.7、8.9；Kirkwood 第 35 章', 'c5-1': 'Rosner 13.2；Kirkwood 第 34 章',
   'nonpar': 'Whitlock 13.4–13.7；Rosner 9.2–9.4', 'two-prop': 'Rosner 10.2、10.5；Kirkwood 第 16 章', 'kappa': 'Rosner 10.8；Landis & Koch (1977) Biometrics 33:159', 'mcnemar': 'Rosner 10.4；Kirkwood 第 21 章；Agresti, Categorical Data Analysis', 'two-assume': 'Whitlock 13.1–13.3；Rosner 8.6、8.10；Kirkwood 第 13 章', 'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
   'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'bland-altman': 'Kirkwood 第 36 章；Bland & Altman (1986) Lancet 327:307', 'poisson-reg': 'Kirkwood 第 22–24 章；Rosner 14.1–14.3', 'reg-diag': 'Kirkwood 第 12–13 章；Rosner 11.6；Whitlock 17.5–17.6', 'simple-reg': 'Whitlock 第 17 章；Rosner 11.2–11.6；Kirkwood 第 10 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
-  'c4-2': 'Rosner 13.7–13.8；Kirkwood 第 19–20 章', 'c4-3': 'Whitlock 第 21 章；Rosner 14.8–14.11；Kirkwood 第 26–27 章', 'c4-4': 'Benjamini & Hochberg (1995), J R Stat Soc B 57:289–300',
+  'c4-2': 'Rosner 13.7–13.8；Kirkwood 第 19–20 章', 'mh': 'Rosner 13.5–13.6；Kirkwood 第 18 章；Bickel 等 (1975) Science 187:398', 'c4-3': 'Whitlock 第 21 章；Rosner 14.8–14.11；Kirkwood 第 26–27 章', 'c4-4': 'Benjamini & Hochberg (1995), J R Stat Soc B 57:289–300',
   'c4-6': 'Rosner 12.10、13.13–13.14；Kirkwood 第 31 章', 'c5-2': 'Kirkwood 第 38 章；EQUATOR Network', 'c5-3': 'Kirkwood 第 38 章', 'c5-4': 'Kirkwood 第 34、38 章',
 };
 (() => {

@@ -991,6 +991,23 @@ Object.assign(W, {
     };
     el.addEventListener('input', up); up();
   },
+  mhw(el) {
+    el.innerHTML = `<p class="w-cap">兩個科系：容易進的甲系（錄取率約 65%）、難進的乙系（約 25%）。各 500 名男性、500 名女性申請者。</p>
+<div class="w-row">${slider('wmh-f', '女性申請乙系的比例', 0.1, 0.9, 0.05, 0.8)}${slider('wmh-m', '男性申請乙系的比例', 0.1, 0.9, 0.05, 0.2)}${slider('wmh-g', '乙系中男性比女性多錄取（百分點）', -20, 20, 1, 0)}</div>
+<div class="chart-wrap" id="wmh-c"></div><div class="kv" id="wmh-k"></div>`;
+    const up = () => {
+      const fB = sv('wmh-f', v => Math.round(v * 100) + '%'), mB = sv('wmh-m', v => Math.round(v * 100) + '%'), gB = sv('wmh-g') / 100;
+      const cell = (n, p) => [Math.round(n * p), n - Math.round(n * p)];
+      const tA = (() => { const m = cell(500 * (1 - mB), 0.65), f = cell(500 * (1 - fB), 0.65); return [[m[0], f[0]], [m[1], f[1]]]; })(), tB = (() => { const m = cell(500 * mB, 0.25 + gB / 2), f = cell(500 * fB, 0.25 - gB / 2); return [[m[0], f[0]], [m[1], f[1]]]; })();
+      const crude = [[tA[0][0] + tB[0][0], tA[0][1] + tB[0][1]], [tA[1][0] + tB[1][0], tA[1][1] + tB[1][1]]], M = S.mantelHaenszel([tA, tB]);
+      const orOf = ([[a, b], [c, d]]) => { const h = a * b * c * d === 0 ? 0.5 : 0, A = a + h, B = b + h, C = c + h, D = d + h, l = Math.log(A * D / (B * C)), se = Math.sqrt(1 / A + 1 / B + 1 / C + 1 / D); return { est: Math.exp(l), lo: Math.exp(l - 1.96 * se), hi: Math.exp(l + 1.96 * se) }; };
+      const rows = [{ k: 'sa', label: '甲系', ...orOf(tA) }, { k: 'sb', label: '乙系', ...orOf(tB) }, { k: 'crude', label: '兩系合起來（粗）', ...orOf(crude) }, { k: 'mh', label: 'Mantel–Haenszel', est: M.or, lo: M.ci[0], hi: M.ci[1] }];
+      $('#wmh-c').innerHTML = forestChart(rows, '男性錄取的勝算比（相對於女性，對數尺度）');
+      const rate = (t, j) => t[0][j] / (t[0][j] + t[1][j]);
+      $('#wmh-k').innerHTML = kvs([['未分層：男 vs 女錄取率', `${F.n(100 * rate(crude, 0), 1)}% vs ${F.n(100 * rate(crude, 1), 1)}%`, 'crude'], ['甲系的勝算比', F.n(rows[0].est, 2), 'sa'], ['乙系的勝算比', F.n(rows[1].est, 2), 'sb'], ['粗勝算比（未分層）', F.n(rows[2].est, 2), 'crude'], ['Mantel–Haenszel 勝算比', `${F.n(M.or, 2)}（${F.ci(...M.ci, 2)}）`, 'mh']]);
+    };
+    el.addEventListener('input', up); up();
+  },
   mosaic(el) {
     el.innerHTML = `<p class="w-cap">正方形代表全部的人（面積 = 1）。左右寬度是吸菸與不吸菸的比例；每一欄內，紅色的高度是該群中有高血壓的比例。</p>
 <div class="w-row">${slider('wm2-a', 'P(吸菸)', 5, 95, 5, 30, '%')}${slider('wm2-ba', 'P(高血壓 | 吸菸)', 0, 100, 5, 30, '%')}${slider('wm2-bn', 'P(高血壓 | 不吸菸)', 0, 100, 5, 15, '%')}</div>
@@ -1008,5 +1025,5 @@ Object.assign(W, {
   },
 });
 
-const WMAP = { 'bland-altman': ['blandw', '兩台血糖儀'], 'poisson-reg': ['ratew', '發生率與率比'], 'reg-diag': ['regdiagw', '看殘差圖找問題'], 'simple-reg': ['simpleregw', '信賴帶與預測帶'], 'graphs': ['graphsw', '同一份資料，四種圖'], 'kappa': ['kappaw', '兩位病理師的一致性'], 'mcnemar': ['mcnemarw', '只看不一致的人'], 'two-prop': ['twopropw', '兩組反應率'], 'nonpar': ['nonparw', '用名次比較'], 'two-assume': ['twoassume', '轉換與極端值'], 'boot': ['bootw', '重抽 2000 次'], 'gof': ['gofw', '孟德爾的豌豆'], 'binom-test': ['binomtestw', '二項檢定'], 'one-t': ['onetw', '單一樣本 t 檢定'], 'prop-ci': ['propciw', '三種比例信賴區間'], 'tdist': ['tdistw', 't 分佈與常態分佈'], 'poisson': ['poissonw', 'Poisson 分佈與培養皿'], 'binom': ['binomw', '二項分佈'], 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
+const WMAP = { 'mh': ['mhw', '辛普森悖論'], 'bland-altman': ['blandw', '兩台血糖儀'], 'poisson-reg': ['ratew', '發生率與率比'], 'reg-diag': ['regdiagw', '看殘差圖找問題'], 'simple-reg': ['simpleregw', '信賴帶與預測帶'], 'graphs': ['graphsw', '同一份資料，四種圖'], 'kappa': ['kappaw', '兩位病理師的一致性'], 'mcnemar': ['mcnemarw', '只看不一致的人'], 'two-prop': ['twopropw', '兩組反應率'], 'nonpar': ['nonparw', '用名次比較'], 'two-assume': ['twoassume', '轉換與極端值'], 'boot': ['bootw', '重抽 2000 次'], 'gof': ['gofw', '孟德爾的豌豆'], 'binom-test': ['binomtestw', '二項檢定'], 'one-t': ['onetw', '單一樣本 t 檢定'], 'prop-ci': ['propciw', '三種比例信賴區間'], 'tdist': ['tdistw', 't 分佈與常態分佈'], 'poisson': ['poissonw', 'Poisson 分佈與培養皿'], 'binom': ['binomw', '二項分佈'], 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
 for (const [id, [w, t]] of Object.entries(WMAP)) { const c = CH.find(x => x.id === id); c.widget = w; c.wtitle = t; }

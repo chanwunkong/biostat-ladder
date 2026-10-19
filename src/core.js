@@ -213,6 +213,17 @@ const S = (() => {
     const kap = (po - pe) / (1 - pe), se = Math.sqrt(po * (1 - po) / (n * (1 - pe) ** 2));
     return { po, pe, kappa: kap, se, ci: [kap - 1.959964 * se, kap + 1.959964 * se], n };
   }
+  // Mantel–Haenszel：tabs 為各層的 2×2 表 [[a, b], [c, d]]。共同勝算比、Robins–Breslow–Greenland 信賴區間、CMH χ²（含與不含連續性校正）
+  function mantelHaenszel(tabs) {
+    let R = 0, Sx = 0, PR = 0, PSQR = 0, QS = 0, sumA = 0, sumE = 0, sumV = 0;
+    for (const [[a, b], [c, d]] of tabs) {
+      const n = a + b + c + d; if (n < 2) continue;
+      const r = a * d / n, s = b * c / n, P = (a + d) / n, Q = (b + c) / n; R += r; Sx += s; PR += P * r; PSQR += P * s + Q * r; QS += Q * s;
+      sumA += a; sumE += (a + b) * (a + c) / n; sumV += (a + b) * (c + d) * (a + c) * (b + d) / (n * n * (n - 1));
+    }
+    const or = R / Sx, v = PR / (2 * R * R) + PSQR / (2 * R * Sx) + QS / (2 * Sx * Sx), se = Math.sqrt(v), chi2 = (sumA - sumE) ** 2 / sumV, chi2c = Math.max(0, Math.abs(sumA - sumE) - 0.5) ** 2 / sumV;
+    return { or, ci: [or * Math.exp(-1.959964 * se), or * Math.exp(1.959964 * se)], chi2, chi2c, p: pchisq(chi2, 1), pc: pchisq(chi2c, 1) };
+  }
   // 卡方適合度檢定：obs 為各類觀察次數，probs 為預期比例（會自動標準化）
   function gof(obs, probs) { const n = sum(obs), ps = probs.map(p => p / sum(probs)), E = ps.map(p => n * p), chi2 = sum(obs.map((o, i) => (o - E[i]) ** 2 / E[i])), df = obs.length - 1; return { chi2, df, p: pchisq(chi2, df), E, minExp: Math.min(...E) }; }
   // 精確二項檢定（雙尾：加總機率不大於觀察結果的所有結果，與 R 的 binom.test 相同）
@@ -377,7 +388,7 @@ const S = (() => {
   const nProps = (p1, p2, alpha, power) => { const za = qnorm(1 - alpha / 2), zb = qnorm(power), pb = (p1 + p2) / 2; return Math.ceil((za * Math.sqrt(2 * pb * (1 - pb)) + zb * Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))) ** 2 / ((p1 - p2) ** 2)); };
   const powerProps = (p1, p2, n, alpha) => { const za = qnorm(1 - alpha / 2), pb = (p1 + p2) / 2; return pnorm((Math.abs(p1 - p2) * Math.sqrt(n) - za * Math.sqrt(2 * pb * (1 - pb))) / Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))); };
 
-  return { dbinom, pbinom, dpois, ppois, propCI, binomTest, gof, signTest, twoProp, mcnemar, kappa, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, varTest, mannWhitney, oneT, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, slrPredict, logistic, poisson, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
+  return { dbinom, pbinom, dpois, ppois, propCI, binomTest, gof, signTest, twoProp, mcnemar, kappa, mantelHaenszel, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, varTest, mannWhitney, oneT, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, slrPredict, logistic, poisson, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
 })();
 
 /* ---------- 格式 ---------- */
@@ -558,6 +569,7 @@ const DEF = {
   cookDef: 'Cook 距離：刪除某個觀察值後，所有預測值會改變多少的綜合指標；結合殘差大小與槓桿值（x 離平均多遠）。',
   rateRatio: '率比：e 的 β 次方，兩組發生率的比值（其他變數固定時）。', dispDef: '離散度：Pearson χ² 除以自由度；Poisson 模型假設約為 1，明顯大於 1 代表過度離散，標準誤會被低估。',
   baDef: 'Bland–Altman：每個樣本兩方法的差值對兩方法的平均作圖。平均差是系統性偏差；一致性界限 = 平均差 ± 1.96 × 差值的標準差，約 95% 的差值落在其中。差值隨平均變大而變大，代表比例偏差。',
+  mhDef: 'Mantel–Haenszel 勝算比：各層勝算比的加權平均，權重為各層的 b × c ÷ n；等於校正分層變數後的共同勝算比。',
   n: '分析使用的觀察數。', ev: '結果為事件（編碼 1）的人數。',
 };
 const cd = (k, l, v, d) => ({ k, l, v, d });
@@ -1112,6 +1124,27 @@ const AN = {
         tables: [{ head: ['n', '平均差', '差值 SD', '一致性界限下限', '一致性界限上限'], rows: [[idx.length, F.n(bias), F.n(sdd), F.n(loa[0]), F.n(loa[1])]] }],
         write: W2(`${s.a} 與 ${s.b} 的一致性以 Bland–Altman 法評估，計算平均差（偏差）與 95% 一致性界限（平均差 ± 1.96 SD）。`, `平均差 ${F.n(bias)}（95% CI ${F.ci(...ci)}）；95% 一致性界限 ${F.ci(...loa)}；n = ${idx.length}。`,
           `Agreement between ${s.a} and ${s.b} was assessed with the Bland–Altman method (mean difference and 95% limits of agreement, mean difference ± 1.96 SD).`, `Mean difference ${F.n(bias)} (95% CI ${F.cien(...ci)}); 95% limits of agreement ${F.cien(...loa)}; n = ${idx.length}.`),
+      };
+    },
+  },
+  mh: {
+    name: '分層分析（Mantel–Haenszel）', when: '兩個二元變數的關聯，依第三個類別變數分層後合併',
+    fields: [{ k: 'r', label: '暴露（二元）', t: 'bin' }, { k: 'c', label: '結果（二元）', t: 'bin' }, { k: 'z', label: '分層變數', t: 'cat' }],
+    run(ds, s) {
+      if (new Set([s.r, s.c, s.z]).size < 3) throw new Error('三個變數要不同。');
+      const rc = colOf(ds, s.r), cc = colOf(ds, s.c), zc = colOf(ds, s.z), { idx, dropped } = complete(ds, [s.r, s.c, s.z]), Rb = binCode(ds, rc, idx), Cb = binCode(ds, cc, idx), Z = levelsOf(ds, zc, idx);
+      if (Z.length > 12) throw new Error('分層變數超過 12 層。');
+      const tab = ii => { const t = [[0, 0], [0, 0]]; ii.forEach(k => { t[1 - Rb.y[k]][1 - Cb.y[k]]++; }); return t; };
+      const all = idx.map((_, k) => k), crude = tab(all), tabs = Z.map(l => tab(all.filter(k => lab(zc.values[idx[k]]) === l))), M = S.mantelHaenszel(tabs);
+      const orCI = ([[a, b], [c, d]]) => { const h = a * b * c * d === 0 ? 0.5 : 0, [A, B, C, D] = [a + h, b + h, c + h, d + h], l = Math.log(A * D / (B * C)), se = Math.sqrt(1 / A + 1 / B + 1 / C + 1 / D); return { est: Math.exp(l), lo: Math.exp(l - 1.96 * se), hi: Math.exp(l + 1.96 * se) }; };
+      const rows = [...Z.map((l, i) => ({ k: 'z' + i + ' strata', label: `${s.z} = ${l}`, ...orCI(tabs[i]) })), { k: 'crude', label: '未分層（粗勝算比）', ...orCI(crude) }, { k: 'mh', label: 'Mantel–Haenszel 合併', est: M.or, lo: M.ci[0], hi: M.ci[1] }];
+      return {
+        title: `${esc(s.r)} 與 ${esc(s.c)}，依「${esc(s.z)}」分層`, meta: meta(idx.length, dropped), facts: [`勝算比：${esc(s.c)} = ${esc(Cb.ev)} 的勝算，${esc(s.r)} = ${esc(Rb.ev)} 相對於 ${esc(Rb.ref)}`],
+        charts: [{ svg: forestChart(rows, '勝算比（對數尺度）'), cap: '各層的勝算比、未分層的粗勝算比，以及 Mantel–Haenszel 合併的勝算比。' }, { svg: distChart('chi2', M.chi2, 1, 'CMH χ²（自由度 1）'), cap: distCap.chi2 }],
+        cards: [cd('crude', '粗勝算比（未分層）', `${F.n(rows[rows.length - 2].est, 2)}（${F.ci(rows[rows.length - 2].lo, rows[rows.length - 2].hi, 2)}）`, 'or'), cd('strata', '各層勝算比', Z.map((l, i) => `${l} ${F.n(rows[i].est, 2)}`).join('、'), 'or'), cd('mh', 'Mantel–Haenszel 勝算比', `${F.n(M.or, 2)}（${F.ci(...M.ci, 2)}）`, 'mhDef'), cd('p', 'p 值（CMH 檢定）', F.p(M.p), 'p')],
+        tables: [{ head: ['層', `${esc(Rb.ev)}：${esc(Cb.ev)}／總數`, `${esc(Rb.ref)}：${esc(Cb.ev)}／總數`, '勝算比', '95% CI'], rows: [...Z.map((l, i) => { const [[a, b], [c, d]] = tabs[i]; return [esc(l), `${a}/${a + b}`, `${c}/${c + d}`, F.n(rows[i].est, 2), F.ci(rows[i].lo, rows[i].hi, 2)]; }), ['<b>未分層</b>', `${crude[0][0]}/${crude[0][0] + crude[0][1]}`, `${crude[1][0]}/${crude[1][0] + crude[1][1]}`, F.n(rows[Z.length].est, 2), F.ci(rows[Z.length].lo, rows[Z.length].hi, 2)]], foot: `CMH χ²(1) = ${F.n(M.chi2, 2)}，${F.peq(M.p)}；連續性校正 χ² = ${F.n(M.chi2c, 2)}，${F.peq(M.pc)}。` }],
+        write: W2(`${s.r} 與 ${s.c} 的關聯以 ${s.z} 分層，並以 Mantel–Haenszel 法估計共同勝算比（Robins–Breslow–Greenland 信賴區間）與 Cochran–Mantel–Haenszel 檢定。`, `未分層勝算比 ${F.n(rows[Z.length].est, 2)}（95% CI ${F.ci(rows[Z.length].lo, rows[Z.length].hi, 2)}）；依 ${s.z} 分層後 Mantel–Haenszel 勝算比 ${F.n(M.or, 2)}（95% CI ${F.ci(...M.ci, 2)}），CMH χ²(1) = ${F.n(M.chi2, 2)}，${F.peq(M.p)}。`,
+          `The association between ${s.r} and ${s.c} was stratified by ${s.z}; the common odds ratio was estimated by the Mantel–Haenszel method (Robins–Breslow–Greenland confidence interval) and tested with the Cochran–Mantel–Haenszel test.`, `Crude OR ${F.n(rows[Z.length].est, 2)} (95% CI ${F.cien(rows[Z.length].lo, rows[Z.length].hi, 2)}); Mantel–Haenszel OR stratified by ${s.z} ${F.n(M.or, 2)} (95% CI ${F.cien(...M.ci, 2)}); CMH χ²(1) = ${F.n(M.chi2, 2)}, ${F.peq(M.p)}.`),
       };
     },
   },

@@ -158,6 +158,13 @@ near('Poisson 迴歸 outcome2 標準誤', pr.se[1], 0.2022);
 const pr2 = S.poisson([[1, 0], [1, 1]], [15, 30], [Math.log(2500), Math.log(2000)]);
 near('Poisson 迴歸 exp(β) = 率比', Math.exp(pr2.b[1]), (30 / 2000) / (15 / 2500));
 
+// R: mantelhaen.test(UCBAdmissions)；每個科系一層，列＝錄取／拒絕，欄＝男／女
+const ucb = [[[512, 89], [313, 19]], [[353, 17], [207, 8]], [[120, 202], [205, 391]], [[138, 131], [279, 244]], [[53, 94], [138, 299]], [[22, 24], [351, 317]]], mh = S.mantelHaenszel(ucb);
+near('MH 共同勝算比 (UCBAdmissions)', mh.or, 0.9046968);
+near('MH 信賴區間下限', mh.ci[0], 0.7719074);
+near('MH 信賴區間上限', mh.ci[1], 1.0603298);
+near('CMH χ²（連續性校正）', mh.chi2c, 1.4269);
+
 const DS = {};
 for (const m of DATASETS) { const d = m.gen(); DS[m.id] = makeDS({ ...m, head: d.head, rows: d.rows }); }
 const runs = [
@@ -181,6 +188,7 @@ const runs = [
   ['bp_trial', 'ancova', { y: 'sbp_wk12', g: 'group', x: 'sbp_base' }],
   ['ward_inf', 'poisreg', { y: 'infections', xs: ['period', 'icu'], pt: 'patient_days' }],
   ['bp_trial', 'bland', { a: 'sbp_base', b: 'sbp_wk12' }],
+  ['cvd_cohort', 'mh', { r: 'smoker', c: 'cvd_10y', z: 'sex' }],
   ['diet_geno', 'anova2', { y: 'weight_gain_g', a: 'diet', b: 'genotype' }],
 ];
 for (const [id, an, sel] of runs) {
