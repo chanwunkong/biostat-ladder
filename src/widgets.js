@@ -112,14 +112,23 @@ Object.assign(W, {
     el.addEventListener('input', up); up();
   },
   anovavis(el) {
-    const r = rngOf(11), N = normOf(r), z = [0, 1, 2].map(() => std(Array.from({ length: 12 }, () => N())));
-    el.innerHTML = `<div class="w-row">${slider('wa-g', '組間差距', 0, 10, 0.5, 4)}${slider('wa-s', '組內標準差', 1, 10, 0.5, 3)}</div><div class="chart-wrap" id="wa-c"></div><p class="w-cap">粗線是各組平均，虛線是全體平均。</p><div class="fbar" id="wa-f"></div><div class="kv" id="wa-k"></div>`;
+    const r = rngOf(11), N = normOf(r), z = [0, 1, 2].map(() => std(Array.from({ length: 8 }, () => N())));
+    el.innerHTML = `<div class="w-row">${slider('wa-g', '組間差距', 0, 10, 0.5, 4)}${slider('wa-s', '組內標準差', 1, 10, 0.5, 3)}</div><div class="chart-wrap" id="wa-c"></div><p class="w-cap">粗橫線是各組平均，灰色虛線是全體平均。點數字卡，圖上會畫出每個平方和用到的距離。</p><div class="fbar" id="wa-f"></div><div class="kv" id="wa-k"></div>`;
     const up = () => {
-      const gap = sv('wa-g'), s = sv('wa-s'), mu = [30, 30 + gap, 30 + gap / 2], v = z.map((zz, k) => zz.map(x => mu[k] + s * x)), A = S.anova(v), gm = S.mean(v.flat());
-      $('#wa-c').innerHTML = chart({ xcats: ['肥料 A', '肥料 B', '肥料 C'], y: [0, 72], h: 260, ylab: '株高（公分）' }, (X, Y, { M, iw }) => `<line data-k="eta msb" x1="${M.l}" x2="${M.l + iw}" y1="${Y(gm)}" y2="${Y(gm)}" style="stroke:var(--muted);stroke-dasharray:5 4"/>` + v.map((g, k) => g.map((x, i) => `<circle data-k="msw" cx="${X(k) + ((i * 0.618) % 1 - 0.5) * 40}" cy="${Y(x)}" r="3.6" style="fill:${col4(k)};fill-opacity:.6"/>`).join('') + `<line class="hlx" data-k="msb eta" x1="${X(k) + 34}" x2="${X(k) + 34}" y1="${Y(gm)}" y2="${Y(S.mean(g))}" style="stroke:var(--c2);stroke-width:3"/><line data-k="eta msb msw" x1="${X(k) - 30}" x2="${X(k) + 30}" y1="${Y(S.mean(g))}" y2="${Y(S.mean(g))}" style="stroke:${col4(k)};stroke-width:3.5"/>`).join(''));
+      const gap = sv('wa-g'), s = sv('wa-s'), mu = [30, 30 + gap, 30 + gap / 2], v = z.map((zz, k) => zz.map(x => mu[k] + s * x)), A = S.anova(v), gm = S.mean(v.flat()), sst = A.ssb + A.ssw;
+      $('#wa-c').innerHTML = chart({ xcats: ['肥料 A', '肥料 B', '肥料 C'], y: [0, 72], h: 280, ylab: '株高（公分）' }, (X, Y, { M, iw }) => {
+        let g = `<line data-k="eta msb ssb sst" x1="${M.l}" x2="${M.l + iw}" y1="${Y(gm)}" y2="${Y(gm)}" style="stroke:var(--muted);stroke-dasharray:5 4"/>`;
+        v.forEach((grp, k) => {
+          const m = S.mean(grp), xs = grp.map((_, i) => X(k) - 34 + i * 68 / (grp.length - 1));
+          grp.forEach((x, i) => { g += `<line class="hlx" data-k="sst" x1="${xs[i]}" x2="${xs[i]}" y1="${Y(x)}" y2="${Y(gm)}" style="stroke:var(--c4);stroke-width:2"/><line class="hlx" data-k="ssw msw" x1="${xs[i]}" x2="${xs[i]}" y1="${Y(x)}" y2="${Y(m)}" style="stroke:var(--c3);stroke-width:2"/>`; });
+          g += grp.map((x, i) => `<circle data-k="ssw msw sst" cx="${xs[i]}" cy="${Y(x)}" r="3.8" style="fill:${col4(k)};fill-opacity:.75"/>`).join('');
+          g += `<line data-k="eta msb ssb ssw msw" x1="${X(k) - 38}" x2="${X(k) + 38}" y1="${Y(m)}" y2="${Y(m)}" style="stroke:${col4(k)};stroke-width:3.5"/><line class="hlx" data-k="msb ssb eta" x1="${X(k) + 42}" x2="${X(k) + 42}" y1="${Y(gm)}" y2="${Y(m)}" style="stroke:var(--c2);stroke-width:4"/>`;
+        });
+        return g;
+      });
       const mx = Math.max(A.msb, A.msw) || 1;
-      $('#wa-f').innerHTML = `<div data-card="msb" data-k="msb F" role="button" tabindex="0"><span>組間變異</span><i style="width:${100 * A.msb / mx}%;background:var(--c2)"></i><b>${F.n(A.msb, 1)}</b></div><div data-card="msw" data-k="msw F" role="button" tabindex="0"><span>組內變異</span><i style="width:${100 * A.msw / mx}%;background:var(--muted)"></i><b>${F.n(A.msw, 1)}</b></div>`;
-      $('#wa-k').innerHTML = kvs([['F = 組間 ÷ 組內', F.n(A.F, 2), 'F'], ['η²', F.n(A.eta2, 2), 'eta'], ['p 值', F.p(A.p)]]);
+      $('#wa-f').innerHTML = `<div data-card="msb" data-k="msb F" role="button" tabindex="0"><span>組間均方</span><i style="width:${100 * A.msb / mx}%;background:var(--c2)"></i><b>${F.n(A.msb, 1)}</b></div><div data-card="msw" data-k="msw F" role="button" tabindex="0"><span>組內均方</span><i style="width:${100 * A.msw / mx}%;background:var(--muted)"></i><b>${F.n(A.msw, 1)}</b></div>`;
+      $('#wa-k').innerHTML = kvs([['總平方和', F.n(sst, 1), 'sst'], ['組間平方和', F.n(A.ssb, 1), 'ssb'], ['組內平方和', F.n(A.ssw, 1), 'ssw'], ['F = 組間均方 ÷ 組內均方', F.n(A.F, 2), 'F'], ['η²', F.n(A.eta2, 2), 'eta'], ['p 值', F.p(A.p)]]);
     };
     el.addEventListener('input', up); up();
   },

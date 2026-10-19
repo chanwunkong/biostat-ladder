@@ -1628,17 +1628,25 @@ const CH = [
     ],
   },
   {
-    id: 'c3-2', lv: 3, num: '3.2', title: '多組比較：ANOVA',
+    id: 'c3-2', lv: 3, num: '3.2', title: '單因子 ANOVA',
     body: `<p>比較三組以上的平均數時，不要兩兩做 t 檢定：3 組要比 3 次、5 組要比 10 次，每次 5% 的偽陽性累積起來，整體犯錯機率遠超過 5%。</p>
 <p><b>單因子變異數分析（one-way ANOVA）</b>先回答一個整體問題：所有組的平均都相等嗎？</p>
 <div class="formula">F = 組間變異 MS<sub>between</sub> ÷ 組內變異 MS<sub>within</sub></div>
 <p>這個比值叫做 <b>F 值</b>。<b>組間變異</b>是各組平均彼此相差多少；<b>組內變異</b>是同一組內個體之間的分散程度。</p>
+<h3>把總變異拆成兩部分</h3>
+<p>每個值和全體平均的距離，都可以拆成兩段：「這個值 → 它那組的平均」加上「那組的平均 → 全體平均」。把距離平方後加總，就得到三個<b>平方和</b>（sum of squares, SS）：</p>
+<div class="formula">總平方和 = 組間平方和 + 組內平方和<br>SS<sub>總</sub> = Σ(每個值 − 全體平均)²<br>SS<sub>組間</sub> = Σ 每組人數 × (組平均 − 全體平均)²<br>SS<sub>組內</sub> = Σ(每個值 − 自己那組的平均)²</div>
+<p>平方和會隨人數和組數變大，所以要除以各自的自由度，得到<b>均方</b>（mean square, MS）：組間自由度 = 組數 − 1，組內自由度 = 總人數 − 組數。F 就是兩個均方相除：</p>
+<div class="tbl-wrap"><table class="st"><thead><tr><th>來源</th><th>SS</th><th>自由度</th><th>MS = SS ÷ 自由度</th><th>F</th></tr></thead><tbody><tr><td>組間</td><td>120</td><td>3 − 1 = 2</td><td>60</td><td>60 ÷ 10 = 6.0</td></tr><tr><td>組內</td><td>270</td><td>30 − 3 = 27</td><td>10</td><td></td></tr><tr><td>總和</td><td>390</td><td>29</td><td></td><td></td></tr></tbody></table></div>
+<p class="w-cap">例：3 組、每組 10 株。這就是論文和統計軟體輸出的「ANOVA 表」。</p>
+<p>只有兩組時，ANOVA 和等變異的 t 檢定是同一件事：F 剛好等於 t²，p 值也相同。</p>
 <p>F 大，表示組間差異遠大於組內的隨機波動，至少有一組不同。但 ANOVA 不告訴你<b>哪幾組</b>不同，需要<b>事後比較</b>（post hoc）：例如 Tukey HSD，或兩兩比較後以 Holm／Bonferroni 校正。本站實驗室使用兩兩 Welch t 檢定加 Holm 校正。</p>
 <p>效果量 η²（eta squared）= SS<sub>between</sub> ÷ SS<sub>total</sub>，即分組能解釋的變異比例。</p>
 <p class="note">若有兩個因子（例如肥料 × 品種）用二因子 ANOVA；若有區集或重複測量，要用含區集的模型或混合模型（見 {{c4-6}}）。在實驗室中，可以把區集當作線性迴歸的一個變數。</p>`,
     labs: [{ label: '比較四種肥料的株高', ds: 'plant_growth', an: 'anova', sel: { y: 'height_cm', g: 'fertilizer' } }, { label: '加入區集與 pH 的迴歸', ds: 'plant_growth', an: 'linreg', sel: { y: 'height_cm', xs: ['fertilizer', 'block', 'soil_ph'] } }],
     quiz: [
       { q: '4 組兩兩做 t 檢定，總共需要幾次？', o: ['6', '4', '8', '12'], why: '4 取 2 = 6 次。' },
+      { q: '組間平方和 = 120、組內平方和 = 480，η² 是多少？', o: ['0.2', '0.25', '4', '600'], why: '總平方和 = 120 + 480 = 600；η² = 組間平方和 ÷ 總平方和 = 120 ÷ 600 = 0.2，分組解釋了 20% 的變異。' },
       { q: 'ANOVA 得到 p < 0.001，代表？', o: ['至少有一組平均與其他組不同', '所有組彼此都不同', '對照組最差', '資料是常態'], why: 'ANOVA 是整體檢定；要知道哪幾組不同，需看事後比較。' },
     ],
   },
@@ -1958,7 +1966,9 @@ const GLOSS = [
   ['配對 t 檢定', ['配對'], '同一個體測兩次時，分析「每個人的變化量」的 t 檢定。', 'c3-1'],
   ['Welch', [], '不假設兩組變異數相等的 t 檢定版本。', 'c3-1'],
   ['ANOVA', ['變異數分析'], '一次比較三組以上平均數的方法。', 'c3-2'],
-  ['F 值', ['F ='], '組間變異 ÷ 組內變異。', 'c3-2'],
+  ['F 值', ['F ='], '組間均方 ÷ 組內均方。', 'c3-2'],
+  ['平方和', ['SS'], '把距離平方後加總。ANOVA 把總平方和拆成組間平方和與組內平方和。', 'c3-2'],
+  ['均方', ['MS'], '平方和 ÷ 自由度。', 'c3-2'],
   ['η²', ['eta squared'], '組間平方和 ÷ 總平方和：分組能解釋的變異比例。', 'c3-2'],
   ['組間變異', [], '各組平均彼此相差多少。', 'c3-2'],
   ['組內變異', [], '同一組內個體之間的分散程度。', 'c3-2'],
@@ -2406,14 +2416,23 @@ Object.assign(W, {
     el.addEventListener('input', up); up();
   },
   anovavis(el) {
-    const r = rngOf(11), N = normOf(r), z = [0, 1, 2].map(() => std(Array.from({ length: 12 }, () => N())));
-    el.innerHTML = `<div class="w-row">${slider('wa-g', '組間差距', 0, 10, 0.5, 4)}${slider('wa-s', '組內標準差', 1, 10, 0.5, 3)}</div><div class="chart-wrap" id="wa-c"></div><p class="w-cap">粗線是各組平均，虛線是全體平均。</p><div class="fbar" id="wa-f"></div><div class="kv" id="wa-k"></div>`;
+    const r = rngOf(11), N = normOf(r), z = [0, 1, 2].map(() => std(Array.from({ length: 8 }, () => N())));
+    el.innerHTML = `<div class="w-row">${slider('wa-g', '組間差距', 0, 10, 0.5, 4)}${slider('wa-s', '組內標準差', 1, 10, 0.5, 3)}</div><div class="chart-wrap" id="wa-c"></div><p class="w-cap">粗橫線是各組平均，灰色虛線是全體平均。點數字卡，圖上會畫出每個平方和用到的距離。</p><div class="fbar" id="wa-f"></div><div class="kv" id="wa-k"></div>`;
     const up = () => {
-      const gap = sv('wa-g'), s = sv('wa-s'), mu = [30, 30 + gap, 30 + gap / 2], v = z.map((zz, k) => zz.map(x => mu[k] + s * x)), A = S.anova(v), gm = S.mean(v.flat());
-      $('#wa-c').innerHTML = chart({ xcats: ['肥料 A', '肥料 B', '肥料 C'], y: [0, 72], h: 260, ylab: '株高（公分）' }, (X, Y, { M, iw }) => `<line data-k="eta msb" x1="${M.l}" x2="${M.l + iw}" y1="${Y(gm)}" y2="${Y(gm)}" style="stroke:var(--muted);stroke-dasharray:5 4"/>` + v.map((g, k) => g.map((x, i) => `<circle data-k="msw" cx="${X(k) + ((i * 0.618) % 1 - 0.5) * 40}" cy="${Y(x)}" r="3.6" style="fill:${col4(k)};fill-opacity:.6"/>`).join('') + `<line class="hlx" data-k="msb eta" x1="${X(k) + 34}" x2="${X(k) + 34}" y1="${Y(gm)}" y2="${Y(S.mean(g))}" style="stroke:var(--c2);stroke-width:3"/><line data-k="eta msb msw" x1="${X(k) - 30}" x2="${X(k) + 30}" y1="${Y(S.mean(g))}" y2="${Y(S.mean(g))}" style="stroke:${col4(k)};stroke-width:3.5"/>`).join(''));
+      const gap = sv('wa-g'), s = sv('wa-s'), mu = [30, 30 + gap, 30 + gap / 2], v = z.map((zz, k) => zz.map(x => mu[k] + s * x)), A = S.anova(v), gm = S.mean(v.flat()), sst = A.ssb + A.ssw;
+      $('#wa-c').innerHTML = chart({ xcats: ['肥料 A', '肥料 B', '肥料 C'], y: [0, 72], h: 280, ylab: '株高（公分）' }, (X, Y, { M, iw }) => {
+        let g = `<line data-k="eta msb ssb sst" x1="${M.l}" x2="${M.l + iw}" y1="${Y(gm)}" y2="${Y(gm)}" style="stroke:var(--muted);stroke-dasharray:5 4"/>`;
+        v.forEach((grp, k) => {
+          const m = S.mean(grp), xs = grp.map((_, i) => X(k) - 34 + i * 68 / (grp.length - 1));
+          grp.forEach((x, i) => { g += `<line class="hlx" data-k="sst" x1="${xs[i]}" x2="${xs[i]}" y1="${Y(x)}" y2="${Y(gm)}" style="stroke:var(--c4);stroke-width:2"/><line class="hlx" data-k="ssw msw" x1="${xs[i]}" x2="${xs[i]}" y1="${Y(x)}" y2="${Y(m)}" style="stroke:var(--c3);stroke-width:2"/>`; });
+          g += grp.map((x, i) => `<circle data-k="ssw msw sst" cx="${xs[i]}" cy="${Y(x)}" r="3.8" style="fill:${col4(k)};fill-opacity:.75"/>`).join('');
+          g += `<line data-k="eta msb ssb ssw msw" x1="${X(k) - 38}" x2="${X(k) + 38}" y1="${Y(m)}" y2="${Y(m)}" style="stroke:${col4(k)};stroke-width:3.5"/><line class="hlx" data-k="msb ssb eta" x1="${X(k) + 42}" x2="${X(k) + 42}" y1="${Y(gm)}" y2="${Y(m)}" style="stroke:var(--c2);stroke-width:4"/>`;
+        });
+        return g;
+      });
       const mx = Math.max(A.msb, A.msw) || 1;
-      $('#wa-f').innerHTML = `<div data-card="msb" data-k="msb F" role="button" tabindex="0"><span>組間變異</span><i style="width:${100 * A.msb / mx}%;background:var(--c2)"></i><b>${F.n(A.msb, 1)}</b></div><div data-card="msw" data-k="msw F" role="button" tabindex="0"><span>組內變異</span><i style="width:${100 * A.msw / mx}%;background:var(--muted)"></i><b>${F.n(A.msw, 1)}</b></div>`;
-      $('#wa-k').innerHTML = kvs([['F = 組間 ÷ 組內', F.n(A.F, 2), 'F'], ['η²', F.n(A.eta2, 2), 'eta'], ['p 值', F.p(A.p)]]);
+      $('#wa-f').innerHTML = `<div data-card="msb" data-k="msb F" role="button" tabindex="0"><span>組間均方</span><i style="width:${100 * A.msb / mx}%;background:var(--c2)"></i><b>${F.n(A.msb, 1)}</b></div><div data-card="msw" data-k="msw F" role="button" tabindex="0"><span>組內均方</span><i style="width:${100 * A.msw / mx}%;background:var(--muted)"></i><b>${F.n(A.msw, 1)}</b></div>`;
+      $('#wa-k').innerHTML = kvs([['總平方和', F.n(sst, 1), 'sst'], ['組間平方和', F.n(A.ssb, 1), 'ssb'], ['組內平方和', F.n(A.ssw, 1), 'ssw'], ['F = 組間均方 ÷ 組內均方', F.n(A.F, 2), 'F'], ['η²', F.n(A.eta2, 2), 'eta'], ['p 值', F.p(A.p)]]);
     };
     el.addEventListener('input', up); up();
   },
@@ -2825,6 +2844,7 @@ const QD = {
   ],
   'c3-2': [
     { q: '組間差距固定為 4，把組內標準差從 3 調到 8，F 值會？', o: ['變小', '變大', '不變', '變成負數'], why: 'F = 組間變異 ÷ 組內變異；分母變大，F 就變小，三組變得難以區分。', demo: { set: { 'wa-g': 4, 'wa-s': 8 }, look: '看灰色的組內變異長條變長，F 值下降。' } },
+    { demo: { set: { 'wa-g': 4, 'wa-s': 3 }, look: '點「總平方和」「組間平方和」「組內平方和」三張卡，看每一段距離怎麼加起來；η² 就是組間占總和的比例。' } },
     { demo: { set: { 'wa-g': 8, 'wa-s': 3 }, look: '三組平均明顯分開時 p 很小，但 A 與 C 的差距比 A 與 B 小：ANOVA 不會告訴你是哪幾組不同。' } },
   ],
   'c3-3': [
