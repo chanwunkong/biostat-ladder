@@ -166,7 +166,7 @@ Object.assign(W, {
     const R = (m, note, an) => ({ m, note, an });
     const T = { q: '你的結果變數是什麼？', o: [
       ['數值（血壓、體重、表現量）', { q: '你要比較什麼？', o: [['兩組不同個體', R('Welch t 檢定', '樣本小又明顯偏態：Mann–Whitney U', 'ttest')], ['同一個體測兩次', R('配對 t 檢定', '明顯偏態：Wilcoxon 符號等級檢定', 'paired')], ['三組以上', R('單因子 ANOVA', '偏態：Kruskal–Wallis；事後比較要校正多重比較', 'anova')], ['與另一個數值變數的關係', R('相關分析或線性迴歸', '需要校正干擾因子時用線性迴歸', 'corr')]] }],
-      ['二元（有／無）', { q: '需要校正其他變數嗎？', o: [['不用，比較兩組比例', R('卡方檢定', '任一格期望值小於 5 時用 Fisher 精確檢定', 'chisq')], ['要校正', R('邏輯斯迴歸', '每個參數至少約 10 個事件', 'logreg')]] }],
+      ['二元（有／無）', { q: '需要校正其他變數嗎？', o: [['不用，比較兩組比例', R('卡方檢定', '任一格期望次數小於 5 時用 Fisher 精確檢定', 'chisq')], ['要校正', R('邏輯斯迴歸', '每個參數至少約 10 個事件', 'logreg')]] }],
       ['時間至事件（存活、復發）', { q: '需要校正其他變數嗎？', o: [['不用，比較組別', R('Kaplan–Meier + log-rank 檢定', '', 'surv')], ['要校正', R('Cox 比例風險模型', '記得檢查比例風險假設', 'surv')]] }],
       ['同一個體多次測量，或群集資料', R('混合模型或 GEE', '本站沒有實作；替代做法是把每個群集摘要成一個數再分析', '')],
     ] };
@@ -729,6 +729,24 @@ Object.assign(W, {
     el.addEventListener('input', e => { if (e.target.type === 'range') up(e.target.id === 'wps2-l'); });
     $('#wps2-go', el).onclick = () => up(true); up(true);
   },
+  tdistw(el) {
+    el.innerHTML = `<div class="w-row">${slider('wtd-df', '自由度（n − 1）', 1, 60, 1, 4)}</div><div class="chart-wrap" id="wtd-c"></div>
+<div class="w-row"><button class="btn" type="button" id="wtd-go">模擬 2000 個樣本：誤用 1.96 時，95% 信賴區間的實際涵蓋率</button></div><div class="kv" id="wtd-k"></div>`;
+    let cov = null;
+    const up = () => {
+      const df = sv('wtd-df'), tc = S.qt(0.975, df), tail = 2 * (1 - S.pt(1.96, df)), npdf = x => Math.exp(-x * x / 2) / Math.sqrt(2 * Math.PI);
+      $('#wtd-c').innerHTML = chart({ x: [-5, 5], y: [0, 0.42], noY: true, h: 230, xlab: 't 值' }, (X, Y) => {
+        const curve = f => { let q = ''; for (let i = 0; i <= 200; i++) { const x = -5 + 10 * i / 200; q += `${i ? 'L' : 'M'}${X(x).toFixed(1)} ${Y(f(x)).toFixed(1)}`; } return q; };
+        const area = (f, a, b) => { let q = `M${X(a)} ${Y(0)}`; for (let i = 0; i <= 60; i++) { const x = a + (b - a) * i / 60; q += `L${X(x).toFixed(1)} ${Y(f(x)).toFixed(1)}`; } return q + `L${X(b)} ${Y(0)}Z`; };
+        const tp = x => S.tpdf(x, df);
+        return `<path data-k="tail" d="${area(tp, 1.96, 5)}${area(tp, -5, -1.96)}" style="fill:var(--c2);fill-opacity:.35"/><path data-k="norm" class="keep" d="${curve(npdf)}" style="fill:none;stroke:var(--muted);stroke-width:2;stroke-dasharray:6 4"/><path class="keep" d="${curve(tp)}" style="fill:none;stroke:var(--c1);stroke-width:2.5"/>`
+          + [-1, 1].map(s => `<line data-k="norm" x1="${X(1.96 * s)}" x2="${X(1.96 * s)}" y1="${Y(0)}" y2="${Y(0.2)}" style="stroke:var(--muted);stroke-width:2"/><line data-k="tc" x1="${X(Math.min(5, tc) * s)}" x2="${X(Math.min(5, tc) * s)}" y1="${Y(0)}" y2="${Y(0.2)}" style="stroke:var(--c1);stroke-width:2.5"/>`).join('');
+      });
+      $('#wtd-k').innerHTML = kvs([['t 分佈的 95% 臨界值', F.n(tc, 3), 'tc'], ['常態分佈的臨界值', '1.960', 'norm'], ['t 分佈中 |t| > 1.96 的機率', F.n(100 * tail, 1) + '%', 'tail'], ['誤用 1.96 的信賴區間涵蓋率（模擬）', cov ? F.n(100 * cov[0], 1) + '%' : '按上方按鈕', 'tail'], ['用 t 臨界值的信賴區間涵蓋率（模擬）', cov ? F.n(100 * cov[1], 1) + '%' : '按上方按鈕', 'tc']]);
+    };
+    $('#wtd-go', el).onclick = () => { const df = +$('#wtd-df').value, n = df + 1, tc = S.qt(0.975, df); let a = 0, b = 0; for (let r = 0; r < 2000; r++) { const x = Array.from({ length: n }, rnorm), m = S.mean(x), se = S.sd(x) / Math.sqrt(n); if (Math.abs(m) <= 1.96 * se) a++; if (Math.abs(m) <= tc * se) b++; } cov = [a / 2000, b / 2000]; up(); };
+    $('#wtd-df').oninput = () => { cov = null; up(); }; up();
+  },
   mosaic(el) {
     el.innerHTML = `<p class="w-cap">正方形代表全部的人（面積 = 1）。左右寬度是吸菸與不吸菸的比例；每一欄內，紅色的高度是該群中有高血壓的比例。</p>
 <div class="w-row">${slider('wm2-a', 'P(吸菸)', 5, 95, 5, 30, '%')}${slider('wm2-ba', 'P(高血壓 | 吸菸)', 0, 100, 5, 30, '%')}${slider('wm2-bn', 'P(高血壓 | 不吸菸)', 0, 100, 5, 15, '%')}</div>
@@ -746,5 +764,5 @@ Object.assign(W, {
   },
 });
 
-const WMAP = { 'poisson': ['poissonw', 'Poisson 分佈與培養皿'], 'binom': ['binomw', '二項分佈'], 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
+const WMAP = { 'tdist': ['tdistw', 't 分佈與常態分佈'], 'poisson': ['poissonw', 'Poisson 分佈與培養皿'], 'binom': ['binomw', '二項分佈'], 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
 for (const [id, [w, t]] of Object.entries(WMAP)) { const c = CH.find(x => x.id === id); c.widget = w; c.wtitle = t; }

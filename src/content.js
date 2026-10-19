@@ -744,6 +744,21 @@ const CH = [
       { q: '突變率 0.001，檢查 2,000 個細胞。突變細胞數最適合用哪個分佈近似？', o: ['λ = 2 的 Poisson 分佈', '平均 2000 的常態分佈', 'p = 0.5 的二項分佈', '均勻分佈'], why: 'n 很大、p 很小時，二項分佈可用 λ = n × p = 2 的 Poisson 分佈近似。' },
     ],
   },
+  {
+    id: 'tdist', title: 't 分佈',
+    body: `<p>計算平均數的信賴區間時，理想上要用母體標準差 σ，但 σ 幾乎永遠不知道，只能用樣本標準差 s 代替。s 本身也是估計出來的、會有誤差，所以 (x̄ − μ) ÷ (s ÷ √n) 的分佈比標準常態分佈更分散，叫做 <b>t 分佈</b>。</p>
+<h3>t 分佈的特性</h3>
+<ul><li>和常態分佈一樣是左右對稱的鐘形，中心在 0。</li><li>尾巴比較「厚」：極端值出現的機率比常態分佈高，所以臨界值比 1.96 大。</li><li>形狀由<b>自由度</b>決定，估計一個平均數時自由度 = n − 1。自由度越大，越接近常態分佈；自由度超過 30 左右時已經非常接近。</li></ul>
+<h3>臨界值</h3>
+<div class="tbl-wrap"><table class="st"><thead><tr><th>自由度</th><th>2</th><th>4</th><th>9</th><th>19</th><th>29</th><th>99</th><th>∞（常態）</th></tr></thead><tbody><tr><td>95% 雙尾的<b>臨界值</b></td><td>4.30</td><td>2.78</td><td>2.26</td><td>2.09</td><td>2.05</td><td>1.98</td><td>1.96</td></tr></tbody></table></div>
+<p>所以 n = 10 時，平均數的 95% 信賴區間是 x̄ ± 2.26 × s ÷ √n，而不是 ± 1.96。樣本越小，差別越大。</p>
+<p class="note">小樣本卻用 1.96，信賴區間會太窄，實際涵蓋真值的比例低於 95%。上方模擬可以直接看到這個差距。t 檢定（{{c3-1}} 章）的 p 值也是用 t 分佈計算的。</p>`,
+    quiz: [
+      { q: '為什麼小樣本計算平均數的信賴區間時，要用 t 分佈的臨界值而不是 1.96？', o: ['用樣本標準差 s 代替 σ 帶來額外的不確定性，t 分佈的尾巴比較厚', '因為小樣本的資料一定不是常態', '因為 t 分佈比較窄，區間會更精確', '1.96 只能用在比例'], why: 's 也是估計值；t 分佈把這個額外的不確定性算進去，臨界值因此比 1.96 大。' },
+      { q: '自由度越來越大時，t 分佈會？', o: ['越來越接近標準常態分佈', '越來越偏', '尾巴越來越厚', '中心往右移'], why: '樣本大時 s 很接近 σ，t 分佈就和常態分佈幾乎一樣。' },
+      { q: 'n = 10，平均數 95% 信賴區間的臨界值約是多少？', o: ['2.26', '1.96', '2.09', '1.645'], why: '自由度 = 10 − 1 = 9，t₀.₉₇₅,₉ ≈ 2.26。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -879,6 +894,8 @@ const GLOSS = [
   ['中央極限定理', [], '樣本數夠大時，不論原始資料長什麼樣子，樣本平均數的分佈都接近常態。', 'c2-2'],
   ['標準誤', ['SE'], '樣本平均數的標準差：σ ÷ √n。描述「平均數這個估計值」有多不確定。', 'c2-2'],
   ['信賴區間', ['CI'], '估計值 ± 臨界值 × 標準誤。以同樣方法重複研究時，95% 的區間會涵蓋真值。', 'c2-3'],
+  ['t 分佈', [], '用樣本標準差代替母體標準差時，標準化平均數的分佈；尾巴比常態分佈厚，形狀由自由度決定。', 'tdist'],
+  ['臨界值', [], '信賴區間或檢定所用的分界值，例如 95% 雙尾的常態臨界值 1.96。', 'tdist'],
   ['虛無假設', ['H0', 'H₀'], '「沒有差異、沒有效果」的假設，檢定是以它為出發點計算的。', 'c2-4'],
   ['p 值', ['p = ', 'p < '], '假設虛無假設為真時，得到至少這麼極端結果的機率。', 'c2-4'],
   ['顯著水準', ['α'], '事先定好的門檻（通常 0.05）：p 值小於它就拒絕虛無假設。', 'c2-4'],
@@ -950,7 +967,7 @@ const ORDER = [
   ['c0-1', 'c0-2', 'c0-3', 'c0-4'],
   ['c1-1', 'c1-2', 'c1-3', 'c1-4', 'c1-5'],
   ['prob-rules', 'c2-1', 'roc', 'rv', 'binom', 'poisson'],
-  ['c2-2', 'c2-3', 'c2-4', 'c4-5', 'c5-1'],
+  ['c2-2', 'c2-3', 'tdist', 'c2-4', 'c4-5', 'c5-1'],
   ['c3-1', 'c3-3', 'c3-5'],
   ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff', 'ancova'],
   ['c3-4', 'c4-1', 'c4-2'],
@@ -962,7 +979,7 @@ const ORDER = [
 const REFS = {
   'c0-1': 'Rosner 3.10', 'c1-1': 'Whitlock 第 1 章；Kirkwood 第 2 章', 'c1-2': 'Whitlock 第 3 章；Rosner 2.2–2.3；Kirkwood 第 4 章',
   'c1-3': 'Whitlock 第 3 章；Rosner 2.4–2.5；Kirkwood 第 4 章', 'c1-4': 'Whitlock 第 10 章；Rosner 第 5 章；Kirkwood 第 5 章', 'c1-5': 'Kirkwood 第 34 章',
-  'prob-rules': 'Whitlock 第 5 章；Rosner 3.2–3.6', 'roc': 'Rosner 3.9；UTHealth GSBS 課綱第 10 週', 'rv': 'Rosner 4.2–4.6', 'binom': 'Whitlock 7.1；Rosner 4.7–4.9、5.7；Kirkwood 第 15 章', 'poisson': 'Whitlock 8.4；Rosner 4.10–4.13；Kirkwood 第 22 章', 'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
+  'prob-rules': 'Whitlock 第 5 章；Rosner 3.2–3.6', 'roc': 'Rosner 3.9；UTHealth GSBS 課綱第 10 週', 'rv': 'Rosner 4.2–4.6', 'binom': 'Whitlock 7.1；Rosner 4.7–4.9、5.7；Kirkwood 第 15 章', 'poisson': 'Whitlock 8.4；Rosner 4.10–4.13；Kirkwood 第 22 章', 'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'tdist': 'Whitlock 11.1；Rosner 6.5', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
   'c2-4': 'Whitlock 第 6 章；Rosner 7.1–7.5；Kirkwood 第 8 章', 'c4-5': 'Whitlock 14.6；Rosner 7.6–7.7、8.9；Kirkwood 第 35 章', 'c5-1': 'Rosner 13.2；Kirkwood 第 34 章',
   'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
   'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',

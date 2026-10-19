@@ -2,6 +2,11 @@
    每題的 demo：set = 設定輸入元件（id → 值）；click = 依序點擊的按鈕；custom = 交給互動圖自己的 _demo()；look = 示範時的觀察提示。
    有 q 的項目會整題替換（原題無法在圖上示範時）。 */
 const QD = {
+  'tdist': [
+    { demo: { set: { 'wtd-df': 4 }, then: ['#wtd-go'], look: '自由度 4（n = 5）：藍色 t 分佈的尾巴比灰色常態厚。模擬中誤用 1.96 的涵蓋率明顯低於 95%。' } },
+    { demo: { set: { 'wtd-df': 60 }, look: '自由度 60：t 分佈和常態分佈幾乎重疊，臨界值接近 1.96。' } },
+    { demo: { set: { 'wtd-df': 9 }, look: '自由度 9（n = 10）：點「t 分佈的 95% 臨界值」。' } },
+  ],
   'poisson': [
     { demo: { click: ['#wps2-m [data-m="rand"]'], set: { 'wps2-l': 3, 'wps2-k': 2 }, look: '點「P(X = k)」：λ = 3 時，恰好 2 次的機率約 0.224。' } },
     { demo: { click: ['#wps2-m [data-m="clump"]'], set: { 'wps2-l': 2, 'wps2-k': 2 }, look: '成團聚集：很多格是 0，少數格很多；每格變異數遠大於平均，直方圖不符合藍色的 Poisson 曲線。' } },
