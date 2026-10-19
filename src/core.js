@@ -116,6 +116,16 @@ const S = (() => {
     }
     return { pairs: out, qcrit: qc, df: A.df2, msw: A.msw };
   }
+  // 二因子 ANOVA（含交互作用）。a、b 為各觀察值所屬水準的編號（0 起算）。
+  // 以模型比較計算 Type II 平方和：主效果各自校正另一個主效果，交互作用校正兩個主效果；平衡設計時與 R 的 aov() 相同
+  function twoway(y, a, b) {
+    const na = Math.max(...a) + 1, nb = Math.max(...b) + 1, N = y.length;
+    const cols = (useA, useB, useAB) => y.map((_, i) => { const r = [1]; if (useA) for (let l = 1; l < na; l++) r.push(a[i] === l ? 1 : 0); if (useB) for (let l = 1; l < nb; l++) r.push(b[i] === l ? 1 : 0); if (useAB) for (let l = 1; l < na; l++) for (let m = 1; m < nb; m++) r.push(a[i] === l && b[i] === m ? 1 : 0); return r; });
+    const rss = X => { const XtX = X[0].map((_, p) => X[0].map((__, q) => X.reduce((s, r) => s + r[p] * r[q], 0))), Xty = X[0].map((_, p) => X.reduce((s, r, i) => s + r[p] * y[i], 0)), V = inv(XtX), bb = V.map(r => dot(r, Xty)); return y.reduce((s, v, i) => s + (v - dot(X[i], bb)) ** 2, 0); };
+    const rFull = rss(cols(1, 1, 1)), rAB = rss(cols(1, 1, 0)), rA = rss(cols(1, 0, 0)), rB = rss(cols(0, 1, 0)), my = mean(y), sst = y.reduce((s, v) => s + (v - my) ** 2, 0);
+    const dfE = N - na * nb, mse = rFull / dfE, row = (ss, df) => ({ ss, df, ms: ss / df, F: ss / df / mse, p: pf(ss / df / mse, df, dfE) });
+    return { A: row(rB - rAB, na - 1), B: row(rA - rAB, nb - 1), AB: row(rAB - rFull, (na - 1) * (nb - 1)), E: { ss: rFull, df: dfE, ms: mse }, sst };
+  }
   // Welch ANOVA（不假設各組變異數相等；R 的 oneway.test(var.equal = FALSE)）
   function welchAnova(groups) {
     const k = groups.length, n = groups.map(g => g.length), m = groups.map(mean), w = groups.map((g, i) => n[i] / variance(g)), W = sum(w);
@@ -274,7 +284,7 @@ const S = (() => {
   const nProps = (p1, p2, alpha, power) => { const za = qnorm(1 - alpha / 2), zb = qnorm(power), pb = (p1 + p2) / 2; return Math.ceil((za * Math.sqrt(2 * pb * (1 - pb)) + zb * Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))) ** 2 / ((p1 - p2) ** 2)); };
   const powerProps = (p1, p2, n, alpha) => { const za = qnorm(1 - alpha / 2), pb = (p1 + p2) / 2; return pnorm((Math.abs(p1 - p2) * Math.sqrt(n) - za * Math.sqrt(2 * pb * (1 - pb))) / Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))); };
 
-  return { lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, mannWhitney, pairedT, wilcoxonSR, anova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
+  return { lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, mannWhitney, pairedT, wilcoxonSR, anova, twoway, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
 })();
 
 /* ---------- 格式 ---------- */
@@ -400,6 +410,20 @@ function cld(means, sig) {
   const max = runs.filter((r, i) => !runs.some((o, j) => j !== i && o[0] <= r[0] && o[1] >= r[1] && (o[0] < r[0] || o[1] > r[1]))).filter((r, i, arr) => arr.findIndex(o => o[0] === r[0] && o[1] === r[1]) === i);
   const L = new Array(k).fill(''); max.forEach((r, li) => { for (let t = r[0]; t <= r[1]; t++) L[ord[t]] += String.fromCharCode(97 + li); }); return L;
 }
+// 交互作用圖：x 軸為因子 A，每條線為因子 B 的一個水準。cells[i][j] 為 A 第 i 水準、B 第 j 水準的資料
+// data-k：b{j} 各線；mainA 因子 A 的邊際平均（◆）；mainB 因子 B 的邊際平均（虛線）；inter 「沒有交互作用時」的平行參考線與偏離量
+function interPlot(La, Lb, cells, ylab, extra) {
+  const [mn, mx] = S.minmax(cells.flat(2)), mean = (i, j) => S.mean(cells[i][j]);
+  return chart({ xcats: La, y: [mn, mx], ylab, h: 320 }, (X, Y, ctx) => {
+    let g = '';
+    La.forEach((_, i) => Lb.forEach((__, j) => cells[i][j].forEach((v, k) => { g += `<circle cx="${(X(i) + (j - (Lb.length - 1) / 2) * 16 + (((k * 0.618) % 1) - 0.5) * 10).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="2.4" style="fill:${col4(j)};fill-opacity:.3"/>`; })));
+    Lb.forEach((_, j) => { const mb = S.mean(La.flatMap((__, i) => cells[i][j])); g += `<line class="hlx" data-k="mainB" x1="${X(0) - 20}" x2="${X(La.length - 1) + 20}" y1="${Y(mb)}" y2="${Y(mb)}" style="stroke:${col4(j)};stroke-width:2;stroke-dasharray:6 4"/>`; });
+    for (let j = 1; j < Lb.length; j++) { const sh = S.mean(La.map((__, i) => mean(i, j) - mean(i, 0))); g += `<path class="hlx" data-k="inter" d="${La.map((__, i) => `${i ? 'L' : 'M'}${X(i)} ${Y(mean(i, 0) + sh)}`).join('')}" style="fill:none;stroke:${col4(j)};stroke-width:2;stroke-dasharray:4 4"/>` + La.map((__, i) => `<line class="hlx" data-k="inter" x1="${X(i) + 10}" x2="${X(i) + 10}" y1="${Y(mean(i, 0) + sh)}" y2="${Y(mean(i, j))}" style="stroke:var(--c2);stroke-width:3.5"/>`).join(''); }
+    Lb.forEach((_, j) => { g += `<g data-k="b${j}"><path d="${La.map((__, i) => `${i ? 'L' : 'M'}${X(i)} ${Y(mean(i, j))}`).join('')}" style="fill:none;stroke:${col4(j)};stroke-width:3"/>${La.map((__, i) => `<circle cx="${X(i)}" cy="${Y(mean(i, j))}" r="5.5" style="fill:${col4(j)}"/>`).join('')}</g>`; });
+    La.forEach((_, i) => { const ma = S.mean(Lb.flatMap((__, j) => cells[i][j])); g += `<path class="hlx" data-k="mainA" d="M${X(i)} ${Y(ma) - 8}l8 8l-8 8l-8 -8z" style="fill:var(--ink)"/>`; });
+    return g + (extra ? extra(X, Y, ctx, mean) : '');
+  });
+}
 // 常態 Q-Q 圖；data-k="qq" 為各點
 function qqChart(vals) {
   const sr = Float64Array.from(vals).sort(), n = sr.length, sd = S.sd(vals), m = S.mean(vals), th = Array.from(sr, (_, i) => m + S.qnorm((i + 0.5) / n) * sd), [lo, hi] = S.minmax([...sr, ...th]);
@@ -430,6 +454,7 @@ const DEF = {
   sig: '未校正 p < 0.05 的變數數。', q: 'Benjamini–Hochberg：p 值由小到大排序，第 i 個乘上 m ÷ i，再由後往前取最小值，得到 q 值；這裡數 q < 0.05 的個數。', bonf: 'Bonferroni：p 值 × 檢定總數 m；這裡數校正後 < 0.05 的個數，等同 p < 0.05 ÷ m。',
   welchF: 'Welch ANOVA：各組變異數分別估計、以各組人數 ÷ 變異數為權重的 F 檢定，不要求變異數相等。', levene: 'Levene 檢定：算出每個值與自己那組中位數的距離，再用 ANOVA 比較這些距離；p 值小代表各組變異數不同。Q-Q 圖則用來看殘差是否接近常態。',
   cldDef: 'Tukey–Kramer 事後比較後，平均由大到小排列；彼此沒有顯著差異的組別共用同一個字母。兩組沒有共同字母，代表 Tukey 校正 p < 0.05。',
+  mainEff: '主效果：把另一個因子的各水準平均起來後，這個因子各水準之間的差異。圖上的 ◆ 或虛線是邊際平均。', interEff: '交互作用：一個因子的效果是否隨另一個因子的水準而不同。圖上虛線是「沒有交互作用時」第二條線應在的位置，紅色線段是實際偏離的量。',
   n: '分析使用的觀察數。', ev: '結果為事件（編碼 1）的人數。',
 };
 const cd = (k, l, v, d) => ({ k, l, v, d });
@@ -518,6 +543,18 @@ const DATASETS = [
         rows.push(['T' + pad(i + 1, 2), f, b, ph, +(28 + eff[f] + be[b] + 2.2 * (ph - 6.5) + N(0, 2.6)).toFixed(1), Math.max(3, Math.round(N(11 + eff[f] * 0.6, 2.2)))]);
       }
       return { head: ['plant', 'fertilizer', 'block', 'soil_ph', 'height_cm', 'leaf_count'], rows };
+    },
+  },
+  {
+    id: 'diet_geno', name: '小鼠基因型 × 飲食', tag: '因子設計', track: '生態／實驗',
+    desc: '48 隻小鼠，野生型（WT）與基因剔除（KO）各 24 隻，各一半吃一般飼料、一半吃高脂飼料（每種組合 12 隻），8 週後測量體重增加與肝臟脂肪比例。',
+    order: { genotype: ['WT', 'KO'], diet: ['chow', 'HFD'], sex: ['F', 'M'] },
+    codebook: { id: '小鼠編號', genotype: '基因型：WT = 野生型，KO = 基因剔除', diet: '飼料：chow = 一般飼料，HFD = 高脂飼料', sex: '性別：F = 雌，M = 雄', weight_gain_g: '8 週體重增加（公克）', liver_fat_pct: '肝臟脂肪比例（%）' },
+    uses: ['二因子 ANOVA 與交互作用', '多組比較'],
+    gen() {
+      const r = rngOf(808), N = normOf(r), rows = [], mu = { 'WT|chow': 3, 'WT|HFD': 9, 'KO|chow': 3.2, 'KO|HFD': 5.2 }, lf = { 'WT|chow': 4, 'WT|HFD': 9, 'KO|chow': 3, 'KO|HFD': 8 };
+      let k = 0; for (const g of ['WT', 'KO']) for (const d of ['chow', 'HFD']) for (let i = 0; i < 12; i++) { k++; rows.push(['M' + pad(k, 2), g, d, i % 2 ? 'M' : 'F', +(mu[g + '|' + d] + (i % 2 ? 0.6 : 0) + N(0, 1.6)).toFixed(1), +Math.max(0.5, lf[g + '|' + d] + N(0, 1.5)).toFixed(1)]); }
+      return { head: ['id', 'genotype', 'diet', 'sex', 'weight_gain_g', 'liver_fat_pct'], rows };
     },
   },
 ];
@@ -723,6 +760,31 @@ const AN = {
           `F(${A.df1}, ${A.df2}) = ${F.n(A.F, 2)}，${F.peq(A.p)}，η² = ${F.n(A.eta2, 3)}；Welch F(${Wl.df1}, ${F.n(Wl.df2, 1)}) = ${F.n(Wl.F, 2)}，${F.peq(Wl.p)}；Kruskal–Wallis H = ${F.n(K.H, 2)}，${F.peq(K.p)}；Levene F(${Lv.df1}, ${Lv.df2}) = ${F.n(Lv.F, 2)}，${F.peq(Lv.p)}。各組：${G.map((l, j) => `${l} ${F.n(S.mean(gv[j]))} ± ${F.n(S.sd(gv[j]))}`).join('；')}。`,
           `${s.y} was compared across ${G.length} groups using one-way analysis of variance${G.length > 2 ? ", with pairwise Welch's t tests adjusted by the Holm method" : ''}, Welch's ANOVA (not assuming equal variances), and the Kruskal–Wallis test; homogeneity of variances was assessed with Levene's test.`,
           `F(${A.df1}, ${A.df2}) = ${F.n(A.F, 2)}, ${F.peq(A.p)}, η² = ${F.n(A.eta2, 3)}; Welch's F(${Wl.df1}, ${F.n(Wl.df2, 1)}) = ${F.n(Wl.F, 2)}, ${F.peq(Wl.p)}; Kruskal–Wallis H = ${F.n(K.H, 2)}, ${F.peq(K.p)}; Levene's F(${Lv.df1}, ${Lv.df2}) = ${F.n(Lv.F, 2)}, ${F.peq(Lv.p)}. Group means: ${G.map((l, j) => `${F.n(S.mean(gv[j]))} ± ${F.n(S.sd(gv[j]))} (${l})`).join(', ')}.`),
+      };
+    },
+  },
+  anova2: {
+    name: '二因子 ANOVA', when: '兩個類別因子同時影響一個數值結果，含交互作用',
+    fields: [{ k: 'y', label: '結果變數（數值）', t: 'num' }, { k: 'a', label: '因子 A（x 軸）', t: 'cat' }, { k: 'b', label: '因子 B（不同線）', t: 'cat' }],
+    run(ds, s) {
+      if (s.a === s.b) throw new Error('兩個因子要選不同的變數。');
+      const yc = colOf(ds, s.y), ac = colOf(ds, s.a), bc = colOf(ds, s.b), { idx, dropped } = complete(ds, [s.y, s.a, s.b]), La = levelsOf(ds, ac, idx), Lb = levelsOf(ds, bc, idx);
+      if (La.length < 2 || Lb.length < 2) throw new Error('兩個因子都至少需要兩個水準。'); if (La.length * Lb.length > 24) throw new Error('組合太多（超過 24 種），請選擇水準較少的因子。');
+      const ai = idx.map(i => La.indexOf(lab(ac.values[i]))), bi = idx.map(i => Lb.indexOf(lab(bc.values[i]))), y = idx.map(i => yc.values[i]);
+      const cells = La.map((_, i) => Lb.map((__, j) => y.filter((v, k) => ai[k] === i && bi[k] === j)));
+      if (cells.flat().some(c => c.length < 2)) throw new Error('每一種組合至少需要 2 個觀察值，才能估計組內變異。');
+      let T; try { T = S.twoway(y, ai, bi); } catch (e) { catFail(e); }
+      const bal = new Set(cells.flat().map(c => c.length)).size === 1, rowT = (nm, r) => [nm, F.n(r.ss), r.df, F.n(r.ms), F.n(r.F, 2), F.p(r.p)];
+      return {
+        title: `${esc(s.y)}：${esc(s.a)} × ${esc(s.b)}`, meta: meta(idx.length, dropped), facts: [bal ? `平衡設計：每種組合 ${cells[0][0].length} 個觀察值` : '非平衡設計：各組合人數不同，平方和採 Type II'],
+        charts: [{ svg: interPlot(La, Lb, cells, s.y), legend: legend(Lb.map((l, j) => [col4(j), esc(l)])), cap: '交互作用圖：每個大點是一種組合的平均，同一條線是因子 B 的同一個水準。兩條線平行代表沒有交互作用。' }, { svg: distChart('F', T.AB.F, [T.AB.df, T.E.df], `交互作用的 F（自由度 ${T.AB.df}, ${T.E.df}）`), cap: distCap.F + '（交互作用）' }],
+        cards: [cd('mainA', `${esc(s.a)} 主效果 F`, `${F.n(T.A.F, 2)}（p ${F.p(T.A.p)}）`, 'mainEff'), cd('mainB', `${esc(s.b)} 主效果 F`, `${F.n(T.B.F, 2)}（p ${F.p(T.B.p)}）`, 'mainEff'), cd('inter', '交互作用 F', `${F.n(T.AB.F, 2)}（df ${T.AB.df}, ${T.E.df}）`, 'interEff'), cd('p', 'p 值（交互作用）', F.p(T.AB.p), 'p')],
+        tables: [{ head: [`${esc(s.a)} ＼ ${esc(s.b)}`, ...Lb.map(esc)], rows: La.map((l, i) => [`<b>${esc(l)}</b>`, ...Lb.map((_, j) => `${F.n(S.mean(cells[i][j]))} ± ${F.n(S.sd(cells[i][j]))} <span class="mut">(n=${cells[i][j].length})</span>`)]), foot: '各組合的平均 ± SD。' },
+          { head: ['變異來源', 'SS', '自由度', 'MS', 'F', 'p 值'], rows: [rowT(esc(s.a), T.A), rowT(esc(s.b), T.B), rowT(`${esc(s.a)} × ${esc(s.b)}`, T.AB), ['殘差', F.n(T.E.ss), T.E.df, F.n(T.E.ms), '', '']], foot: '二因子 ANOVA（Type II 平方和）。' }],
+        write: W2(`以二因子變異數分析（含交互作用項，Type II 平方和）分析 ${s.y} 與 ${s.a}、${s.b} 的關係。`,
+          `${s.a}：F(${T.A.df}, ${T.E.df}) = ${F.n(T.A.F, 2)}，${F.peq(T.A.p)}；${s.b}：F(${T.B.df}, ${T.E.df}) = ${F.n(T.B.F, 2)}，${F.peq(T.B.p)}；${s.a} × ${s.b} 交互作用：F(${T.AB.df}, ${T.E.df}) = ${F.n(T.AB.F, 2)}，${F.peq(T.AB.p)}。`,
+          `${s.y} was analysed by two-way analysis of variance with ${s.a}, ${s.b}, and their interaction (Type II sums of squares).`,
+          `${s.a}: F(${T.A.df}, ${T.E.df}) = ${F.n(T.A.F, 2)}, ${F.peq(T.A.p)}; ${s.b}: F(${T.B.df}, ${T.E.df}) = ${F.n(T.B.F, 2)}, ${F.peq(T.B.p)}; ${s.a} × ${s.b} interaction: F(${T.AB.df}, ${T.E.df}) = ${F.n(T.AB.F, 2)}, ${F.peq(T.AB.p)}.`),
       };
     },
   },

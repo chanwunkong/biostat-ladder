@@ -59,6 +59,16 @@ near('TukeyHSD p trt2-ctrl', tk[1].p, 0.1979960);
 near('TukeyHSD p trt2-trt1', tk[2].p, 0.0120064);
 near('TukeyHSD 下限 trt2-trt1', tk[2].ci[0], 0.1737839);
 
+// R: summary(aov(len ~ supp * factor(dose), data = ToothGrowth))
+const tg = { VC: [[4.2, 11.5, 7.3, 5.8, 6.4, 10, 11.2, 11.2, 5.2, 7], [16.5, 16.5, 15.2, 17.3, 22.5, 17.3, 13.6, 14.5, 18.8, 15.5], [23.6, 18.5, 33.9, 25.5, 26.4, 32.5, 26.7, 21.5, 23.3, 29.5]],
+  OJ: [[15.2, 21.5, 17.6, 9.7, 14.5, 10, 8.2, 9.4, 16.5, 9.7], [19.7, 23.3, 23.6, 26.4, 20, 25.2, 25.8, 21.2, 14.5, 27.3], [25.5, 26.4, 22.4, 24.5, 24.8, 30.9, 26.4, 27.3, 29.4, 23]] };
+const ty = [], ta = [], tb = []; ['OJ', 'VC'].forEach((sp, i) => tg[sp].forEach((cell, j) => cell.forEach(v => { ty.push(v); ta.push(i); tb.push(j); })));
+const tw = S.twoway(ty, ta, tb);
+near('二因子 F 給法 (ToothGrowth)', tw.A.F, 15.572);
+near('二因子 F 劑量', tw.B.F, 92.000);
+near('二因子 F 交互作用', tw.AB.F, 4.107);
+near('二因子 p 交互作用', tw.AB.p, 0.021860);
+
 const DS = {};
 for (const m of DATASETS) { const d = m.gen(); DS[m.id] = makeDS({ ...m, head: d.head, rows: d.rows }); }
 const runs = [
@@ -72,6 +82,7 @@ const runs = [
   ['lung_surv', 'surv', { time: 'time_months', status: 'status', g: 'treatment', xs: ['treatment', 'stage', 'age'] }],
   ['gene_expr', 'multi', { g: 'tissue', vars: DS.gene_expr.cols.slice(2).map(c => c.name) }],
   ['plant_growth', 'anova', { y: 'height_cm', g: 'fertilizer' }],
+  ['diet_geno', 'anova2', { y: 'weight_gain_g', a: 'diet', b: 'genotype' }],
 ];
 for (const [id, an, sel] of runs) {
   try { const r = AN[an].run(DS[id], sel); console.log(`ok   ${id} / ${an}: ${r.write ? r.write.zh.r.slice(0, 60) : r.title}…`); }
