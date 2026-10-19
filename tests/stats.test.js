@@ -99,6 +99,9 @@ near('lm R²', lmc.r2, 0.6511);
 near('dbinom(3, 10, 0.2)', S.dbinom(3, 10, 0.2), 0.2013266);
 near('pbinom(3, 10, 0.2)', S.pbinom(3, 10, 0.2), 0.8791261);
 
+near('dpois(2, 3)', S.dpois(2, 3), 0.2240418);
+near('ppois(2, 3)', S.ppois(2, 3), 0.4231901);
+
 const DS = {};
 for (const m of DATASETS) { const d = m.gen(); DS[m.id] = makeDS({ ...m, head: d.head, rows: d.rows }); }
 const runs = [

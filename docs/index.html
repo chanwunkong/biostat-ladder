@@ -706,6 +706,8 @@ const S = (() => {
   const lchoose = (n, k) => lgamma(n + 1) - lgamma(k + 1) - lgamma(n - k + 1);
   const dbinom = (k, n, p) => (k < 0 || k > n ? 0 : p === 0 ? (k === 0 ? 1 : 0) : p === 1 ? (k === n ? 1 : 0) : Math.exp(lchoose(n, k) + k * Math.log(p) + (n - k) * Math.log(1 - p)));
   const pbinom = (k, n, p) => { let s = 0; for (let i = 0; i <= Math.min(k, n); i++) s += dbinom(i, n, p); return Math.min(1, s); };
+  const dpois = (k, lam) => (k < 0 ? 0 : Math.exp(-lam + k * Math.log(lam) - lgamma(k + 1)));
+  const ppois = (k, lam) => { let s = 0; for (let i = 0; i <= k; i++) s += dpois(i, lam); return Math.min(1, s); };
   function fisher(a, b, c, d) {
     const r1 = a + b, r2 = c + d, c1 = a + c, n = r1 + r2; const lp = x => lchoose(r1, x) + lchoose(r2, c1 - x) - lchoose(n, c1);
     const lo = Math.max(0, c1 - r2), hi = Math.min(r1, c1), p0 = lp(a); let p = 0;
@@ -839,7 +841,7 @@ const S = (() => {
   const nProps = (p1, p2, alpha, power) => { const za = qnorm(1 - alpha / 2), zb = qnorm(power), pb = (p1 + p2) / 2; return Math.ceil((za * Math.sqrt(2 * pb * (1 - pb)) + zb * Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))) ** 2 / ((p1 - p2) ** 2)); };
   const powerProps = (p1, p2, n, alpha) => { const za = qnorm(1 - alpha / 2), pb = (p1 + p2) / 2; return pnorm((Math.abs(p1 - p2) * Math.sqrt(n) - za * Math.sqrt(2 * pb * (1 - pb))) / Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))); };
 
-  return { dbinom, pbinom, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, mannWhitney, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
+  return { dbinom, pbinom, dpois, ppois, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, mannWhitney, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
 })();
 
 /* ---------- 格式 ---------- */
@@ -1891,8 +1893,8 @@ const CH = [
   {
     id: 'c3-3', lv: 3, num: '3.3', title: '類別資料：卡方檢定與勝算比',
     body: `<p>當兩個變數都是類別（例如：吸菸與否 × 是否發生心血管事件），資料可整理成<b>列聯表</b>。</p>
-<div class="formula">χ² = Σ (觀察值 − 期望值)² ÷ 期望值　　　期望值 = 列總和 × 欄總和 ÷ 總數</div>
-<p>若任一格期望值小於 5（常見於小樣本），改用 <b>Fisher 精確檢定</b>。</p>
+<div class="formula">χ² = Σ (觀察值 − 期望次數)² ÷ 期望次數　　　期望次數（也常稱期望值）= 列總和 × 欄總和 ÷ 總數</div>
+<p>若任一格期望次數小於 5（常見於小樣本），改用 <b>Fisher 精確檢定</b>。</p>
 <h3>效果量：風險比與勝算比</h3>
 <div class="tbl-wrap"><table class="st"><thead><tr><th></th><th>有事件</th><th>無事件</th></tr></thead><tbody><tr><td>暴露</td><td>a</td><td>b</td></tr><tr><td>未暴露</td><td>c</td><td>d</td></tr></tbody></table></div>
 <div class="formula">風險比 RR = [a ÷ (a+b)] ÷ [c ÷ (c+d)]<br>勝算比 OR = (a ÷ b) ÷ (c ÷ d) = ad ÷ bc</div>
@@ -1901,7 +1903,7 @@ const CH = [
     labs: [{ label: '吸菸與心血管事件', ds: 'cvd_cohort', an: 'chisq', sel: { r: 'smoker', c: 'cvd_10y' } }, { label: '新藥與不良事件', ds: 'bp_trial', an: 'chisq', sel: { r: 'group', c: 'ae' } }],
     quiz: [
       { q: '病例對照研究中應報告哪一種效果量？', o: ['OR', 'RR', '發生率', '盛行率'], why: '病例對照研究中「有病者的比例」是研究者設定的，無法估計風險，只能估計勝算比。' },
-      { q: '2×2 表中有一格的期望值是 2.4，應該？', o: ['改用 Fisher 精確檢定', '照樣用卡方', '刪除那一格', '合併成 1×2 表'], why: '期望值太小時，卡方近似不準確。' },
+      { q: '2×2 表中有一格的期望次數是 2.4，應該？', o: ['改用 Fisher 精確檢定', '照樣用卡方', '刪除那一格', '合併成 1×2 表'], why: '期望次數太小時，卡方近似不準確。' },
     ],
   },
   {
@@ -2364,6 +2366,22 @@ const CH = [
       { q: '下列哪一項「不是」二項分佈的前提？', o: ['每次試驗的結果必須是常態分佈', '試驗次數事先固定', '每次成功的機率相同', '每次試驗彼此獨立'], why: '二項分佈的每次試驗只有兩種結果，和常態無關。' },
     ],
   },
+  {
+    id: 'poisson', title: 'Poisson 分佈',
+    body: `<p>很多生物資料是「在固定的時間或空間內，某件事發生幾次」：一個培養皿上的菌落數、顯微鏡一個視野中的細胞數、一年內某醫院的罕見疾病病例數。如果事件<b>隨機、彼此獨立</b>地以固定的平均速率發生，次數就服從 <b>Poisson 分佈</b>。</p>
+<div class="formula">P(X = k) = e<sup>−λ</sup> × λ<sup>k</sup> ÷ k!　　（k = 0, 1, 2, …）<br>E(X) = λ　　Var(X) = λ</div>
+<p>λ（lambda）是單位時間或空間內的平均次數，也叫<b>速率</b>。例：平均每個培養皿 3 個菌落，恰好 2 個的機率 = e<sup>−3</sup> × 3² ÷ 2! ≈ 0.224。</p>
+<h3>平均等於變異數</h3>
+<p>Poisson 分佈最大的特徵是<b>平均數等於變異數</b>。實際資料若變異數遠大於平均數，稱為<b>過度離散</b>，通常代表事件不是獨立隨機發生，而是<b>聚集</b>在一起（例如菌落成團、病例群聚），或是不同單位的速率本來就不同。這時要改用負二項分佈等模型。上方的培養皿模擬可以比較這兩種情況。</p>
+<h3>Poisson 近似二項分佈</h3>
+<p>二項分佈中，如果 n 很大、p 很小（罕見事件），可以用 λ = n × p 的 Poisson 分佈近似。例：突變率 0.001，檢查 2,000 個細胞，突變細胞數近似 λ = 2 的 Poisson 分佈。</p>
+<p class="note">比較兩組的率（例如每千人年的發生率）與 Poisson 迴歸，會在相關與迴歸階段再介紹。</p>`,
+    quiz: [
+      { q: '平均每個培養皿 3 個菌落（符合 Poisson 分佈）。某個培養皿恰好 2 個菌落的機率約是多少？', o: ['0.224', '0.149', '0.423', '0.667'], why: 'e⁻³ × 3² ÷ 2! = 0.0498 × 9 ÷ 2 ≈ 0.224。0.423 是 P(X ≤ 2)。' },
+      { q: '每格的菌落數，平均是 2、變異數是 9。這代表什麼？', o: ['過度離散：菌落可能成團聚集，不符合 Poisson 分佈', '完全符合 Poisson 分佈', '樣本數太少，沒有意義', '平均數算錯了'], why: 'Poisson 分佈的變異數等於平均數；變異數遠大於平均數代表聚集。' },
+      { q: '突變率 0.001，檢查 2,000 個細胞。突變細胞數最適合用哪個分佈近似？', o: ['λ = 2 的 Poisson 分佈', '平均 2000 的常態分佈', 'p = 0.5 的二項分佈', '均勻分佈'], why: 'n 很大、p 很小時，二項分佈可用 λ = n × p = 2 的 Poisson 分佈近似。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -2487,6 +2505,10 @@ const GLOSS = [
   ['組合數', ['C(n, k)'], '從 n 個中挑出 k 個的方法數：n! ÷ (k! × (n − k)!)。', 'binom'],
   ['常態近似', [], 'n 夠大時，用平均與標準差相同的常態分佈近似其他分佈。', 'binom'],
   ['連續性校正', [], '用連續的常態分佈近似離散分佈時，把邊界加減 0.5。', 'binom'],
+  ['Poisson 分佈', ['Poisson'], '在固定時間或空間內，隨機、獨立發生的事件次數的分佈；平均數等於變異數。', 'poisson'],
+  ['速率', ['λ'], 'Poisson 分佈中，單位時間或空間內事件的平均次數。', 'poisson'],
+  ['過度離散', [], '計數資料的變異數明顯大於平均數，常代表事件聚集。', 'poisson'],
+  ['聚集', [], '事件成團出現，而不是隨機、獨立地散布。', 'poisson'],
   ['閾值', ['cutoff'], '把連續數值的檢驗結果分成陽性與陰性的分界值。', 'roc'],
   ['ROC 曲線', ['ROC'], '把所有閾值下的敏感度對「1 − 特異度」畫出的曲線。', 'roc'],
   ['AUC', [], 'ROC 曲線下的面積：隨機挑一位有病、一位沒病的人，有病者檢驗值較高的機率。', 'roc'],
@@ -2516,7 +2538,7 @@ const GLOSS = [
   ['事後比較', [], 'ANOVA 之後，找出哪幾組之間不同的兩兩比較，需要校正多重比較。', 'c3-2'],
   ['卡方檢定', ['卡方', 'χ²'], '比較列聯表中觀察人數與期望人數的差距。', 'c3-3'],
   ['2×2 表', ['列聯表'], '把兩個類別變數交叉列出人數的表格。', 'c3-3'],
-  ['期望值', ['期望次數'], '假如兩變數無關，每一格應該有的人數：列總和 × 欄總和 ÷ 總數。', 'c3-3'],
+  ['期望次數', [], '假如兩變數無關，每一格應該有的人數：列總和 × 欄總和 ÷ 總數。', 'c3-3'],
   ['Fisher 精確檢定', ['Fisher'], '小樣本時用的精確計算法，不依賴卡方近似。', 'c3-3'],
   ['勝算比', ['OR'], '兩組「勝算」的比值。勝算 = 發生的人數 ÷ 沒發生的人數。', 'c3-3'],
   ['世代研究', [], '先依暴露分組，再往後追蹤看誰發生事件的研究。', 'c3-3'],
@@ -2565,7 +2587,7 @@ const GLOSS = [
 const ORDER = [
   ['c0-1', 'c0-2', 'c0-3', 'c0-4'],
   ['c1-1', 'c1-2', 'c1-3', 'c1-4', 'c1-5'],
-  ['prob-rules', 'c2-1', 'roc', 'rv', 'binom'],
+  ['prob-rules', 'c2-1', 'roc', 'rv', 'binom', 'poisson'],
   ['c2-2', 'c2-3', 'c2-4', 'c4-5', 'c5-1'],
   ['c3-1', 'c3-3', 'c3-5'],
   ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff', 'ancova'],
@@ -2578,7 +2600,7 @@ const ORDER = [
 const REFS = {
   'c0-1': 'Rosner 3.10', 'c1-1': 'Whitlock 第 1 章；Kirkwood 第 2 章', 'c1-2': 'Whitlock 第 3 章；Rosner 2.2–2.3；Kirkwood 第 4 章',
   'c1-3': 'Whitlock 第 3 章；Rosner 2.4–2.5；Kirkwood 第 4 章', 'c1-4': 'Whitlock 第 10 章；Rosner 第 5 章；Kirkwood 第 5 章', 'c1-5': 'Kirkwood 第 34 章',
-  'prob-rules': 'Whitlock 第 5 章；Rosner 3.2–3.6', 'roc': 'Rosner 3.9；UTHealth GSBS 課綱第 10 週', 'rv': 'Rosner 4.2–4.6', 'binom': 'Whitlock 7.1；Rosner 4.7–4.9、5.7；Kirkwood 第 15 章', 'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
+  'prob-rules': 'Whitlock 第 5 章；Rosner 3.2–3.6', 'roc': 'Rosner 3.9；UTHealth GSBS 課綱第 10 週', 'rv': 'Rosner 4.2–4.6', 'binom': 'Whitlock 7.1；Rosner 4.7–4.9、5.7；Kirkwood 第 15 章', 'poisson': 'Whitlock 8.4；Rosner 4.10–4.13；Kirkwood 第 22 章', 'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
   'c2-4': 'Whitlock 第 6 章；Rosner 7.1–7.5；Kirkwood 第 8 章', 'c4-5': 'Whitlock 14.6；Rosner 7.6–7.7、8.9；Kirkwood 第 35 章', 'c5-1': 'Rosner 13.2；Kirkwood 第 34 章',
   'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
   'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
@@ -2988,7 +3010,7 @@ Object.assign(W, {
       const bar = (l, r, col) => `<div class="rbar" data-k="rr"><span>${l}</span><div><i style="width:${100 * r}%;background:${col}"></i></div><b>${F.n(100 * r, 1)}%</b></div>`;
       $('#w2-bars').innerHTML = `<p class="w-cap">各組發生事件的比例（風險）</p>${bar('吸菸', r1, 'var(--c2)')}${bar('不吸菸', r0, 'var(--c1)')}`;
       $('#w2-k').innerHTML = kvs([['風險比 RR', F.n(r1 / r0, 2), 'rr'], ['勝算比 OR', F.n((a * d) / (b * c), 2), 'or'], ['卡方 p', F.p(t.p), 'chi'], ['Fisher p', F.p(fp), 'fis']]);
-      const w = $('#w2-w'); w.hidden = !(t.minExp < 5); w.textContent = `最小期望值 ${F.n(t.minExp, 2)}，小於 5：卡方近似不可靠，請看 Fisher 精確檢定。`;
+      const w = $('#w2-w'); w.hidden = !(t.minExp < 5); w.textContent = `最小期望次數 ${F.n(t.minExp, 2)}，小於 5：卡方近似不可靠，請看 Fisher 精確檢定。`;
     };
     $('#w2-small', el).onclick = () => set({ a: 4, b: 3, c: 1, d: 8 }); $('#w2-reset', el).onclick = () => set({ a: 25, b: 70, c: 45, d: 260 });
     el.addEventListener('input', up); up();
@@ -3550,6 +3572,30 @@ Object.assign(W, {
     };
     el.addEventListener('input', up); el.addEventListener('change', up); up();
   },
+  poissonw(el) {
+    el.innerHTML = `<div class="w-row">${slider('wps2-l', '平均次數 λ', 0.5, 15, 0.5, 3)}${slider('wps2-k', 'k', 0, 30, 1, 2)}</div>
+<div class="chart-wrap" id="wps2-g"></div>
+<p class="w-cap">培養皿模擬：皿面切成 100 格，菌落總數平均每格 λ 個。</p>
+<div class="seg wrap" id="wps2-m"><button type="button" data-m="rand" aria-selected="true">隨機散布</button><button type="button" data-m="clump" aria-selected="false">成團聚集</button></div>
+<div class="w-row"><button class="btn" type="button" id="wps2-go">重新培養</button></div>
+<div class="w-cols"><figure class="fig"><figcaption>培養皿（每點一個菌落）</figcaption><div class="chart-wrap" id="wps2-d"></div></figure><figure class="fig"><figcaption>每格菌落數的分佈（線為 Poisson 預期）</figcaption><div class="chart-wrap" id="wps2-h"></div></figure></div>
+<div class="kv" id="wps2-o"></div>`;
+    let mode = 'rand', pts = [];
+    const gen = lam => { const tot = Math.round(lam * 100); pts = []; if (mode === 'rand') for (let i = 0; i < tot; i++) pts.push([Math.random() * 10, Math.random() * 10]); else { const nc = Math.max(1, Math.round(tot / 8)); const cs = Array.from({ length: nc }, () => [Math.random() * 10, Math.random() * 10]); for (let i = 0; i < tot; i++) { const c0 = cs[i % nc]; pts.push([Math.min(9.999, Math.max(0, c0[0] + 0.35 * rnorm())), Math.min(9.999, Math.max(0, c0[1] + 0.35 * rnorm()))]); } } };
+    const up = regen => {
+      const lam = sv('wps2-l', v => v.toFixed(1)), k = sv('wps2-k'), pm = Array.from({ length: 31 }, (_, i) => S.dpois(i, lam)), top = Math.max(...pm), mx = Math.min(30, Math.ceil(lam + 4 * Math.sqrt(lam) + 2));
+      if (regen) gen(lam);
+      $('#wps2-g').innerHTML = chart({ x: [-0.5, mx + 0.5], y: [0, top * 1.15], h: 220, xlab: '次數 X', ylab: 'P(X = x)' }, (X, Y) => { const bw = Math.max(1, (X(1) - X(0)) * 0.7); return pm.slice(0, mx + 1).map((v, i) => `<rect data-k="${[i === k ? 'pk' : '', i <= k ? 'cdf' : ''].join(' ').trim()}" x="${X(i) - bw / 2}" y="${Y(v)}" width="${bw}" height="${Y(0) - Y(v)}" style="fill:var(--c1);fill-opacity:.8"/>`).join('') + `<line data-k="ex" x1="${X(lam)}" x2="${X(lam)}" y1="${Y(0)}" y2="${Y(top * 1.1)}" style="stroke:var(--c2);stroke-width:2.5"/>`; });
+      const counts = new Array(100).fill(0); pts.forEach(([x, y]) => { counts[Math.floor(y) * 10 + Math.floor(x)]++; }); const m = S.mean(counts), v = S.variance(counts), cmax = Math.max(...counts);
+      $('#wps2-d').innerHTML = chart({ x: [0, 10], y: [0, 10], noY: true, h: 240, m: { b: 16, l: 16 } }, (X, Y) => { let g = ''; for (let i = 1; i < 10; i++) g += `<line class="keep" x1="${X(i)}" x2="${X(i)}" y1="${Y(0)}" y2="${Y(10)}" style="stroke:var(--line)"/><line class="keep" x1="${X(0)}" x2="${X(10)}" y1="${Y(i)}" y2="${Y(i)}" style="stroke:var(--line)"/>`; return g + pts.map(([x, y]) => `<circle data-k="dots" cx="${X(x).toFixed(1)}" cy="${Y(y).toFixed(1)}" r="1.8" style="fill:var(--c2);fill-opacity:.7"/>`).join(''); });
+      const hm = Math.max(cmax, mx), freq = Array.from({ length: hm + 1 }, (_, i) => counts.filter(c => c === i).length);
+      $('#wps2-h').innerHTML = chart({ x: [-0.5, hm + 0.5], y: [0, Math.max(...freq, ...pm.slice(0, hm + 1).map(p => p * 100)) * 1.1], h: 240, xlab: '每格的菌落數', ylab: '格數' }, (X, Y) => { const bw = Math.max(1, (X(1) - X(0)) * 0.7); return freq.map((f, i) => `<rect data-k="var" x="${X(i) - bw / 2}" y="${Y(f)}" width="${bw}" height="${Y(0) - Y(f)}" style="fill:var(--c2);fill-opacity:.6"/>`).join('') + `<path class="keep" d="${Array.from({ length: hm + 1 }, (_, i) => `${i ? 'L' : 'M'}${X(i)} ${Y(S.dpois(i, lam) * 100)}`).join('')}" style="fill:none;stroke:var(--c1);stroke-width:2.5"/>`; });
+      $('#wps2-o').innerHTML = kvs([['P(X = k)', F.n(pm[k] ?? 0, 4), 'pk'], ['P(X ≤ k)', F.n(S.ppois(k, lam), 4), 'cdf'], ['期望值 = 變異數 = λ', lam.toFixed(1), 'ex'], ['培養皿：每格平均數', F.n(m, 2), 'dots'], ['培養皿：每格變異數', F.n(v, 2), 'var'], ['變異數 ÷ 平均（Poisson 約為 1）', F.n(v / m, 2), 'var']]);
+    };
+    segBind(el, '#wps2-m', b => { mode = b.dataset.m; up(true); });
+    el.addEventListener('input', e => { if (e.target.type === 'range') up(e.target.id === 'wps2-l'); });
+    $('#wps2-go', el).onclick = () => up(true); up(true);
+  },
   mosaic(el) {
     el.innerHTML = `<p class="w-cap">正方形代表全部的人（面積 = 1）。左右寬度是吸菸與不吸菸的比例；每一欄內，紅色的高度是該群中有高血壓的比例。</p>
 <div class="w-row">${slider('wm2-a', 'P(吸菸)', 5, 95, 5, 30, '%')}${slider('wm2-ba', 'P(高血壓 | 吸菸)', 0, 100, 5, 30, '%')}${slider('wm2-bn', 'P(高血壓 | 不吸菸)', 0, 100, 5, 15, '%')}</div>
@@ -3567,13 +3613,18 @@ Object.assign(W, {
   },
 });
 
-const WMAP = { 'binom': ['binomw', '二項分佈'], 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
+const WMAP = { 'poisson': ['poissonw', 'Poisson 分佈與培養皿'], 'binom': ['binomw', '二項分佈'], 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
 for (const [id, [w, t]] of Object.entries(WMAP)) { const c = CH.find(x => x.id === id); c.widget = w; c.wtitle = t; }
 
 /* ---------- 練習題示範：把題目情境帶入同一章的互動圖 ----------
    每題的 demo：set = 設定輸入元件（id → 值）；click = 依序點擊的按鈕；custom = 交給互動圖自己的 _demo()；look = 示範時的觀察提示。
    有 q 的項目會整題替換（原題無法在圖上示範時）。 */
 const QD = {
+  'poisson': [
+    { demo: { click: ['#wps2-m [data-m="rand"]'], set: { 'wps2-l': 3, 'wps2-k': 2 }, look: '點「P(X = k)」：λ = 3 時，恰好 2 次的機率約 0.224。' } },
+    { demo: { click: ['#wps2-m [data-m="clump"]'], set: { 'wps2-l': 2, 'wps2-k': 2 }, look: '成團聚集：很多格是 0，少數格很多；每格變異數遠大於平均，直方圖不符合藍色的 Poisson 曲線。' } },
+    { demo: { click: ['#wps2-m [data-m="rand"]'], set: { 'wps2-l': 2, 'wps2-k': 2 }, look: 'λ = n × p = 2000 × 0.001 = 2 的 Poisson 分佈。' } },
+  ],
   'binom': [
     { demo: { set: { 'wbn-n': 4, 'wbn-p': 0.25, 'wbn-k': 1 }, look: '4 個孩子、每個 aa 的機率 1/4：點「P(X = 1)」，看那一根長條的高度約 0.42。' } },
     { demo: { set: { 'wbn-n': 20, 'wbn-p': 0.3, 'wbn-k': 6 }, look: '紅線是期望值 6；點「標準差」看 6 ± 2.05 的範圍。' } },
@@ -3696,7 +3747,7 @@ const QD = {
   ],
   'c3-3': [
     { demo: { set: { 'w2-a': 25, 'w2-b': 70, 'w2-c': 45, 'w2-d': 260 }, look: 'OR 只用到 a、b、c、d 的交叉相乘，不需要知道族群中真正的事件率；病例對照研究只能算這個。' } },
-    { q: '2×2 表為 4、3／1、8，最小的期望值約 2.2。應該怎麼做？', o: ['改用 Fisher 精確檢定', '照樣用卡方', '刪除那一格', '合併成 1×2 表'], why: '期望值小於 5 時卡方近似不準確，改用 Fisher 精確檢定。', demo: { set: { 'w2-a': 4, 'w2-b': 3, 'w2-c': 1, 'w2-d': 8 }, look: '注意出現的黃色提醒，以及卡方 p 與 Fisher p 的差別。' } },
+    { q: '2×2 表為 4、3／1、8，最小的期望次數約 2.2。應該怎麼做？', o: ['改用 Fisher 精確檢定', '照樣用卡方', '刪除那一格', '合併成 1×2 表'], why: '期望次數小於 5 時卡方近似不準確，改用 Fisher 精確檢定。', demo: { set: { 'w2-a': 4, 'w2-b': 3, 'w2-c': 1, 'w2-d': 8 }, look: '注意出現的黃色提醒，以及卡方 p 與 Fisher p 的差別。' } },
   ],
   'c3-4': [
     { demo: { set: { 'wc2-r': -0.8, 'wc2-n': 40, 'wc2-o': false, 'wc2-u': false }, look: '點沿著一條往下的直線緊密排列。' } },

@@ -143,7 +143,7 @@ Object.assign(W, {
       const bar = (l, r, col) => `<div class="rbar" data-k="rr"><span>${l}</span><div><i style="width:${100 * r}%;background:${col}"></i></div><b>${F.n(100 * r, 1)}%</b></div>`;
       $('#w2-bars').innerHTML = `<p class="w-cap">各組發生事件的比例（風險）</p>${bar('吸菸', r1, 'var(--c2)')}${bar('不吸菸', r0, 'var(--c1)')}`;
       $('#w2-k').innerHTML = kvs([['風險比 RR', F.n(r1 / r0, 2), 'rr'], ['勝算比 OR', F.n((a * d) / (b * c), 2), 'or'], ['卡方 p', F.p(t.p), 'chi'], ['Fisher p', F.p(fp), 'fis']]);
-      const w = $('#w2-w'); w.hidden = !(t.minExp < 5); w.textContent = `最小期望值 ${F.n(t.minExp, 2)}，小於 5：卡方近似不可靠，請看 Fisher 精確檢定。`;
+      const w = $('#w2-w'); w.hidden = !(t.minExp < 5); w.textContent = `最小期望次數 ${F.n(t.minExp, 2)}，小於 5：卡方近似不可靠，請看 Fisher 精確檢定。`;
     };
     $('#w2-small', el).onclick = () => set({ a: 4, b: 3, c: 1, d: 8 }); $('#w2-reset', el).onclick = () => set({ a: 25, b: 70, c: 45, d: 260 });
     el.addEventListener('input', up); up();
@@ -705,6 +705,30 @@ Object.assign(W, {
     };
     el.addEventListener('input', up); el.addEventListener('change', up); up();
   },
+  poissonw(el) {
+    el.innerHTML = `<div class="w-row">${slider('wps2-l', '平均次數 λ', 0.5, 15, 0.5, 3)}${slider('wps2-k', 'k', 0, 30, 1, 2)}</div>
+<div class="chart-wrap" id="wps2-g"></div>
+<p class="w-cap">培養皿模擬：皿面切成 100 格，菌落總數平均每格 λ 個。</p>
+<div class="seg wrap" id="wps2-m"><button type="button" data-m="rand" aria-selected="true">隨機散布</button><button type="button" data-m="clump" aria-selected="false">成團聚集</button></div>
+<div class="w-row"><button class="btn" type="button" id="wps2-go">重新培養</button></div>
+<div class="w-cols"><figure class="fig"><figcaption>培養皿（每點一個菌落）</figcaption><div class="chart-wrap" id="wps2-d"></div></figure><figure class="fig"><figcaption>每格菌落數的分佈（線為 Poisson 預期）</figcaption><div class="chart-wrap" id="wps2-h"></div></figure></div>
+<div class="kv" id="wps2-o"></div>`;
+    let mode = 'rand', pts = [];
+    const gen = lam => { const tot = Math.round(lam * 100); pts = []; if (mode === 'rand') for (let i = 0; i < tot; i++) pts.push([Math.random() * 10, Math.random() * 10]); else { const nc = Math.max(1, Math.round(tot / 8)); const cs = Array.from({ length: nc }, () => [Math.random() * 10, Math.random() * 10]); for (let i = 0; i < tot; i++) { const c0 = cs[i % nc]; pts.push([Math.min(9.999, Math.max(0, c0[0] + 0.35 * rnorm())), Math.min(9.999, Math.max(0, c0[1] + 0.35 * rnorm()))]); } } };
+    const up = regen => {
+      const lam = sv('wps2-l', v => v.toFixed(1)), k = sv('wps2-k'), pm = Array.from({ length: 31 }, (_, i) => S.dpois(i, lam)), top = Math.max(...pm), mx = Math.min(30, Math.ceil(lam + 4 * Math.sqrt(lam) + 2));
+      if (regen) gen(lam);
+      $('#wps2-g').innerHTML = chart({ x: [-0.5, mx + 0.5], y: [0, top * 1.15], h: 220, xlab: '次數 X', ylab: 'P(X = x)' }, (X, Y) => { const bw = Math.max(1, (X(1) - X(0)) * 0.7); return pm.slice(0, mx + 1).map((v, i) => `<rect data-k="${[i === k ? 'pk' : '', i <= k ? 'cdf' : ''].join(' ').trim()}" x="${X(i) - bw / 2}" y="${Y(v)}" width="${bw}" height="${Y(0) - Y(v)}" style="fill:var(--c1);fill-opacity:.8"/>`).join('') + `<line data-k="ex" x1="${X(lam)}" x2="${X(lam)}" y1="${Y(0)}" y2="${Y(top * 1.1)}" style="stroke:var(--c2);stroke-width:2.5"/>`; });
+      const counts = new Array(100).fill(0); pts.forEach(([x, y]) => { counts[Math.floor(y) * 10 + Math.floor(x)]++; }); const m = S.mean(counts), v = S.variance(counts), cmax = Math.max(...counts);
+      $('#wps2-d').innerHTML = chart({ x: [0, 10], y: [0, 10], noY: true, h: 240, m: { b: 16, l: 16 } }, (X, Y) => { let g = ''; for (let i = 1; i < 10; i++) g += `<line class="keep" x1="${X(i)}" x2="${X(i)}" y1="${Y(0)}" y2="${Y(10)}" style="stroke:var(--line)"/><line class="keep" x1="${X(0)}" x2="${X(10)}" y1="${Y(i)}" y2="${Y(i)}" style="stroke:var(--line)"/>`; return g + pts.map(([x, y]) => `<circle data-k="dots" cx="${X(x).toFixed(1)}" cy="${Y(y).toFixed(1)}" r="1.8" style="fill:var(--c2);fill-opacity:.7"/>`).join(''); });
+      const hm = Math.max(cmax, mx), freq = Array.from({ length: hm + 1 }, (_, i) => counts.filter(c => c === i).length);
+      $('#wps2-h').innerHTML = chart({ x: [-0.5, hm + 0.5], y: [0, Math.max(...freq, ...pm.slice(0, hm + 1).map(p => p * 100)) * 1.1], h: 240, xlab: '每格的菌落數', ylab: '格數' }, (X, Y) => { const bw = Math.max(1, (X(1) - X(0)) * 0.7); return freq.map((f, i) => `<rect data-k="var" x="${X(i) - bw / 2}" y="${Y(f)}" width="${bw}" height="${Y(0) - Y(f)}" style="fill:var(--c2);fill-opacity:.6"/>`).join('') + `<path class="keep" d="${Array.from({ length: hm + 1 }, (_, i) => `${i ? 'L' : 'M'}${X(i)} ${Y(S.dpois(i, lam) * 100)}`).join('')}" style="fill:none;stroke:var(--c1);stroke-width:2.5"/>`; });
+      $('#wps2-o').innerHTML = kvs([['P(X = k)', F.n(pm[k] ?? 0, 4), 'pk'], ['P(X ≤ k)', F.n(S.ppois(k, lam), 4), 'cdf'], ['期望值 = 變異數 = λ', lam.toFixed(1), 'ex'], ['培養皿：每格平均數', F.n(m, 2), 'dots'], ['培養皿：每格變異數', F.n(v, 2), 'var'], ['變異數 ÷ 平均（Poisson 約為 1）', F.n(v / m, 2), 'var']]);
+    };
+    segBind(el, '#wps2-m', b => { mode = b.dataset.m; up(true); });
+    el.addEventListener('input', e => { if (e.target.type === 'range') up(e.target.id === 'wps2-l'); });
+    $('#wps2-go', el).onclick = () => up(true); up(true);
+  },
   mosaic(el) {
     el.innerHTML = `<p class="w-cap">正方形代表全部的人（面積 = 1）。左右寬度是吸菸與不吸菸的比例；每一欄內，紅色的高度是該群中有高血壓的比例。</p>
 <div class="w-row">${slider('wm2-a', 'P(吸菸)', 5, 95, 5, 30, '%')}${slider('wm2-ba', 'P(高血壓 | 吸菸)', 0, 100, 5, 30, '%')}${slider('wm2-bn', 'P(高血壓 | 不吸菸)', 0, 100, 5, 15, '%')}</div>
@@ -722,5 +746,5 @@ Object.assign(W, {
   },
 });
 
-const WMAP = { 'binom': ['binomw', '二項分佈'], 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
+const WMAP = { 'poisson': ['poissonw', 'Poisson 分佈與培養皿'], 'binom': ['binomw', '二項分佈'], 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
 for (const [id, [w, t]] of Object.entries(WMAP)) { const c = CH.find(x => x.id === id); c.widget = w; c.wtitle = t; }

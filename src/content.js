@@ -255,8 +255,8 @@ const CH = [
   {
     id: 'c3-3', lv: 3, num: '3.3', title: '類別資料：卡方檢定與勝算比',
     body: `<p>當兩個變數都是類別（例如：吸菸與否 × 是否發生心血管事件），資料可整理成<b>列聯表</b>。</p>
-<div class="formula">χ² = Σ (觀察值 − 期望值)² ÷ 期望值　　　期望值 = 列總和 × 欄總和 ÷ 總數</div>
-<p>若任一格期望值小於 5（常見於小樣本），改用 <b>Fisher 精確檢定</b>。</p>
+<div class="formula">χ² = Σ (觀察值 − 期望次數)² ÷ 期望次數　　　期望次數（也常稱期望值）= 列總和 × 欄總和 ÷ 總數</div>
+<p>若任一格期望次數小於 5（常見於小樣本），改用 <b>Fisher 精確檢定</b>。</p>
 <h3>效果量：風險比與勝算比</h3>
 <div class="tbl-wrap"><table class="st"><thead><tr><th></th><th>有事件</th><th>無事件</th></tr></thead><tbody><tr><td>暴露</td><td>a</td><td>b</td></tr><tr><td>未暴露</td><td>c</td><td>d</td></tr></tbody></table></div>
 <div class="formula">風險比 RR = [a ÷ (a+b)] ÷ [c ÷ (c+d)]<br>勝算比 OR = (a ÷ b) ÷ (c ÷ d) = ad ÷ bc</div>
@@ -265,7 +265,7 @@ const CH = [
     labs: [{ label: '吸菸與心血管事件', ds: 'cvd_cohort', an: 'chisq', sel: { r: 'smoker', c: 'cvd_10y' } }, { label: '新藥與不良事件', ds: 'bp_trial', an: 'chisq', sel: { r: 'group', c: 'ae' } }],
     quiz: [
       { q: '病例對照研究中應報告哪一種效果量？', o: ['OR', 'RR', '發生率', '盛行率'], why: '病例對照研究中「有病者的比例」是研究者設定的，無法估計風險，只能估計勝算比。' },
-      { q: '2×2 表中有一格的期望值是 2.4，應該？', o: ['改用 Fisher 精確檢定', '照樣用卡方', '刪除那一格', '合併成 1×2 表'], why: '期望值太小時，卡方近似不準確。' },
+      { q: '2×2 表中有一格的期望次數是 2.4，應該？', o: ['改用 Fisher 精確檢定', '照樣用卡方', '刪除那一格', '合併成 1×2 表'], why: '期望次數太小時，卡方近似不準確。' },
     ],
   },
   {
@@ -728,6 +728,22 @@ const CH = [
       { q: '下列哪一項「不是」二項分佈的前提？', o: ['每次試驗的結果必須是常態分佈', '試驗次數事先固定', '每次成功的機率相同', '每次試驗彼此獨立'], why: '二項分佈的每次試驗只有兩種結果，和常態無關。' },
     ],
   },
+  {
+    id: 'poisson', title: 'Poisson 分佈',
+    body: `<p>很多生物資料是「在固定的時間或空間內，某件事發生幾次」：一個培養皿上的菌落數、顯微鏡一個視野中的細胞數、一年內某醫院的罕見疾病病例數。如果事件<b>隨機、彼此獨立</b>地以固定的平均速率發生，次數就服從 <b>Poisson 分佈</b>。</p>
+<div class="formula">P(X = k) = e<sup>−λ</sup> × λ<sup>k</sup> ÷ k!　　（k = 0, 1, 2, …）<br>E(X) = λ　　Var(X) = λ</div>
+<p>λ（lambda）是單位時間或空間內的平均次數，也叫<b>速率</b>。例：平均每個培養皿 3 個菌落，恰好 2 個的機率 = e<sup>−3</sup> × 3² ÷ 2! ≈ 0.224。</p>
+<h3>平均等於變異數</h3>
+<p>Poisson 分佈最大的特徵是<b>平均數等於變異數</b>。實際資料若變異數遠大於平均數，稱為<b>過度離散</b>，通常代表事件不是獨立隨機發生，而是<b>聚集</b>在一起（例如菌落成團、病例群聚），或是不同單位的速率本來就不同。這時要改用負二項分佈等模型。上方的培養皿模擬可以比較這兩種情況。</p>
+<h3>Poisson 近似二項分佈</h3>
+<p>二項分佈中，如果 n 很大、p 很小（罕見事件），可以用 λ = n × p 的 Poisson 分佈近似。例：突變率 0.001，檢查 2,000 個細胞，突變細胞數近似 λ = 2 的 Poisson 分佈。</p>
+<p class="note">比較兩組的率（例如每千人年的發生率）與 Poisson 迴歸，會在相關與迴歸階段再介紹。</p>`,
+    quiz: [
+      { q: '平均每個培養皿 3 個菌落（符合 Poisson 分佈）。某個培養皿恰好 2 個菌落的機率約是多少？', o: ['0.224', '0.149', '0.423', '0.667'], why: 'e⁻³ × 3² ÷ 2! = 0.0498 × 9 ÷ 2 ≈ 0.224。0.423 是 P(X ≤ 2)。' },
+      { q: '每格的菌落數，平均是 2、變異數是 9。這代表什麼？', o: ['過度離散：菌落可能成團聚集，不符合 Poisson 分佈', '完全符合 Poisson 分佈', '樣本數太少，沒有意義', '平均數算錯了'], why: 'Poisson 分佈的變異數等於平均數；變異數遠大於平均數代表聚集。' },
+      { q: '突變率 0.001，檢查 2,000 個細胞。突變細胞數最適合用哪個分佈近似？', o: ['λ = 2 的 Poisson 分佈', '平均 2000 的常態分佈', 'p = 0.5 的二項分佈', '均勻分佈'], why: 'n 很大、p 很小時，二項分佈可用 λ = n × p = 2 的 Poisson 分佈近似。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -851,6 +867,10 @@ const GLOSS = [
   ['組合數', ['C(n, k)'], '從 n 個中挑出 k 個的方法數：n! ÷ (k! × (n − k)!)。', 'binom'],
   ['常態近似', [], 'n 夠大時，用平均與標準差相同的常態分佈近似其他分佈。', 'binom'],
   ['連續性校正', [], '用連續的常態分佈近似離散分佈時，把邊界加減 0.5。', 'binom'],
+  ['Poisson 分佈', ['Poisson'], '在固定時間或空間內，隨機、獨立發生的事件次數的分佈；平均數等於變異數。', 'poisson'],
+  ['速率', ['λ'], 'Poisson 分佈中，單位時間或空間內事件的平均次數。', 'poisson'],
+  ['過度離散', [], '計數資料的變異數明顯大於平均數，常代表事件聚集。', 'poisson'],
+  ['聚集', [], '事件成團出現，而不是隨機、獨立地散布。', 'poisson'],
   ['閾值', ['cutoff'], '把連續數值的檢驗結果分成陽性與陰性的分界值。', 'roc'],
   ['ROC 曲線', ['ROC'], '把所有閾值下的敏感度對「1 − 特異度」畫出的曲線。', 'roc'],
   ['AUC', [], 'ROC 曲線下的面積：隨機挑一位有病、一位沒病的人，有病者檢驗值較高的機率。', 'roc'],
@@ -880,7 +900,7 @@ const GLOSS = [
   ['事後比較', [], 'ANOVA 之後，找出哪幾組之間不同的兩兩比較，需要校正多重比較。', 'c3-2'],
   ['卡方檢定', ['卡方', 'χ²'], '比較列聯表中觀察人數與期望人數的差距。', 'c3-3'],
   ['2×2 表', ['列聯表'], '把兩個類別變數交叉列出人數的表格。', 'c3-3'],
-  ['期望值', ['期望次數'], '假如兩變數無關，每一格應該有的人數：列總和 × 欄總和 ÷ 總數。', 'c3-3'],
+  ['期望次數', [], '假如兩變數無關，每一格應該有的人數：列總和 × 欄總和 ÷ 總數。', 'c3-3'],
   ['Fisher 精確檢定', ['Fisher'], '小樣本時用的精確計算法，不依賴卡方近似。', 'c3-3'],
   ['勝算比', ['OR'], '兩組「勝算」的比值。勝算 = 發生的人數 ÷ 沒發生的人數。', 'c3-3'],
   ['世代研究', [], '先依暴露分組，再往後追蹤看誰發生事件的研究。', 'c3-3'],
@@ -929,7 +949,7 @@ const GLOSS = [
 const ORDER = [
   ['c0-1', 'c0-2', 'c0-3', 'c0-4'],
   ['c1-1', 'c1-2', 'c1-3', 'c1-4', 'c1-5'],
-  ['prob-rules', 'c2-1', 'roc', 'rv', 'binom'],
+  ['prob-rules', 'c2-1', 'roc', 'rv', 'binom', 'poisson'],
   ['c2-2', 'c2-3', 'c2-4', 'c4-5', 'c5-1'],
   ['c3-1', 'c3-3', 'c3-5'],
   ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff', 'ancova'],
@@ -942,7 +962,7 @@ const ORDER = [
 const REFS = {
   'c0-1': 'Rosner 3.10', 'c1-1': 'Whitlock 第 1 章；Kirkwood 第 2 章', 'c1-2': 'Whitlock 第 3 章；Rosner 2.2–2.3；Kirkwood 第 4 章',
   'c1-3': 'Whitlock 第 3 章；Rosner 2.4–2.5；Kirkwood 第 4 章', 'c1-4': 'Whitlock 第 10 章；Rosner 第 5 章；Kirkwood 第 5 章', 'c1-5': 'Kirkwood 第 34 章',
-  'prob-rules': 'Whitlock 第 5 章；Rosner 3.2–3.6', 'roc': 'Rosner 3.9；UTHealth GSBS 課綱第 10 週', 'rv': 'Rosner 4.2–4.6', 'binom': 'Whitlock 7.1；Rosner 4.7–4.9、5.7；Kirkwood 第 15 章', 'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
+  'prob-rules': 'Whitlock 第 5 章；Rosner 3.2–3.6', 'roc': 'Rosner 3.9；UTHealth GSBS 課綱第 10 週', 'rv': 'Rosner 4.2–4.6', 'binom': 'Whitlock 7.1；Rosner 4.7–4.9、5.7；Kirkwood 第 15 章', 'poisson': 'Whitlock 8.4；Rosner 4.10–4.13；Kirkwood 第 22 章', 'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
   'c2-4': 'Whitlock 第 6 章；Rosner 7.1–7.5；Kirkwood 第 8 章', 'c4-5': 'Whitlock 14.6；Rosner 7.6–7.7、8.9；Kirkwood 第 35 章', 'c5-1': 'Rosner 13.2；Kirkwood 第 34 章',
   'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
   'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
