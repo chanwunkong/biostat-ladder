@@ -831,6 +831,24 @@ const CH = [
       { q: '某一類的期望次數只有 2.1，其他類都超過 10。較適當的處理是？', o: ['把這一類和相鄰的類別合併，或改用精確檢定', '直接刪掉這一類的資料', '照算不必處理', '把期望次數四捨五入成 5'], why: '期望次數太小時，卡方近似不準確；合併類別或使用精確檢定。' },
     ],
   },
+  {
+    id: 'boot', title: 'Bootstrap 與排列檢定',
+    body: `<p>前面的方法都依賴某個理論分佈（常態、t、χ²）。電腦普及之後，有兩種不需要這些分佈公式、直接用資料反覆重抽的方法，在生物學研究中越來越常見。</p>
+<h3>排列檢定：自己做出虛無分佈</h3>
+<p>比較兩組時，如果虛無假設為真（組別和結果無關），那麼「誰屬於哪一組」的標籤就只是隨機貼上的。<b>排列檢定</b>的做法：</p>
+<ol><li>算出觀察到的兩組平均差。</li><li>把所有資料的組別標籤<b>隨機打亂</b>，重新分成兩組，算一次平均差。</li><li>重複幾千次，得到「虛無假設下的差異分佈」，稱為<b>虛無分佈</b>。</li><li>p 值 = 打亂後的差異「和觀察值一樣極端或更極端」的比例。</li></ol>
+<p>排列檢定不需要常態假設，只需要「虛無假設下各觀察值可以互換」。小樣本、分佈形狀不明時特別有用。</p>
+<h3>Bootstrap：估計任何統計量的不確定性</h3>
+<p>想知道中位數、比值、相關係數這類統計量的標準誤或信賴區間，但沒有簡單公式時，可以用 <b>Bootstrap</b>：</p>
+<ol><li>從原始資料中<b>放回抽樣</b>，抽出和原始資料同樣多的觀察值（同一個值可能被抽到好幾次、有些值一次也沒抽到）。</li><li>在這份重抽的樣本上算出統計量。</li><li>重複幾千次，得到統計量的分佈。</li><li>取這個分佈的第 2.5 和第 97.5 百分位，就是 95% 信賴區間（百分位數法）。</li></ol>
+<p>Bootstrap 的想法是：把手上的樣本當作母體的縮影，從樣本重抽，模擬「從母體重抽」會有多少起伏。</p>
+<p class="note">兩者都要求觀察值彼此獨立；樣本很小時，Bootstrap 的信賴區間可能太窄。重抽次數越多，結果越穩定，一般至少 1,000 次。</p>`,
+    quiz: [
+      { q: '排列檢定的「虛無分佈」是怎麼得到的？', o: ['把組別標籤隨機打亂很多次，每次重新計算組間差異', '假設資料是常態分佈', '從資料中放回抽樣', '把每組的資料排序'], why: '若虛無假設為真，標籤可以任意互換；打亂標籤得到的差異就代表「純粹機遇」會產生多大的差異。' },
+      { q: 'Bootstrap 重抽樣本的方式是？', o: ['從原始資料中「放回」地抽出同樣多的觀察值', '從原始資料中「不放回」地抽出一半', '從常態分佈產生新資料', '把資料的組別標籤打亂'], why: '放回抽樣讓每次重抽的樣本都略有不同，模擬從母體重新抽樣的起伏。' },
+      { q: '想估計一組偏態資料「中位數」的 95% 信賴區間，最方便的方法是？', o: ['Bootstrap：重抽幾千次，取中位數分佈的第 2.5 與第 97.5 百分位', '平均 ± 1.96 × SD', '卡方檢定', '中位數 ± 1.96'], why: '中位數的標準誤沒有簡單公式；Bootstrap 直接從資料估計它的分佈。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -971,6 +989,10 @@ const GLOSS = [
   ['單一樣本 t 檢定', [], '比較一組樣本的平均和一個已知參考值 μ₀ 的 t 檢定。', 'one-t'],
   ['參考值', ['μ₀'], '單一樣本檢定中要比較的已知數值。', 'one-t'],
   ['卡方適合度檢定', ['適合度'], '檢定一個類別變數的各類人數是否符合預期比例。', 'gof'],
+  ['排列檢定', [], '把組別標籤隨機打亂很多次，建出虛無分佈來計算 p 值的方法。', 'boot'],
+  ['虛無分佈', [], '假設虛無假設為真時，檢定統計量的分佈。', 'boot'],
+  ['Bootstrap', [], '從資料中放回抽樣很多次，估計統計量的分佈、標準誤或信賴區間。', 'boot'],
+  ['放回抽樣', [], '每抽出一個觀察值後再放回去，同一個值可能被抽到好幾次。', 'boot'],
   ['二項檢定', ['精確二項檢定'], '用二項分佈直接計算的單一比例檢定。', 'binom-test'],
   ['預期比例', ['p₀'], '虛無假設下的比例，例如孟德爾預期的 0.75。', 'binom-test'],
   ['樣本比例', ['p̂'], '樣本中「成功」的比例 x ÷ n，用來估計母體比例。', 'prop-ci'],
@@ -1049,7 +1071,7 @@ const ORDER = [
   ['c0-1', 'c0-2', 'c0-3', 'c0-4'],
   ['c1-1', 'c1-2', 'c1-3', 'c1-4', 'c1-5'],
   ['prob-rules', 'c2-1', 'roc', 'rv', 'binom', 'poisson'],
-  ['c2-2', 'c2-3', 'tdist', 'prop-ci', 'c2-4', 'one-t', 'binom-test', 'gof', 'c4-5', 'c5-1'],
+  ['c2-2', 'c2-3', 'tdist', 'prop-ci', 'c2-4', 'one-t', 'binom-test', 'gof', 'boot', 'c4-5', 'c5-1'],
   ['c3-1', 'c3-3', 'c3-5'],
   ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff', 'ancova'],
   ['c3-4', 'c4-1', 'c4-2'],
@@ -1061,7 +1083,7 @@ const ORDER = [
 const REFS = {
   'c0-1': 'Rosner 3.10', 'c1-1': 'Whitlock 第 1 章；Kirkwood 第 2 章', 'c1-2': 'Whitlock 第 3 章；Rosner 2.2–2.3；Kirkwood 第 4 章',
   'c1-3': 'Whitlock 第 3 章；Rosner 2.4–2.5；Kirkwood 第 4 章', 'c1-4': 'Whitlock 第 10 章；Rosner 第 5 章；Kirkwood 第 5 章', 'c1-5': 'Kirkwood 第 34 章',
-  'prob-rules': 'Whitlock 第 5 章；Rosner 3.2–3.6', 'roc': 'Rosner 3.9；UTHealth GSBS 課綱第 10 週', 'rv': 'Rosner 4.2–4.6', 'binom': 'Whitlock 7.1；Rosner 4.7–4.9、5.7；Kirkwood 第 15 章', 'poisson': 'Whitlock 8.4；Rosner 4.10–4.13；Kirkwood 第 22 章', 'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'tdist': 'Whitlock 11.1；Rosner 6.5', 'prop-ci': 'Whitlock 7.3；Rosner 6.8；Kirkwood 第 15 章', 'binom-test': 'Whitlock 7.2；Rosner 7.9', 'gof': 'Whitlock 8.1–8.3；Rosner 10.7', 'one-t': 'Whitlock 11.2；Rosner 7.3–7.5；UTHealth GSBS 課綱第 2 週', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
+  'prob-rules': 'Whitlock 第 5 章；Rosner 3.2–3.6', 'roc': 'Rosner 3.9；UTHealth GSBS 課綱第 10 週', 'rv': 'Rosner 4.2–4.6', 'binom': 'Whitlock 7.1；Rosner 4.7–4.9、5.7；Kirkwood 第 15 章', 'poisson': 'Whitlock 8.4；Rosner 4.10–4.13；Kirkwood 第 22 章', 'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'tdist': 'Whitlock 11.1；Rosner 6.5', 'prop-ci': 'Whitlock 7.3；Rosner 6.8；Kirkwood 第 15 章', 'binom-test': 'Whitlock 7.2；Rosner 7.9', 'gof': 'Whitlock 8.1–8.3；Rosner 10.7', 'boot': 'Whitlock 13.8、第 19 章；Rosner 6.11、9.6', 'one-t': 'Whitlock 11.2；Rosner 7.3–7.5；UTHealth GSBS 課綱第 2 週', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
   'c2-4': 'Whitlock 第 6 章；Rosner 7.1–7.5；Kirkwood 第 8 章', 'c4-5': 'Whitlock 14.6；Rosner 7.6–7.7、8.9；Kirkwood 第 35 章', 'c5-1': 'Rosner 13.2；Kirkwood 第 34 章',
   'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
   'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',

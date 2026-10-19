@@ -54,8 +54,8 @@ EOF
 # 每頁開一個獨立的無頭瀏覽器，同時跑 8 頁
 export CHROME PROBE TMP
 run_page() {
-  r=$("$CHROME" --headless=new --disable-gpu --user-data-dir="$TMP/prof-$1" --window-size=500,900 --virtual-time-budget=8000 --dump-dom "file://$PROBE#$1" 2>/dev/null | grep -o '<title>[^<]*</title>' | tail -1 | sed 's/<[^>]*>//g')
-  case "$r" in *"untaught= orphan= errors=") echo "ok   $1  $r" ;; *) echo "FAIL $1  $r" ;; esac
+  r=$(perl -e 'alarm 60; exec @ARGV' "$CHROME" --headless=new --disable-gpu --user-data-dir="$TMP/prof-$1" --window-size=500,900 --virtual-time-budget=8000 --dump-dom "file://$PROBE#$1" 2>/dev/null | grep -o '<title>[^<]*</title>' | tail -1 | sed 's/<[^>]*>//g')
+  case "$r" in *"untaught= orphan= errors=") echo "ok   $1  $r" ;; *) echo "FAIL $1  ${r:-逾時（超過 60 秒）}" ;; esac
 }
 export -f run_page 2>/dev/null
 CHAPTERS=$(node -e "const fs=require('fs');const r=f=>fs.readFileSync('src/'+f,'utf8');console.log(new Function(r('core.js')+r('content.js')+';return CH;')().map(c=>c.id).join(' '))")

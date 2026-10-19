@@ -803,6 +803,36 @@ Object.assign(W, {
     segBind(el, '#wg2-r', b => { ratio = b.dataset.r.split(',').map(Number); up(); });
     el.addEventListener('input', up); up();
   },
+  bootw(el) {
+    const A = [12.1, 14.5, 9.8, 15.2, 11.0, 13.4, 10.6, 25.3], B = [16.8, 19.5, 14.9, 22.1, 18.0, 17.2, 31.0, 20.4], all = [...A, ...B], obs = S.mean(B) - S.mean(A);
+    el.innerHTML = `<p class="w-cap">兩組各 8 個樣本（對照組、處理組），資料有點偏、各有一個很大的值。</p>
+<div class="seg wrap" id="wbo-m"><button type="button" data-m="perm" aria-selected="true">排列檢定</button><button type="button" data-m="boot" aria-selected="false">Bootstrap：處理組中位數</button></div>
+<div class="w-row"><button class="btn" type="button" id="wbo-1">重抽 1 次</button><button class="btn" type="button" id="wbo-2">重抽 2000 次</button><button class="btn ghost" type="button" id="wbo-0">清除</button></div>
+<div class="chart-wrap" id="wbo-d"></div><div class="chart-wrap" id="wbo-h"></div><div class="kv" id="wbo-k"></div>`;
+    let mode = 'perm', res = [], last = null;
+    const once = () => {
+      if (mode === 'perm') { const idx = all.map((_, i) => i); for (let i = idx.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [idx[i], idx[j]] = [idx[j], idx[i]]; } const a = idx.slice(0, 8).map(i => all[i]), b = idx.slice(8).map(i => all[i]); last = { a, b }; return S.mean(b) - S.mean(a); }
+      const b = Array.from({ length: 8 }, () => B[Math.floor(Math.random() * 8)]); last = { b }; return S.median(b);
+    };
+    const draw = () => {
+      const groups = mode === 'perm' ? [['對照', last ? last.a : A], ['處理', last ? last.b : B]] : [['處理組（原始）', B], ['重抽的樣本', last ? last.b : B]];
+      $('#wbo-d').innerHTML = chart({ xcats: groups.map(g => g[0]), y: [5, 33], h: 200, ylab: '測量值' }, (X, Y) => groups.map(([, v], k) => v.map((x, i) => `<circle cx="${X(k) + ((i * 0.618) % 1 - 0.5) * 40}" cy="${Y(x)}" r="5" style="fill:${col4(k)};fill-opacity:.7"/>`).join('') + `<line x1="${X(k) - 30}" x2="${X(k) + 30}" y1="${Y(mode === 'perm' ? S.mean(v) : S.median(v))}" y2="${Y(mode === 'perm' ? S.mean(v) : S.median(v))}" style="stroke:var(--ink);stroke-width:3"/>`).join(''));
+      if (mode === 'perm') {
+        const ext = res.filter(d => Math.abs(d) >= Math.abs(obs) - 1e-12).length, p = res.length ? ext / res.length : NaN, w = S.welch(A, B);
+        $('#wbo-h').innerHTML = res.length ? histChart(res, { lo: -10, hi: 10, bins: 40, h: 220, xlab: '打亂標籤後的平均差（虛無分佈）', ylab: '次數', color: i => (Math.abs(-10 + (i + 0.5) * 0.5) >= Math.abs(obs) ? 'var(--c2)' : 'var(--c1)'), tag: i => (Math.abs(-10 + (i + 0.5) * 0.5) >= Math.abs(obs) ? 'pp' : 'null'), extra: (X, Y) => `<line data-k="obs pp" x1="${X(obs)}" x2="${X(obs)}" y1="${Y(0)}" y2="${Y(0) - 160}" style="stroke:var(--ink);stroke-width:2.5"/>` }) : '';
+        $('#wbo-k').innerHTML = kvs([['觀察到的平均差', F.n(obs, 2), 'obs'], ['重抽次數', res.length], ['排列檢定 p 值', res.length ? F.p(p) : '—', 'pp'], ['Welch t 檢定 p 值（比較用）', F.p(w.p), 'obs']]);
+      } else {
+        const ci = res.length >= 40 ? [S.quantile(res, 0.025), S.quantile(res, 0.975)] : null;
+        $('#wbo-h').innerHTML = res.length ? histChart(res, { lo: 12, hi: 32, bins: 40, h: 220, xlab: '重抽樣本的中位數（Bootstrap 分佈）', ylab: '次數', tag: () => 'bd', extra: (X, Y) => `<line data-k="med" x1="${X(S.median(B))}" x2="${X(S.median(B))}" y1="${Y(0)}" y2="${Y(0) - 160}" style="stroke:var(--ink);stroke-width:2.5"/>` + (ci ? `<g class="hlx" data-k="bci"><line x1="${X(ci[0])}" x2="${X(ci[1])}" y1="${Y(0) - 150}" y2="${Y(0) - 150}" style="stroke:var(--c2);stroke-width:5"/></g>` : '') }) : '';
+        $('#wbo-k').innerHTML = kvs([['原始資料的中位數', F.n(S.median(B), 2), 'med'], ['重抽次數', res.length], ['Bootstrap 95% 信賴區間', ci ? F.ci(...ci, 1) : '至少重抽 40 次', 'bci']]);
+      }
+    };
+    segBind(el, '#wbo-m', b => { mode = b.dataset.m; res = []; last = null; draw(); });
+    $('#wbo-1', el).onclick = () => { res.push(once()); draw(); };
+    $('#wbo-2', el).onclick = () => { for (let i = 0; i < 2000; i++) res.push(once()); draw(); };
+    $('#wbo-0', el).onclick = () => { res = []; last = null; draw(); };
+    draw();
+  },
   mosaic(el) {
     el.innerHTML = `<p class="w-cap">正方形代表全部的人（面積 = 1）。左右寬度是吸菸與不吸菸的比例；每一欄內，紅色的高度是該群中有高血壓的比例。</p>
 <div class="w-row">${slider('wm2-a', 'P(吸菸)', 5, 95, 5, 30, '%')}${slider('wm2-ba', 'P(高血壓 | 吸菸)', 0, 100, 5, 30, '%')}${slider('wm2-bn', 'P(高血壓 | 不吸菸)', 0, 100, 5, 15, '%')}</div>
@@ -820,5 +850,5 @@ Object.assign(W, {
   },
 });
 
-const WMAP = { 'gof': ['gofw', '孟德爾的豌豆'], 'binom-test': ['binomtestw', '二項檢定'], 'one-t': ['onetw', '單一樣本 t 檢定'], 'prop-ci': ['propciw', '三種比例信賴區間'], 'tdist': ['tdistw', 't 分佈與常態分佈'], 'poisson': ['poissonw', 'Poisson 分佈與培養皿'], 'binom': ['binomw', '二項分佈'], 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
+const WMAP = { 'boot': ['bootw', '重抽 2000 次'], 'gof': ['gofw', '孟德爾的豌豆'], 'binom-test': ['binomtestw', '二項檢定'], 'one-t': ['onetw', '單一樣本 t 檢定'], 'prop-ci': ['propciw', '三種比例信賴區間'], 'tdist': ['tdistw', 't 分佈與常態分佈'], 'poisson': ['poissonw', 'Poisson 分佈與培養皿'], 'binom': ['binomw', '二項分佈'], 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
 for (const [id, [w, t]] of Object.entries(WMAP)) { const c = CH.find(x => x.id === id); c.widget = w; c.wtitle = t; }
