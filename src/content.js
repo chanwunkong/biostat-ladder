@@ -190,7 +190,7 @@ const CH = [
     id: 'c2-3', lv: 2, num: '2.3', title: '標準誤與信賴區間',
     body: `<div class="formula">標準誤 SE = s ÷ √n<br>95% 信賴區間 = x̄ ± t<sub>0.975, n−1</sub> × SE　（n 大時 t ≈ 1.96）</div>
 <div class="ex"><b>例題</b>　40 位病人平均收縮壓 138，SD 16。SE = 16 ÷ √40 = 2.53；t<sub>0.975, 39</sub> = 2.02；95% CI = 138 ± 5.1，即 132.9 至 143.1 mmHg。</div>
-<p><b>正確的解讀</b>：如果用同樣方法重複做很多次研究，每次算一個區間，約 95% 的區間會涵蓋真正的 μ。對單一個已經算出的區間，μ 要嘛在裡面、要嘛不在，並不是「有 95% 機率」在裡面。用上方模擬器親眼看看。</p>
+<p><b>正確的解讀</b>：如果用同樣方法重複做很多次研究，每次算一個區間，約 95% 的區間會涵蓋真正的 μ，這個比例稱為<b>涵蓋率</b>。對單一個已經算出的區間，μ 要嘛在裡面、要嘛不在，並不是「有 95% 機率」在裡面。用上方模擬器親眼看看。</p>
 <p>現代期刊（尤其醫學期刊）越來越要求報告<b>效果量與 95% CI</b>，而不只是 p 值，因為區間同時告訴你效果多大、估計有多不確定。</p>`,
     widget: 'ci', wtitle: '50 次研究的信賴區間',
     quiz: [
@@ -759,6 +759,24 @@ const CH = [
       { q: 'n = 10，平均數 95% 信賴區間的臨界值約是多少？', o: ['2.26', '1.96', '2.09', '1.645'], why: '自由度 = 10 − 1 = 9，t₀.₉₇₅,₉ ≈ 2.26。' },
     ],
   },
+  {
+    id: 'prop-ci', title: '比例的信賴區間',
+    body: `<p>很多研究要估計的是一個比例：盛行率、反應率、存活率、帶有某基因型的比例。從 n 個樣本中觀察到 x 個「成功」，樣本比例 p̂ = x ÷ n，它是母體比例 p 的估計值。</p>
+<div class="formula">比例的標準誤 SE = √(p̂ × (1 − p̂) ÷ n)</div>
+<h3>最常見的公式：Wald 法</h3>
+<div class="formula">p̂ ± 1.96 × SE</div>
+<p>這是很多教科書的第一個公式，但它有明顯的缺點：樣本小、或比例接近 0 或 1 時，實際涵蓋率常常低於 95%，區間甚至會超出 0 到 1 的範圍。極端的例子是 50 人中 0 人發生副作用：p̂ = 0、SE = 0，區間變成「0 至 0」，好像確定不會有人發生，這顯然不合理。</p>
+<h3>建議的方法</h3>
+<ul><li><b>Wilson 法</b>：把區間的中心往 0.5 稍微拉回、寬度也做調整，各種情況下的涵蓋率都接近 95%，是目前最常建議的方法。Whitlock 教科書使用的 Agresti–Coull 法是它的簡化版。</li>
+<li><b>精確法</b>（Clopper–Pearson）：直接用二項分佈（{{binom}} 章）計算，保證涵蓋率至少 95%，所以通常比較寬（保守）。</li></ul>
+<p>論文中要寫明使用哪一種方法，例如「盛行率 35%（95% CI 18.1–56.7%，Wilson 法）」。</p>
+<p class="note">比例的標準誤和平均數一樣與 √n 成反比：想讓區間寬度減半，樣本數要變成 4 倍。p 越接近 0.5，標準誤越大。</p>`,
+    quiz: [
+      { q: '20 人中 7 人有反應。樣本比例與它的標準誤是？', o: ['0.35；約 0.107', '0.35；約 0.023', '7；約 2.13', '0.35；0.65'], why: 'p̂ = 7 ÷ 20 = 0.35；SE = √(0.35 × 0.65 ÷ 20) ≈ 0.107。' },
+      { q: '50 人中 0 人發生副作用。用 Wald 法算 95% 信賴區間會得到什麼？應該怎麼做？', o: ['得到 0 至 0，不合理；應改用 Wilson 法或精確法', '得到合理的區間，可以直接報告', '無法估計，只能說沒有副作用', '加入更多受試者直到有人發生副作用'], why: 'p̂ = 0 時 Wald 的標準誤為 0；Wilson 或精確法會給出 0 到某個上限的區間。' },
+      { q: '想讓比例的信賴區間寬度減半，樣本數大約要變成幾倍？', o: ['4 倍', '2 倍', '一半', '不變'], why: '寬度與 1 ÷ √n 成正比。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -896,6 +914,11 @@ const GLOSS = [
   ['信賴區間', ['CI'], '估計值 ± 臨界值 × 標準誤。以同樣方法重複研究時，95% 的區間會涵蓋真值。', 'c2-3'],
   ['t 分佈', [], '用樣本標準差代替母體標準差時，標準化平均數的分佈；尾巴比常態分佈厚，形狀由自由度決定。', 'tdist'],
   ['臨界值', [], '信賴區間或檢定所用的分界值，例如 95% 雙尾的常態臨界值 1.96。', 'tdist'],
+  ['樣本比例', ['p̂'], '樣本中「成功」的比例 x ÷ n，用來估計母體比例。', 'prop-ci'],
+  ['Wald 法', ['Wald'], '比例的信賴區間 p̂ ± 1.96 × SE；小樣本或比例接近 0、1 時不準確。', 'prop-ci'],
+  ['Wilson 法', ['Wilson'], '涵蓋率較穩定的比例信賴區間，目前最常建議。', 'prop-ci'],
+  ['精確法', ['Clopper–Pearson'], '直接以二項分佈計算的比例信賴區間，涵蓋率至少 95%，通常較寬。', 'prop-ci'],
+  ['涵蓋率', [], '以同一方法重複研究時，信賴區間實際涵蓋真值的比例。', 'c2-3'],
   ['虛無假設', ['H0', 'H₀'], '「沒有差異、沒有效果」的假設，檢定是以它為出發點計算的。', 'c2-4'],
   ['p 值', ['p = ', 'p < '], '假設虛無假設為真時，得到至少這麼極端結果的機率。', 'c2-4'],
   ['顯著水準', ['α'], '事先定好的門檻（通常 0.05）：p 值小於它就拒絕虛無假設。', 'c2-4'],
@@ -967,7 +990,7 @@ const ORDER = [
   ['c0-1', 'c0-2', 'c0-3', 'c0-4'],
   ['c1-1', 'c1-2', 'c1-3', 'c1-4', 'c1-5'],
   ['prob-rules', 'c2-1', 'roc', 'rv', 'binom', 'poisson'],
-  ['c2-2', 'c2-3', 'tdist', 'c2-4', 'c4-5', 'c5-1'],
+  ['c2-2', 'c2-3', 'tdist', 'prop-ci', 'c2-4', 'c4-5', 'c5-1'],
   ['c3-1', 'c3-3', 'c3-5'],
   ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff', 'ancova'],
   ['c3-4', 'c4-1', 'c4-2'],
@@ -979,7 +1002,7 @@ const ORDER = [
 const REFS = {
   'c0-1': 'Rosner 3.10', 'c1-1': 'Whitlock 第 1 章；Kirkwood 第 2 章', 'c1-2': 'Whitlock 第 3 章；Rosner 2.2–2.3；Kirkwood 第 4 章',
   'c1-3': 'Whitlock 第 3 章；Rosner 2.4–2.5；Kirkwood 第 4 章', 'c1-4': 'Whitlock 第 10 章；Rosner 第 5 章；Kirkwood 第 5 章', 'c1-5': 'Kirkwood 第 34 章',
-  'prob-rules': 'Whitlock 第 5 章；Rosner 3.2–3.6', 'roc': 'Rosner 3.9；UTHealth GSBS 課綱第 10 週', 'rv': 'Rosner 4.2–4.6', 'binom': 'Whitlock 7.1；Rosner 4.7–4.9、5.7；Kirkwood 第 15 章', 'poisson': 'Whitlock 8.4；Rosner 4.10–4.13；Kirkwood 第 22 章', 'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'tdist': 'Whitlock 11.1；Rosner 6.5', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
+  'prob-rules': 'Whitlock 第 5 章；Rosner 3.2–3.6', 'roc': 'Rosner 3.9；UTHealth GSBS 課綱第 10 週', 'rv': 'Rosner 4.2–4.6', 'binom': 'Whitlock 7.1；Rosner 4.7–4.9、5.7；Kirkwood 第 15 章', 'poisson': 'Whitlock 8.4；Rosner 4.10–4.13；Kirkwood 第 22 章', 'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'tdist': 'Whitlock 11.1；Rosner 6.5', 'prop-ci': 'Whitlock 7.3；Rosner 6.8；Kirkwood 第 15 章', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
   'c2-4': 'Whitlock 第 6 章；Rosner 7.1–7.5；Kirkwood 第 8 章', 'c4-5': 'Whitlock 14.6；Rosner 7.6–7.7、8.9；Kirkwood 第 35 章', 'c5-1': 'Rosner 13.2；Kirkwood 第 34 章',
   'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
   'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',

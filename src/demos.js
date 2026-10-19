@@ -2,6 +2,11 @@
    每題的 demo：set = 設定輸入元件（id → 值）；click = 依序點擊的按鈕；custom = 交給互動圖自己的 _demo()；look = 示範時的觀察提示。
    有 q 的項目會整題替換（原題無法在圖上示範時）。 */
 const QD = {
+  'prop-ci': [
+    { demo: { set: { 'wpc-n': 20, 'wpc-x': 7 }, look: '點「樣本比例」與「標準誤」兩張數字卡。' } },
+    { demo: { set: { 'wpc-n': 50, 'wpc-x': 0 }, look: '0 人發生：紅色的 Wald 區間縮成一個點；Wilson 與精確法都給出 0 到某個上限的區間。' } },
+    { demo: { set: { 'wpc-n': 80, 'wpc-x': 28, 'wpc-p': 0.05 }, then: ['#wpc-go'], look: '和 n = 20 相比，n = 80 的區間大約窄一半。下方是 p = 0.05 時的涵蓋率模擬：Wald 明顯低於 95%。' } },
+  ],
   'tdist': [
     { demo: { set: { 'wtd-df': 4 }, then: ['#wtd-go'], look: '自由度 4（n = 5）：藍色 t 分佈的尾巴比灰色常態厚。模擬中誤用 1.96 的涵蓋率明顯低於 95%。' } },
     { demo: { set: { 'wtd-df': 60 }, look: '自由度 60：t 分佈和常態分佈幾乎重疊，臨界值接近 1.96。' } },

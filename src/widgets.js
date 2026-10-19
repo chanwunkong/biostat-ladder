@@ -747,6 +747,23 @@ Object.assign(W, {
     $('#wtd-go', el).onclick = () => { const df = +$('#wtd-df').value, n = df + 1, tc = S.qt(0.975, df); let a = 0, b = 0; for (let r = 0; r < 2000; r++) { const x = Array.from({ length: n }, rnorm), m = S.mean(x), se = S.sd(x) / Math.sqrt(n); if (Math.abs(m) <= 1.96 * se) a++; if (Math.abs(m) <= tc * se) b++; } cov = [a / 2000, b / 2000]; up(); };
     $('#wtd-df').oninput = () => { cov = null; up(); }; up();
   },
+  propciw(el) {
+    el.innerHTML = `<div class="w-row">${slider('wpc-n', '樣本數 n', 5, 200, 1, 20)}${slider('wpc-x', '成功數 x', 0, 200, 1, 7)}</div>
+<div class="chart-wrap" id="wpc-c"></div><div class="kv" id="wpc-k"></div>
+<p class="w-cap">涵蓋率模擬：設定真正的比例 p，用樣本數 n 重複抽樣 2000 次，看三種方法的區間有多少比例涵蓋 p。</p>
+<div class="w-row">${slider('wpc-p', '真正的比例 p', 0.01, 0.5, 0.01, 0.05)}<button class="btn" type="button" id="wpc-go">模擬 2000 次</button></div><div class="chart-wrap" id="wpc-s"></div>`;
+    const methods = [['wald', 'Wald', 'var(--c2)'], ['wilson', 'Wilson', 'var(--c1)'], ['exact', '精確法', 'var(--c3)']];
+    let sim = null;
+    const up = () => {
+      const n = sv('wpc-n'), xs = $('#wpc-x'); xs.max = n; const x = Math.min(n, sv('wpc-x')), R = S.propCI(x, n);
+      $('#wpc-c').innerHTML = chart({ ycats: methods.map(m => m[1]), x: [-0.1, 1], h: 180, m: { l: 70 }, xlab: '比例', xgrid: true }, (X, Y, { M, ih }) => `<line class="keep" x1="${X(0)}" x2="${X(0)}" y1="${M.t}" y2="${M.t + ih}" style="stroke:var(--ink);stroke-width:1.5"/><line class="keep" x1="${X(1)}" x2="${X(1)}" y1="${M.t}" y2="${M.t + ih}" style="stroke:var(--ink);stroke-width:1.5"/>` + methods.map(([k, , c], i) => `<g data-k="${k}"><line x1="${X(R[k][0])}" x2="${X(R[k][1])}" y1="${Y(i)}" y2="${Y(i)}" style="stroke:${c};stroke-width:5"/><circle cx="${X(R.p)}" cy="${Y(i)}" r="5" style="fill:var(--ink)"/></g>`).join(''));
+      $('#wpc-k').innerHTML = kvs([['樣本比例 p̂', F.n(R.p, 3), 'wilson'], ['標準誤', F.n(R.se, 3), 'wald'], ['Wald 95% CI', F.ci(...R.wald, 3), 'wald'], ['Wilson 95% CI', F.ci(...R.wilson, 3), 'wilson'], ['精確法 95% CI', F.ci(...R.exact, 3), 'exact']]);
+      if (sim) $('#wpc-s').innerHTML = chart({ ycats: methods.map(m => m[1]), x: [Math.min(0.7, ...sim) - 0.02, 1], h: 170, m: { l: 70 }, xlab: '涵蓋率' }, (X, Y, { M, ih }) => methods.map(([k, , c], i) => `<rect data-k="cov${k}" x="${X(Math.min(0.7, ...sim) - 0.02)}" y="${Y(i) - ih / 8}" width="${X(sim[i]) - X(Math.min(0.7, ...sim) - 0.02)}" height="${ih / 4}" style="fill:${c}"/><text x="${X(sim[i]) + 5}" y="${Y(i)}" dy=".32em" style="fill:var(--ink)">${F.n(100 * sim[i], 1)}%</text>`).join('') + `<line class="keep" x1="${X(0.95)}" x2="${X(0.95)}" y1="${M.t}" y2="${M.t + ih}" style="stroke:var(--ink);stroke-dasharray:4 3"/>`);
+    };
+    const runSim = () => { const n = +$('#wpc-n').value, p = +$('#wpc-p').value, c = [0, 0, 0]; for (let r = 0; r < 2000; r++) { let x = 0; for (let i = 0; i < n; i++) if (Math.random() < p) x++; const R = S.propCI(x, n); methods.forEach(([k], i) => { if (R[k][0] <= p && p <= R[k][1]) c[i]++; }); } sim = c.map(v => v / 2000); up(); };
+    el.addEventListener('input', e => { if (e.target.type === 'range') { if (e.target.id !== 'wpc-x') sim = null; if (!sim) $('#wpc-s').innerHTML = ''; up(); } });
+    $('#wpc-go', el).onclick = runSim; up();
+  },
   mosaic(el) {
     el.innerHTML = `<p class="w-cap">正方形代表全部的人（面積 = 1）。左右寬度是吸菸與不吸菸的比例；每一欄內，紅色的高度是該群中有高血壓的比例。</p>
 <div class="w-row">${slider('wm2-a', 'P(吸菸)', 5, 95, 5, 30, '%')}${slider('wm2-ba', 'P(高血壓 | 吸菸)', 0, 100, 5, 30, '%')}${slider('wm2-bn', 'P(高血壓 | 不吸菸)', 0, 100, 5, 15, '%')}</div>
@@ -764,5 +781,5 @@ Object.assign(W, {
   },
 });
 
-const WMAP = { 'tdist': ['tdistw', 't 分佈與常態分佈'], 'poisson': ['poissonw', 'Poisson 分佈與培養皿'], 'binom': ['binomw', '二項分佈'], 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
+const WMAP = { 'prop-ci': ['propciw', '三種比例信賴區間'], 'tdist': ['tdistw', 't 分佈與常態分佈'], 'poisson': ['poissonw', 'Poisson 分佈與培養皿'], 'binom': ['binomw', '二項分佈'], 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
 for (const [id, [w, t]] of Object.entries(WMAP)) { const c = CH.find(x => x.id === id); c.widget = w; c.wtitle = t; }

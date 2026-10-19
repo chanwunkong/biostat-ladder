@@ -102,6 +102,12 @@ near('pbinom(3, 10, 0.2)', S.pbinom(3, 10, 0.2), 0.8791261);
 near('dpois(2, 3)', S.dpois(2, 3), 0.2240418);
 near('ppois(2, 3)', S.ppois(2, 3), 0.4231901);
 
+const pci = S.propCI(7, 20);
+near('Wilson 下限 prop.test(7,20,correct=F)', pci.wilson[0], 0.1811918);
+near('Wilson 上限', pci.wilson[1], 0.5671457);
+near('精確法下限 binom.test(7,20)', pci.exact[0], 0.1539092);
+near('精確法上限', pci.exact[1], 0.5921885);
+
 const DS = {};
 for (const m of DATASETS) { const d = m.gen(); DS[m.id] = makeDS({ ...m, head: d.head, rows: d.rows }); }
 const runs = [
