@@ -972,6 +972,29 @@ const CH = [
       { q: '兩組各只有 6 隻小鼠，要比較測量值。最好的呈現方式是？', o: ['點圖或箱型圖，並畫出每一個資料點', '只畫兩根平均值長條加 SE', '圓餅圖', '只報告 p 值'], why: '樣本小時，平均值長條圖會藏住資料的分佈與極端值。' },
     ],
   },
+  {
+    id: 'simple-reg', title: '簡單線性迴歸的推論',
+    body: `<p>相關係數（{{c3-4}} 章）描述兩個變數一起變動的程度；<b>簡單線性迴歸</b>更進一步，用一條直線描述「x 改變時，y 平均改變多少」，並可以用來預測。</p>
+<div class="formula">y = β₀ + β₁x + ε　　（ε 是每個點偏離直線的隨機誤差）</div>
+<p>直線用最小平方法（{{c0-4}} 章）從資料估計，得到截距 b₀ 和斜率 b₁。</p>
+<h3>斜率的推論</h3>
+<div class="formula">t = b₁ ÷ SE(b₁)　　自由度 = n − 2<br>斜率的 95% CI = b₁ ± t 臨界值 × SE(b₁)</div>
+<p>虛無假設是 β₁ = 0（x 和 y 沒有直線關係）。斜率的信賴區間比 p 值更有用：「年齡每增加 1 歲，收縮壓平均增加 0.4 mmHg（95% CI 0.2 至 0.6）」。<b>R²</b> 是 y 的變異中被這條直線解釋的比例，簡單迴歸時 R² = r²。</p>
+<h3>信賴區間和預測區間</h3>
+<p>對某個 x 值（例如 60 歲）做預測時，有兩種不同的問題：</p>
+<ul><li><b>平均反應的信賴區間</b>：所有 60 歲的人，平均收縮壓在哪個範圍？它只反映「直線估得準不準」，樣本越大越窄。</li>
+<li><b>預測區間</b>：下一位 60 歲的病人，收縮壓可能落在哪個範圍？它還要加上個體之間的變異，所以永遠比信賴區間寬，樣本再大也不會縮到 0。</li></ul>
+<p>兩種區間都是在 x 的平均附近最窄，越往兩端越寬。</p>
+<h3>外推的風險</h3>
+<p>直線只在資料涵蓋的 x 範圍內有根據。資料只有 30 到 70 歲，就不能用它預測 90 歲的人；超出範圍的關係可能完全不同（例如飽和、轉彎）。</p>
+<p class="note">迴歸的前提和多元迴歸相同（線性、獨立、殘差常態、變異齊一），檢查方式見下一章「迴歸診斷與轉換」。</p>`,
+    labs: [{ label: '年齡與收縮壓的簡單迴歸', ds: 'cvd_cohort', an: 'linreg', sel: { y: 'sbp', xs: ['age'] } }],
+    quiz: [
+      { q: '「年齡每增加 1 歲，收縮壓平均增加 0.8 mmHg，斜率 95% CI 0.5 至 1.1」。最恰當的解讀是？', o: ['與資料相容的真實斜率大約在每歲 0.5 到 1.1 mmHg 之間', '每個人每年血壓一定增加 0.8', '95% 的人每年增加 0.5 到 1.1', '年齡解釋了 80% 的變異'], why: '斜率的信賴區間描述「平均」變化量的不確定性，不是個體的變化。' },
+      { q: '預測「下一位 60 歲病人」的收縮壓，和估計「所有 60 歲病人的平均」收縮壓。哪一個區間比較寬？', o: ['預測下一位病人的預測區間', '平均的信賴區間', '一樣寬', '視 p 值而定'], why: '預測區間還要加上個體之間的變異。' },
+      { q: '資料的年齡範圍是 30 到 70 歲。用這條迴歸線預測 90 歲的人，有什麼問題？', o: ['外推：資料範圍之外的關係沒有根據，區間也會很寬', '沒有問題，直線可以無限延伸', '只要 R² 夠大就可以', '只要 p < 0.05 就可以'], why: '超出資料範圍時，真實關係可能完全不同。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -993,6 +1016,7 @@ const GLOSS = [
   ['對數', ['log'], '「底數要幾次方才會得到這個數」。log₂(8) = 3，因為 2³ = 8。', 'c0-3'],
   ['倍數變化', ['fold change'], '處理組 ÷ 對照組。2 代表變成兩倍，0.5 代表變成一半。', 'c0-3'],
   ['log₂FC', ['log2 fold change', 'log₂ fold change'], '倍數變化取以 2 為底的對數：+1 是加倍，−1 是減半。', 'c0-3'],
+  ['預測值', [], '把 x 代入迴歸線（模型）得到的 y 值。', 'c0-4'],
   ['斜率', [], 'x 增加 1 時，直線上的 y 變化多少。', 'c0-4'],
   ['截距', [], 'x = 0 時直線的 y 值。', 'c0-4'],
   ['殘差', [], '實際值 − 直線（模型）的預測值。', 'c0-4'],
@@ -1180,6 +1204,10 @@ const GLOSS = [
   ['線性迴歸', [], '用一條直線（或多個變數的組合）預測數值結果的方法。', 'c3-5'],
   ['邏輯斯迴歸', [], '結果是二元（有／無）時使用的迴歸，可同時校正多個變數，結果以勝算比表示。', 'c3-5'],
   ['Cox 迴歸', ['Cox'], '時間至事件資料使用的迴歸，可校正多個變數，結果以危險比表示。', 'c3-5'],
+  ['簡單線性迴歸', [], '只有一個預測變數的線性迴歸：y = β₀ + β₁x + ε。', 'simple-reg'],
+  ['預測區間', [], '對某個 x 值，下一個個體的 y 可能落在的範圍；比平均反應的信賴區間寬。', 'simple-reg'],
+  ['信賴帶', ['平均反應的信賴區間'], '迴歸線上每個 x 值的平均反應信賴區間連起來的帶狀範圍。', 'simple-reg'],
+  ['外推', [], '用迴歸線預測資料範圍以外的 x 值；沒有資料根據。', 'simple-reg'],
   ['迴歸係數', ['係數', 'β'], '其他變數固定時，某變數增加 1 單位，結果平均改變多少。', 'c4-1'],
   ['虛擬變數', [], '把類別變數轉成 0／1 的欄位，才能放進迴歸。', 'c4-1'],
   ['參考組', [], '類別變數中被拿來當比較基準的那一組。', 'c4-1'],
@@ -1218,7 +1246,7 @@ const ORDER = [
   ['c2-2', 'c2-3', 'tdist', 'prop-ci', 'c2-4', 'one-t', 'binom-test', 'gof', 'boot', 'c4-5', 'c5-1'],
   ['c3-1', 'two-assume', 'nonpar', 'c3-3', 'two-prop', 'mcnemar', 'kappa', 'c3-5'],
   ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff', 'ancova'],
-  ['c3-4', 'c4-1', 'c4-2'],
+  ['c3-4', 'simple-reg', 'c4-1', 'c4-2'],
   ['c4-3'],
   ['c4-4', 'c4-6'],
   ['c5-2', 'c5-3', 'c5-4', 'c5-5'],
@@ -1230,7 +1258,7 @@ const REFS = {
   'prob-rules': 'Whitlock 第 5 章；Rosner 3.2–3.6', 'roc': 'Rosner 3.9；UTHealth GSBS 課綱第 10 週', 'rv': 'Rosner 4.2–4.6', 'binom': 'Whitlock 7.1；Rosner 4.7–4.9、5.7；Kirkwood 第 15 章', 'poisson': 'Whitlock 8.4；Rosner 4.10–4.13；Kirkwood 第 22 章', 'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'tdist': 'Whitlock 11.1；Rosner 6.5', 'prop-ci': 'Whitlock 7.3；Rosner 6.8；Kirkwood 第 15 章', 'binom-test': 'Whitlock 7.2；Rosner 7.9', 'gof': 'Whitlock 8.1–8.3；Rosner 10.7', 'boot': 'Whitlock 13.8、第 19 章；Rosner 6.11、9.6', 'one-t': 'Whitlock 11.2；Rosner 7.3–7.5；UTHealth GSBS 課綱第 2 週', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
   'c2-4': 'Whitlock 第 6 章；Rosner 7.1–7.5；Kirkwood 第 8 章', 'c4-5': 'Whitlock 14.6；Rosner 7.6–7.7、8.9；Kirkwood 第 35 章', 'c5-1': 'Rosner 13.2；Kirkwood 第 34 章',
   'nonpar': 'Whitlock 13.4–13.7；Rosner 9.2–9.4', 'two-prop': 'Rosner 10.2、10.5；Kirkwood 第 16 章', 'kappa': 'Rosner 10.8；Landis & Koch (1977) Biometrics 33:159', 'mcnemar': 'Rosner 10.4；Kirkwood 第 21 章；Agresti, Categorical Data Analysis', 'two-assume': 'Whitlock 13.1–13.3；Rosner 8.6、8.10；Kirkwood 第 13 章', 'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
-  'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
+  'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'simple-reg': 'Whitlock 第 17 章；Rosner 11.2–11.6；Kirkwood 第 10 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
   'c4-2': 'Rosner 13.7–13.8；Kirkwood 第 19–20 章', 'c4-3': 'Whitlock 第 21 章；Rosner 14.8–14.11；Kirkwood 第 26–27 章', 'c4-4': 'Benjamini & Hochberg (1995), J R Stat Soc B 57:289–300',
   'c4-6': 'Rosner 12.10、13.13–13.14；Kirkwood 第 31 章', 'c5-2': 'Kirkwood 第 38 章；EQUATOR Network', 'c5-3': 'Kirkwood 第 38 章', 'c5-4': 'Kirkwood 第 34、38 章',
 };

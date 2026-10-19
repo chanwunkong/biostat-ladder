@@ -2,6 +2,11 @@
    每題的 demo：set = 設定輸入元件（id → 值）；click = 依序點擊的按鈕；custom = 交給互動圖自己的 _demo()；look = 示範時的觀察提示。
    有 q 的項目會整題替換（原題無法在圖上示範時）。 */
 const QD = {
+  'simple-reg': [
+    { demo: { set: { 'wsr-n': 40, 'wsr-x': 60 }, look: '點「斜率（95% CI）」：黑線的斜率，以及它的信賴區間。' } },
+    { demo: { set: { 'wsr-n': 40, 'wsr-x': 60 }, look: '比較兩張數字卡：橘色預測區間遠比紅色信賴區間寬。把樣本數拉到 80，信賴區間變窄，預測區間幾乎不變。' } },
+    { demo: { set: { 'wsr-n': 40, 'wsr-x': 92 }, look: '灰色區域是資料範圍之外。預測 92 歲時，兩條帶都變得很寬。' } },
+  ],
   'graphs': [
     { demo: { click: ['#wgr-m [data-m="hist"]'], set: { 'wgr-b': 12 }, look: '直方圖：大多數人住幾天、少數人住很久，右邊拖著長尾巴。' } },
     { demo: { click: ['#wgr-m [data-m="hist"]'], set: { 'wgr-b': 3 }, look: '只有 3 組：右偏的長尾巴幾乎看不出來。把組數拉回 12 或 40 比較。' } },

@@ -140,6 +140,11 @@ near('Kappa（手算例 [[20,5],[10,15]]）', S.kappa([[20, 5], [10, 15]]).kappa
 near('Kappa 觀察一致率', S.kappa([[20, 5], [10, 15]]).po, 0.7);
 near('Kappa 機遇一致率', S.kappa([[20, 5], [10, 15]]).pe, 0.5);
 
+// 簡單迴歸的預測：x0 = x̄ 時，平均反應的信賴區間 = ȳ ± t × s ÷ √n；斜率標準誤要和 lm 相同
+const sp = S.slrPredict(cs, cdist, S.mean(cs));
+near('x̄ 處的信賴區間半寬 = t·s/√n', (sp.ci[1] - sp.ci[0]) / 2, sp.tc * sp.s / Math.sqrt(cs.length));
+near('簡單迴歸斜率標準誤 = lm', sp.seB, 0.4155);
+
 const DS = {};
 for (const m of DATASETS) { const d = m.gen(); DS[m.id] = makeDS({ ...m, head: d.head, rows: d.rows }); }
 const runs = [

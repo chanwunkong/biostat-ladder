@@ -266,6 +266,12 @@ const S = (() => {
     const r2 = 1 - rss / tss, F = p > 1 ? ((tss - rss) / (p - 1)) / s2 : NaN;
     return { b, se, t, p: pv, ci: b.map((v, j) => [v - tc * se[j], v + tc * se[j]]), r2, adj: 1 - (1 - r2) * (n - 1) / df, F, df1: p - 1, df2: df, pF: p > 1 ? pf(F, p - 1, df) : NaN, sigma: Math.sqrt(s2), fitted, resid, n };
   }
+  // 簡單線性迴歸在 x0 的預測：平均反應的信賴區間與個體的預測區間
+  function slrPredict(x, y, x0) {
+    const n = x.length, P = pearson(x, y), xm = mean(x), sxx = sum(x.map(v => (v - xm) ** 2)), res = y.map((v, i) => v - P.intercept - P.slope * x[i]), s = Math.sqrt(sum(res.map(r => r * r)) / (n - 2)), tc = qt(0.975, n - 2), fit = P.intercept + P.slope * x0;
+    const seM = s * Math.sqrt(1 / n + (x0 - xm) ** 2 / sxx), seP = s * Math.sqrt(1 + 1 / n + (x0 - xm) ** 2 / sxx), seB = s / Math.sqrt(sxx);
+    return { fit, ci: [fit - tc * seM, fit + tc * seM], pi: [fit - tc * seP, fit + tc * seP], slope: P.slope, intercept: P.intercept, seB, slopeCI: [P.slope - tc * seB, P.slope + tc * seB], r2: P.r * P.r, s, tc, xm, sxx, n };
+  }
   function logistic(X, y) {
     const n = X.length, p = X[0].length; let b = new Array(p).fill(0), it = 0, conv = false, mu;
     const ybar = mean(y); b[0] = Math.log(ybar / (1 - ybar));
@@ -356,7 +362,7 @@ const S = (() => {
   const nProps = (p1, p2, alpha, power) => { const za = qnorm(1 - alpha / 2), zb = qnorm(power), pb = (p1 + p2) / 2; return Math.ceil((za * Math.sqrt(2 * pb * (1 - pb)) + zb * Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))) ** 2 / ((p1 - p2) ** 2)); };
   const powerProps = (p1, p2, n, alpha) => { const za = qnorm(1 - alpha / 2), pb = (p1 + p2) / 2; return pnorm((Math.abs(p1 - p2) * Math.sqrt(n) - za * Math.sqrt(2 * pb * (1 - pb))) / Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))); };
 
-  return { dbinom, pbinom, dpois, ppois, propCI, binomTest, gof, signTest, twoProp, mcnemar, kappa, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, varTest, mannWhitney, oneT, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
+  return { dbinom, pbinom, dpois, ppois, propCI, binomTest, gof, signTest, twoProp, mcnemar, kappa, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, varTest, mannWhitney, oneT, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, slrPredict, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
 })();
 
 /* ---------- 格式 ---------- */
@@ -1111,7 +1117,9 @@ const AN = {
       const charts = [{ svg: forestChart(rowsB, 'β（與參考值 0 的距離）', false), cap: '每列為一個迴歸係數：方塊＝β，橫線＝95% CI，虛線＝0。' }];
       if (xs.length === 1 && colOf(ds, xs[0]).type === 'num') {
         const x = D.X.map(r => r[0]), [x0, x1] = S.minmax(x), [y0, y1] = S.minmax(y);
-        charts.push({ svg: chart({ x: [x0, x1], y: [y0, y1], xlab: xs[0], ylab: s.y, h: 320 }, (Xs, Ys) => x.map((v, i) => `<circle data-k="r2" cx="${Xs(v).toFixed(1)}" cy="${Ys(y[i]).toFixed(1)}" r="3" style="fill:var(--c1);fill-opacity:.45"/>`).join('') + `<line data-k="b1 r2" x1="${Xs(x0)}" x2="${Xs(x1)}" y1="${Ys(m.b[0] + m.b[1] * x0)}" y2="${Ys(m.b[0] + m.b[1] * x1)}" style="stroke:var(--c2);stroke-width:2.5"/>`), cap: '散佈圖與迴歸直線。' });
+        const grid = Array.from({ length: 41 }, (_, i) => x0 + (x1 - x0) * i / 40), bands = grid.map(g => S.slrPredict(x, y, g)), [by0, by1] = S.minmax([y0, y1, ...bands.flatMap(b => b.pi)]);
+        const band = (X, Y, k, key, op) => `<path data-k="${key}" d="${grid.map((g, i) => `${i ? 'L' : 'M'}${X(g).toFixed(1)} ${Y(bands[i][k][1]).toFixed(1)}`).join('')}${grid.map((g, i) => [g, i]).reverse().map(([g, i]) => `L${X(g).toFixed(1)} ${Y(bands[i][k][0]).toFixed(1)}`).join('')}Z" style="fill:var(--c2);fill-opacity:${op}"/>`;
+        charts.push({ svg: chart({ x: [x0, x1], y: [by0, by1], xlab: xs[0], ylab: s.y, h: 320 }, (Xs, Ys) => band(Xs, Ys, 'pi', 'sigma', 0.08) + band(Xs, Ys, 'ci', 'b1', 0.2) + x.map((v, i) => `<circle data-k="r2" cx="${Xs(v).toFixed(1)}" cy="${Ys(y[i]).toFixed(1)}" r="3" style="fill:var(--c1);fill-opacity:.45"/>`).join('') + `<line data-k="b1 r2" x1="${Xs(x0)}" x2="${Xs(x1)}" y1="${Ys(m.b[0] + m.b[1] * x0)}" y2="${Ys(m.b[0] + m.b[1] * x1)}" style="stroke:var(--c2);stroke-width:2.5"/>`), cap: '散佈圖與迴歸直線。深色帶＝平均反應的 95% 信賴帶；淺色帶＝個體的 95% 預測帶。' });
       }
       const [f0, f1] = S.minmax(m.fitted), [r0, r1] = S.minmax(m.resid), ra = Math.max(Math.abs(r0), Math.abs(r1));
       charts.push({ svg: chart({ x: [f0, f1], y: [-ra, ra], xlab: '預測值', ylab: '殘差', h: 280 }, (Xs, Ys, { M, iw }) => `<line x1="${M.l}" x2="${M.l + iw}" y1="${Ys(0)}" y2="${Ys(0)}" style="stroke:var(--muted);stroke-dasharray:5 4"/>` + m.fitted.map((v, i) => `<circle data-k="r2 sigma" cx="${Xs(v).toFixed(1)}" cy="${Ys(m.resid[i]).toFixed(1)}" r="3" style="fill:var(--c1);fill-opacity:.45"/>`).join('') + `<g class="hlx" data-k="sigma"><rect x="${M.l}" y="${Ys(m.sigma)}" width="${iw}" height="${Ys(-m.sigma) - Ys(m.sigma)}" style="fill:var(--c2);fill-opacity:.12"/></g>`), cap: '殘差（實際值 − 預測值）對預測值；虛線＝0。' });
