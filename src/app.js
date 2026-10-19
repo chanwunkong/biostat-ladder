@@ -52,7 +52,7 @@ function renderHome() {
 <div class="cta"><button class="btn pri" type="button" data-go="${next ? next.id : 'c0-1'}">${next && next.id !== 'c0-1' ? `繼續：${next.num} ${next.title}` : '從第一章開始'}</button><button class="btn" type="button" data-go="lab">打開分析實驗室</button></div>
 <ol class="ladder">${LEVELS.map(L => { const [d, n, first] = prog(L); return `<li><button type="button" data-go="${first}"><span class="glyph">${L.glyph}</span><span class="lv-t"><span class="lv-n">Level ${L.n}</span><b>${L.name}</b><span class="lv-d">${L.desc}</span></span><span class="lv-p mono">${d}/${n}</span></button></li>`; }).join('')}</ol>
 <h2>怎麼使用</h2>
-<ul class="how"><li><b>沒有程式基礎也可以。</b>所有計算都在瀏覽器裡完成，不需要安裝軟體，也不用寫程式。</li><li><b>照順序讀。</b>每一階都只用到前面學過的東西。已經會的章節可以直接做小測驗確認。</li><li><b>在實驗室動手做。</b>Level 3 開始，每章都有「到實驗室動手做」按鈕，會自動載入對應的資料與設定。</li><li><b>用自己的資料。</b>Excel 存成 CSV 後上傳（UTF-8 或 Big5 編碼都可以），資料不會離開你的電腦。</li></ul>
+<ul class="how"><li><b>沒有程式基礎也可以。</b>所有計算都在瀏覽器裡完成，不需要安裝軟體，也不用寫程式。</li><li><b>照順序讀。</b>每一階都只用到前面學過的東西。已經會的章節可以直接做小測驗確認。</li><li><b>在實驗室動手做。</b>有「到實驗室動手做」按鈕的章節，會自動載入對應的資料與設定。</li><li><b>用自己的資料。</b>Excel 存成 CSV 後上傳（UTF-8 或 Big5 編碼都可以），資料不會離開你的電腦。</li></ul>
 </div>`;
 }
 /* ---------- 練習題的名詞（定義來自 content.js 的 GLOSS） ---------- */
@@ -79,7 +79,7 @@ function renderChapter(id) {
   const quiz = c.quiz.map((q, qi) => { const ord = q.o.map((_, k) => k).sort(() => Math.random() - 0.5); return `<div class="q" data-q="${qi}"><p class="q-t"><span class="mono">Q${qi + 1}</span>${esc(q.q)}</p>${termsHTML(q)}${q.demo && c.widget ? `<button type="button" class="demo-btn" data-demo="${qi}"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 15V5M5 9l5-5 5 5" style="fill:none;stroke:currentColor;stroke-width:2"/></svg>在上方圖表示範這題</button>` : ''}<div class="opts">${ord.map(k => `<button type="button" class="opt" data-k="${k}">${esc(q.o[k])}</button>`).join('')}</div><p class="why" hidden></p></div>`; }).join('');
   $('#article').innerHTML = `<div class="ch-top"><p class="eyebrow">Level ${L.n} · ${L.name} · 第 ${c.num} 章</p><button class="toc-btn" type="button" data-toc>☰ 目錄</button></div><h1>${c.title}</h1>
 ${c.widget ? `<section class="widget-box"><p class="lbl">動手玩 · ${c.wtitle}</p><div class="demo-note" id="demoNote" hidden></div><div class="widget" id="widget"></div></section>` : ''}
-<div class="prose">${c.body}</div>
+<div class="prose">${chRef(c.body)}</div>${c.refs ? `<p class="refs"><span class="lbl">對照教科書</span>${esc(c.refs)}</p>` : ''}
 ${c.labs ? `<section class="labs"><p class="lbl">到實驗室用真的資料做</p><div class="lab-btns">${c.labs.map((l, k) => `<button class="btn" type="button" data-lab="${k}">${l.label}<span aria-hidden="true">→</span></button>`).join('')}</div></section>` : ''}
 ${c.quiz.length ? `<section class="quiz"><h2>小測驗</h2>${quiz}</section>` : ''}
 <div class="ch-foot"><button class="btn ${state.done[id] ? 'done' : ''}" type="button" id="doneBtn">${state.done[id] ? '已完成 ✓' : '標記為完成'}</button><nav class="pn">${prev ? `<a href="#${prev.id}"><small>上一章</small>${prev.num} ${prev.title}</a>` : '<span></span>'}${next ? `<a href="#${next.id}" class="nx"><small>下一章</small>${next.num} ${next.title}</a>` : ''}</nav></div>`;
