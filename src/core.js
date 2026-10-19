@@ -207,6 +207,12 @@ const S = (() => {
   }
   // McNemar 檢定（配對的二元資料）：只用不一致的對數 b、c。回傳未校正與連續性校正的 χ²，以及以二項分佈計算的精確 p 值
   function mcnemar(b, c) { const n = b + c, chi2 = n ? (b - c) ** 2 / n : 0, chi2c = n ? Math.max(0, Math.abs(b - c) - 1) ** 2 / n : 0; return { chi2, chi2c, p: n ? pchisq(chi2, 1) : 1, pc: n ? pchisq(chi2c, 1) : 1, pExact: n ? binomTest(b, n, 0.5).p : 1 }; }
+  // Cohen's kappa：tab 為兩位評分者的 k × k 交叉表（列＝評分者 1，欄＝評分者 2）
+  function kappa(tab) {
+    const k = tab.length, n = sum(tab.flat()), po = sum(tab.map((r, i) => r[i])) / n, rs = tab.map(sum), cs = tab[0].map((_, j) => sum(tab.map(r => r[j]))), pe = sum(rs.map((r, i) => r * cs[i])) / (n * n);
+    const kap = (po - pe) / (1 - pe), se = Math.sqrt(po * (1 - po) / (n * (1 - pe) ** 2));
+    return { po, pe, kappa: kap, se, ci: [kap - 1.959964 * se, kap + 1.959964 * se], n };
+  }
   // 卡方適合度檢定：obs 為各類觀察次數，probs 為預期比例（會自動標準化）
   function gof(obs, probs) { const n = sum(obs), ps = probs.map(p => p / sum(probs)), E = ps.map(p => n * p), chi2 = sum(obs.map((o, i) => (o - E[i]) ** 2 / E[i])), df = obs.length - 1; return { chi2, df, p: pchisq(chi2, df), E, minExp: Math.min(...E) }; }
   // 精確二項檢定（雙尾：加總機率不大於觀察結果的所有結果，與 R 的 binom.test 相同）
@@ -350,7 +356,7 @@ const S = (() => {
   const nProps = (p1, p2, alpha, power) => { const za = qnorm(1 - alpha / 2), zb = qnorm(power), pb = (p1 + p2) / 2; return Math.ceil((za * Math.sqrt(2 * pb * (1 - pb)) + zb * Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))) ** 2 / ((p1 - p2) ** 2)); };
   const powerProps = (p1, p2, n, alpha) => { const za = qnorm(1 - alpha / 2), pb = (p1 + p2) / 2; return pnorm((Math.abs(p1 - p2) * Math.sqrt(n) - za * Math.sqrt(2 * pb * (1 - pb))) / Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))); };
 
-  return { dbinom, pbinom, dpois, ppois, propCI, binomTest, gof, signTest, twoProp, mcnemar, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, varTest, mannWhitney, oneT, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
+  return { dbinom, pbinom, dpois, ppois, propCI, binomTest, gof, signTest, twoProp, mcnemar, kappa, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, varTest, mannWhitney, oneT, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
 })();
 
 /* ---------- 格式 ---------- */
@@ -527,6 +533,7 @@ const DEF = {
   gmr: '幾何平均數比：取對數後的平均差，再取 e 的次方換回原尺度，代表第二組的幾何平均數是第一組的幾倍。',
   rdDef: '風險差：第二列的事件比例減第一列的事件比例（百分點）；信賴區間以 Wald 法計算。',
   mcDef: 'McNemar 檢定只用兩次結果不一致的人數 b、c：χ² = (b − c)² ÷ (b + c)。精確 p 值把 b 視為 b + c 次中、成功機率 0.5 的二項結果。',
+  kapDef: 'Cohen κ：(觀察一致率 − 機遇一致率) ÷ (1 − 機遇一致率)。機遇一致率 = Σ(兩者各類比例的乘積)。信賴區間使用近似標準誤 √(po(1 − po) ÷ (n(1 − pe)²))。',
   n: '分析使用的觀察數。', ev: '結果為事件（編碼 1）的人數。',
 };
 const cd = (k, l, v, d) => ({ k, l, v, d });
@@ -862,6 +869,23 @@ const AN = {
         tables: [{ head: ['', `${esc(s.b)}：${esc(B.ev)}`, `${esc(s.b)}：${esc(B.ref)}`], rows: [[`${esc(s.a)}：${esc(A.ev)}`, t[1][1], b], [`${esc(s.a)}：${esc(A.ref)}`, cc, t[0][0]]], foot: `連續性校正 χ² = ${F.n(M.chi2c, 2)}，${F.peq(M.pc)}。` }],
         write: W2(`${s.a} 與 ${s.b} 的配對比例以 McNemar 檢定比較。`, `第一次為「有」的比例 ${F.n(100 * (t[1][1] + b) / n, 1)}%，第二次 ${F.n(100 * (t[1][1] + cc) / n, 1)}%；不一致的對數 ${b} 與 ${cc}；McNemar χ²(1) = ${F.n(M.chi2, 2)}，${F.peq(M.p)}（精確 ${F.peq(M.pExact)}）。`,
           `Paired proportions of ${s.a} and ${s.b} were compared using McNemar's test.`, `Proportion positive: ${F.n(100 * (t[1][1] + b) / n, 1)}% at the first and ${F.n(100 * (t[1][1] + cc) / n, 1)}% at the second assessment; discordant pairs ${b} and ${cc}; McNemar's χ²(1) = ${F.n(M.chi2, 2)}, ${F.peq(M.p)} (exact ${F.peq(M.pExact)}).`),
+      };
+    },
+  },
+  kappa: {
+    name: '一致性 Kappa', when: '兩位評分者（或兩種方法）對同一批對象的類別判讀是否一致',
+    fields: [{ k: 'a', label: '評分者 1（類別）', t: 'cat' }, { k: 'b', label: '評分者 2（類別）', t: 'cat' }],
+    run(ds, s) {
+      if (s.a === s.b) throw new Error('請選擇兩個不同的欄位。');
+      const ac = colOf(ds, s.a), bc = colOf(ds, s.b), { idx, dropped } = complete(ds, [s.a, s.b]), L = [...new Set([...levelsOf(ds, ac, idx), ...levelsOf(ds, bc, idx)])];
+      const tab = L.map(r => L.map(cc => idx.filter(i => lab(ac.values[i]) === r && lab(bc.values[i]) === cc).length)), K = S.kappa(tab), n = idx.length;
+      const ch = chart({ x: [0, 1], y: [0, 1], noY: true, h: 150, xlab: '比例' }, (X, Y) => `<g data-k="po"><rect x="${X(0)}" y="${Y(0.85)}" width="${X(K.po) - X(0)}" height="${Y(0.55) - Y(0.85)}" style="fill:var(--c1)"/><text x="${X(K.po) + 5}" y="${Y(0.7)}" dy=".32em" style="fill:var(--ink)">觀察一致 ${F.n(100 * K.po, 1)}%</text></g><g data-k="pe"><rect x="${X(0)}" y="${Y(0.45)}" width="${X(K.pe) - X(0)}" height="${Y(0.15) - Y(0.45)}" style="fill:var(--muted)"/><text x="${X(K.pe) + 5}" y="${Y(0.3)}" dy=".32em" style="fill:var(--ink)">機遇一致 ${F.n(100 * K.pe, 1)}%</text></g>`);
+      return {
+        title: `${esc(s.a)} 與 ${esc(s.b)} 的一致性`, meta: meta(n, dropped), facts: [`類別：${L.map(esc).join('、')}`],
+        charts: [{ svg: ch, cap: 'κ ＝ (觀察一致 − 機遇一致) ÷ (1 − 機遇一致)。' }],
+        cards: [cd('po', '觀察一致率', `${F.n(100 * K.po, 1)}%`, 'kapDef'), cd('pe', '機遇一致率', `${F.n(100 * K.pe, 1)}%`, 'kapDef'), cd('po', 'Cohen κ（95% CI）', `${F.n(K.kappa, 3)}（${F.ci(...K.ci, 3)}）`, 'kapDef')],
+        tables: [{ head: [`${esc(s.a)} ＼ ${esc(s.b)}`, ...L.map(esc)], rows: L.map((l, i) => [`<b>${esc(l)}</b>`, ...tab[i].map((v, j) => (i === j ? `<b>${v}</b>` : v))]), foot: '粗體為兩者一致的格子。' }],
+        write: W2(`${s.a} 與 ${s.b} 的一致性以 Cohen's kappa 表示。`, `觀察一致率 ${F.n(100 * K.po, 1)}%，機遇一致率 ${F.n(100 * K.pe, 1)}%；κ = ${F.n(K.kappa, 2)}（95% CI ${F.ci(...K.ci, 2)}，n = ${n}）。`, `Agreement between ${s.a} and ${s.b} is reported as Cohen's kappa.`, `Observed agreement ${F.n(100 * K.po, 1)}%, chance agreement ${F.n(100 * K.pe, 1)}%; κ = ${F.n(K.kappa, 2)} (95% CI ${F.cien(...K.ci, 2)}, n = ${n}).`),
       };
     },
   },

@@ -281,7 +281,7 @@ const CH = [
     ],
   },
   {
-    id: 'c3-5', lv: 3, num: '3.5', title: '無母數方法與如何選擇檢定',
+    id: 'c3-5', lv: 3, num: '3.5', title: '如何選擇統計方法',
     body: `<p>資料明顯偏態、樣本小、或是順序資料時，可以用不假設常態分佈的<b>無母數方法</b>，它們通常以名次（rank）為基礎。</p>
 <div class="tbl-wrap"><table class="st"><thead><tr><th>目的</th><th>有母數方法</th><th>無母數方法</th></tr></thead><tbody><tr><td>兩組獨立</td><td>Welch t 檢定</td><td>Mann–Whitney U</td></tr><tr><td>兩組配對</td><td>配對 t 檢定</td><td>Wilcoxon 符號等級</td></tr><tr><td>三組以上</td><td>ANOVA</td><td>Kruskal–Wallis</td></tr><tr><td>相關</td><td>Pearson</td><td>Spearman</td></tr></tbody></table></div>
 <h3>選擇方法：先看結果變數</h3>
@@ -928,6 +928,22 @@ const CH = [
       { q: '同一批 200 位病人分別做 A、B 兩種快篩，想比較兩種快篩的陽性率。應該用？', o: ['McNemar 檢定', '兩組獨立的卡方檢定', 'Welch t 檢定', 'Mann–Whitney'], why: '每位病人都做了兩種檢驗，是配對的二元資料。' },
     ],
   },
+  {
+    id: 'kappa', title: '一致性：Kappa',
+    body: `<p>兩位病理師判讀同一批切片、兩位醫師對同一批 X 光片下診斷、同一位研究人員隔一週重新評分：我們想知道兩次判讀有多<b>一致</b>。最直覺的指標是<b>觀察一致率</b>（兩者判讀相同的比例），但它有一個問題：即使兩人完全亂猜，也會有一部分碰巧一致。</p>
+<h3>Cohen 的 κ（kappa）</h3>
+<div class="formula">κ = (觀察一致率 − 機遇一致率) ÷ (1 − 機遇一致率)<br>機遇一致率 = Σ（評分者 1 判為該類的比例 × 評分者 2 判為該類的比例）</div>
+<p>例：50 張切片，兩人都判為陽性 20 張、都判為陰性 15 張，觀察一致率 = 35/50 = 0.7。評分者 1 判陽性 25 張、評分者 2 判陽性 30 張，機遇一致率 = 0.5 × 0.6 + 0.5 × 0.4 = 0.5。κ = (0.7 − 0.5) ÷ (1 − 0.5) = 0.4。</p>
+<p>κ = 1 代表完全一致；κ = 0 代表一致的程度和亂猜一樣；κ &lt; 0 代表比亂猜還不一致。常被引用的參考分級（Landis &amp; Koch, 1977）：0.21–0.40 尚可、0.41–0.60 中等、0.61–0.80 高度、0.81 以上幾乎完全一致。這只是慣例，不同領域的要求不同。</p>
+<h3>Kappa 悖論</h3>
+<p>某一類非常常見時（例如 95% 的切片都是陰性），兩人很容易「都判陰性」，機遇一致率本身就很高，所以即使觀察一致率 90%，κ 也可能很低。報告時應同時列出觀察一致率、κ 和交叉表。</p>
+<p class="note">κ 用於類別資料。連續數值的一致性要用組內相關係數 ICC（{{random-eff}} 章）或 Bland–Altman 分析，不要用相關係數 r：兩種方法可以完全相關，卻一直差一個固定值。</p>`,
+    quiz: [
+      { q: '觀察一致率 0.7、機遇一致率 0.5。Cohen κ 是多少？', o: ['0.4', '0.2', '0.7', '1.4'], why: '(0.7 − 0.5) ÷ (1 − 0.5) = 0.4。' },
+      { q: '為什麼不直接用「兩人判讀相同的比例」來評估一致性？', o: ['即使亂猜也會有一部分碰巧一致；κ 把這部分扣掉', '因為比例不能超過 1', '因為需要常態分佈', '因為比例只能用在兩組比較'], why: '機遇一致率在某一類很常見時可能很高。' },
+      { q: '95% 的樣本都是陰性，兩人觀察一致率 92%，κ 卻只有 0.3。最可能的原因是？', o: ['陰性太常見，機遇一致率本身就很高', '計算錯誤', '樣本數太大', '兩人完全沒有一致'], why: '這就是 Kappa 悖論；報告時要同時列出一致率與交叉表。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -1114,6 +1130,9 @@ const GLOSS = [
   ['合併比例', ['p̄'], '把兩組合在一起算出的比例，用於兩比例 z 檢定的標準誤。', 'two-prop'],
   ['McNemar 檢定', ['McNemar'], '配對二元資料的檢定，只用兩次結果不一致的人數。', 'mcnemar'],
   ['不一致對', ['不一致'], '配對資料中兩次結果不同的個體。', 'mcnemar'],
+  ['觀察一致率', [], '兩位評分者判讀相同的比例。', 'kappa'],
+  ['機遇一致率', [], '兩位評分者若各自隨機判讀，預期會碰巧相同的比例。', 'kappa'],
+  ['Kappa', ['κ', 'Cohen κ'], '扣掉機遇一致後的一致性指標：(觀察一致率 − 機遇一致率) ÷ (1 − 機遇一致率)。', 'kappa'],
   ['相關係數', ['Pearson'], '−1 到 +1，描述兩個數值變數直線關係的強弱與方向。', 'c3-4'],
   ['Spearman', [], '先把資料換成名次再算的相關係數，較不受極端值影響。', 'c3-4'],
   ['r²', ['R²'], '相關係數的平方：一個變數的變異中，能被另一個變數以直線解釋的比例。', 'c3-4'],
@@ -1163,7 +1182,7 @@ const ORDER = [
   ['c1-1', 'c1-2', 'c1-3', 'c1-4', 'c1-5'],
   ['prob-rules', 'c2-1', 'roc', 'rv', 'binom', 'poisson'],
   ['c2-2', 'c2-3', 'tdist', 'prop-ci', 'c2-4', 'one-t', 'binom-test', 'gof', 'boot', 'c4-5', 'c5-1'],
-  ['c3-1', 'two-assume', 'nonpar', 'c3-3', 'two-prop', 'mcnemar', 'c3-5'],
+  ['c3-1', 'two-assume', 'nonpar', 'c3-3', 'two-prop', 'mcnemar', 'kappa', 'c3-5'],
   ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff', 'ancova'],
   ['c3-4', 'c4-1', 'c4-2'],
   ['c4-3'],
@@ -1176,7 +1195,7 @@ const REFS = {
   'c1-3': 'Whitlock 第 3 章；Rosner 2.4–2.5；Kirkwood 第 4 章', 'c1-4': 'Whitlock 第 10 章；Rosner 第 5 章；Kirkwood 第 5 章', 'c1-5': 'Kirkwood 第 34 章',
   'prob-rules': 'Whitlock 第 5 章；Rosner 3.2–3.6', 'roc': 'Rosner 3.9；UTHealth GSBS 課綱第 10 週', 'rv': 'Rosner 4.2–4.6', 'binom': 'Whitlock 7.1；Rosner 4.7–4.9、5.7；Kirkwood 第 15 章', 'poisson': 'Whitlock 8.4；Rosner 4.10–4.13；Kirkwood 第 22 章', 'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'tdist': 'Whitlock 11.1；Rosner 6.5', 'prop-ci': 'Whitlock 7.3；Rosner 6.8；Kirkwood 第 15 章', 'binom-test': 'Whitlock 7.2；Rosner 7.9', 'gof': 'Whitlock 8.1–8.3；Rosner 10.7', 'boot': 'Whitlock 13.8、第 19 章；Rosner 6.11、9.6', 'one-t': 'Whitlock 11.2；Rosner 7.3–7.5；UTHealth GSBS 課綱第 2 週', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
   'c2-4': 'Whitlock 第 6 章；Rosner 7.1–7.5；Kirkwood 第 8 章', 'c4-5': 'Whitlock 14.6；Rosner 7.6–7.7、8.9；Kirkwood 第 35 章', 'c5-1': 'Rosner 13.2；Kirkwood 第 34 章',
-  'nonpar': 'Whitlock 13.4–13.7；Rosner 9.2–9.4', 'two-prop': 'Rosner 10.2、10.5；Kirkwood 第 16 章', 'mcnemar': 'Rosner 10.4；Kirkwood 第 21 章；Agresti, Categorical Data Analysis', 'two-assume': 'Whitlock 13.1–13.3；Rosner 8.6、8.10；Kirkwood 第 13 章', 'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
+  'nonpar': 'Whitlock 13.4–13.7；Rosner 9.2–9.4', 'two-prop': 'Rosner 10.2、10.5；Kirkwood 第 16 章', 'kappa': 'Rosner 10.8；Landis & Koch (1977) Biometrics 33:159', 'mcnemar': 'Rosner 10.4；Kirkwood 第 21 章；Agresti, Categorical Data Analysis', 'two-assume': 'Whitlock 13.1–13.3；Rosner 8.6、8.10；Kirkwood 第 13 章', 'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
   'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
   'c4-2': 'Rosner 13.7–13.8；Kirkwood 第 19–20 章', 'c4-3': 'Whitlock 第 21 章；Rosner 14.8–14.11；Kirkwood 第 26–27 章', 'c4-4': 'Benjamini & Hochberg (1995), J R Stat Soc B 57:289–300',
   'c4-6': 'Rosner 12.10、13.13–13.14；Kirkwood 第 31 章', 'c5-2': 'Kirkwood 第 38 章；EQUATOR Network', 'c5-3': 'Kirkwood 第 38 章', 'c5-4': 'Kirkwood 第 34、38 章',

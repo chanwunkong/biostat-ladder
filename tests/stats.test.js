@@ -136,6 +136,10 @@ near('差值 CI 上限', tp2.ci[1], 0.3880);
 near('McNemar χ²（Agresti 例）', S.mcnemar(150, 86).chi2, 17.36, 1e-3);
 near('McNemar 連續性校正 χ²', S.mcnemar(150, 86).chi2c, 63 * 63 / 236);
 
+near('Kappa（手算例 [[20,5],[10,15]]）', S.kappa([[20, 5], [10, 15]]).kappa, 0.4);
+near('Kappa 觀察一致率', S.kappa([[20, 5], [10, 15]]).po, 0.7);
+near('Kappa 機遇一致率', S.kappa([[20, 5], [10, 15]]).pe, 0.5);
+
 const DS = {};
 for (const m of DATASETS) { const d = m.gen(); DS[m.id] = makeDS({ ...m, head: d.head, rows: d.rows }); }
 const runs = [
@@ -145,6 +149,7 @@ const runs = [
   ['bp_trial', 'onet', { y: 'sbp_base', mu0: 150 }],
   ['bp_trial', 'binomtest', { y: 'ae', p0: 0.1 }],
   ['cvd_cohort', 'mcnemar', { a: 'smoker', b: 'diabetes' }],
+  ['cvd_cohort', 'kappa', { a: 'smoker', b: 'diabetes' }],
   ['lung_surv', 'gof', { y: 'stage', probs: '1:1:1' }],
   ['bp_trial', 'linreg', { y: 'sbp_wk12', xs: ['group', 'sbp_base', 'age', 'bmi'] }],
   ['bp_trial', 'chisq', { r: 'group', c: 'ae' }],
