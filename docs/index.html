@@ -711,6 +711,8 @@ const S = (() => {
   const pbinom = (k, n, p) => { let s = 0; for (let i = 0; i <= Math.min(k, n); i++) s += dbinom(i, n, p); return Math.min(1, s); };
   const dpois = (k, lam) => (k < 0 ? 0 : Math.exp(-lam + k * Math.log(lam) - lgamma(k + 1)));
   const ppois = (k, lam) => { let s = 0; for (let i = 0; i <= k; i++) s += dpois(i, lam); return Math.min(1, s); };
+  // 符號檢定：只看差值的正負號（0 不計），以 p = 0.5 的二項檢定計算
+  function signTest(d) { const nz = d.filter(v => v !== 0), x = nz.filter(v => v > 0).length; return { n: nz.length, pos: x, p: binomTest(x, nz.length, 0.5).p }; }
   // 卡方適合度檢定：obs 為各類觀察次數，probs 為預期比例（會自動標準化）
   function gof(obs, probs) { const n = sum(obs), ps = probs.map(p => p / sum(probs)), E = ps.map(p => n * p), chi2 = sum(obs.map((o, i) => (o - E[i]) ** 2 / E[i])), df = obs.length - 1; return { chi2, df, p: pchisq(chi2, df), E, minExp: Math.min(...E) }; }
   // 精確二項檢定（雙尾：加總機率不大於觀察結果的所有結果，與 R 的 binom.test 相同）
@@ -854,7 +856,7 @@ const S = (() => {
   const nProps = (p1, p2, alpha, power) => { const za = qnorm(1 - alpha / 2), zb = qnorm(power), pb = (p1 + p2) / 2; return Math.ceil((za * Math.sqrt(2 * pb * (1 - pb)) + zb * Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))) ** 2 / ((p1 - p2) ** 2)); };
   const powerProps = (p1, p2, n, alpha) => { const za = qnorm(1 - alpha / 2), pb = (p1 + p2) / 2; return pnorm((Math.abs(p1 - p2) * Math.sqrt(n) - za * Math.sqrt(2 * pb * (1 - pb))) / Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))); };
 
-  return { dbinom, pbinom, dpois, ppois, propCI, binomTest, gof, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, varTest, mannWhitney, oneT, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
+  return { dbinom, pbinom, dpois, ppois, propCI, binomTest, gof, signTest, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, varTest, mannWhitney, oneT, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
 })();
 
 /* ---------- 格式 ---------- */
@@ -1733,7 +1735,7 @@ const CH = [
 <li><b>率</b>（rate）：分母含有「時間」。<b>發生率</b> = 新個案數 ÷ 人年（person-years）。追蹤 100 人各 2 年 = 200 人年。</li></ul>
 <div class="ex"><b>例題</b>　追蹤 500 人 4 年，共出現 10 位新個案。發生率 = 10 ÷ (500 × 4) = 0.005 / 人年，論文常寫成「每千人年 5 例」。</div>
 <h3>比較兩組：絕對差、相對變化、風險比、需治療人數</h3>
-<p>臨床研究常比較兩組的<b>事件率</b>（一組人中發生事件的比例，例如副作用、死亡）。假設對照組事件率 20%、治療組 10%：</p>
+<p>臨床研究常比較兩組的<b>事件率</b>（一組人中發生事件的比例，例如副作用、死亡）。假設<b>對照組</b>（沒有接受新治療、用來比較的那一組）事件率 20%、治療組 10%：</p>
 <div class="formula">絕對差 = 20% − 10% = 10 個百分點<br>相對變化 = 絕對差 ÷ 對照組事件率 = 10 ÷ 20 = 減少 50%<br>風險比 RR = 治療組 ÷ 對照組 = 10% ÷ 20% = 0.5<br>需治療人數 NNT = 100 ÷ 絕對差（百分點）= 100 ÷ 10 = 10 人</div>
 <p><b>需治療人數（NNT）</b>的意思是：平均要治療 10 個人，才能讓其中 1 個人免於發生事件。風險比等於 1 代表兩組一樣。</p>
 <p class="note">「百分點」和「百分比」不同。從 10% 增加到 15%，是增加 5 個<b>百分點</b>（絕對差），但相對增加了 50%。論文和新聞兩種都會用，讀的時候要分清楚。</p>`,
@@ -2581,6 +2583,26 @@ const CH = [
       { q: '兩組標準差差了 2.5 倍。使用 Welch t 檢定前，需要先證明變異數相等嗎？', o: ['不需要：Welch t 檢定本來就不要求變異數相等', '需要，先做 F 檢定', '需要，否則不能比較', '要改用卡方檢定'], why: '只有傳統的 Student t 檢定才假設變異數相等。' },
     ],
   },
+  {
+    id: 'nonpar', title: '無母數方法：符號檢定、Wilcoxon、Mann–Whitney',
+    body: `<p>資料樣本小、明顯偏態、有極端值，或本身只是順序（例如疼痛分數），而轉換也無法解決時，可以用<b>無母數方法</b>。它們不假設常態分佈，大多以<b>名次</b>（等級）計算。</p>
+<h3>配對資料：符號檢定</h3>
+<p>最簡單的方法：只看每一對的差值是正還是負（差值為 0 的不計）。如果虛無假設為真（中位數差為 0），正號和負號的機率各一半，正號的個數服從 p = 0.5 的二項分佈（{{binom-test}} 章）。例：8 隻小鼠治療後 7 隻上升、1 隻下降，雙尾 p ≈ 0.07。符號檢定只用了正負號，丟掉了差值大小的資訊，所以檢定力較低。</p>
+<h3>配對資料：Wilcoxon 符號等級檢定</h3>
+<ol><li>算出每一對的差值，去掉差值為 0 的。</li><li>把差值的<b>絕對值</b>由小到大排名，相同的值給平均名次。</li><li>把差值為正的名次加總，得到統計量 V。</li><li>V 和虛無假設下的期望值（全部名次總和的一半）差越多，p 值越小。</li></ol>
+<p>它同時用到正負號和差值大小的順序，檢定力比符號檢定高，是配對 t 檢定最常用的無母數替代。</p>
+<h3>兩組獨立：Mann–Whitney U 檢定</h3>
+<p>也稱為 Wilcoxon 等級和檢定。</p>
+<ol><li>把兩組資料<b>合併</b>，由小到大排名。</li><li>算出其中一組的名次總和，換算成 U 值。</li><li>如果兩組來自同一個分佈，兩組的名次應該交錯分布；一組的名次集中在高處或低處，p 值就小。</li></ol>
+<p>Mann–Whitney 檢定的是「一組的值是否傾向比另一組大」。只有在兩組分佈形狀相同時，它才可以解讀為「中位數不同」。</p>
+<h3>代價與限制</h3>
+<ul><li>資料真的接近常態時，無母數方法的檢定力比 t 檢定略低，但差距不大。</li><li>無母數方法主要給出 p 值；要報告效果大小時，可以搭配中位數差或 Hodges–Lehmann 估計值與其信賴區間。</li><li>仍然要求觀察值獨立；也不能解決偽重複或設計上的問題。</li></ul>`,
+    quiz: [
+      { q: '8 隻小鼠治療後 7 隻上升、1 隻下降。符號檢定的雙尾 p 值約是多少？', o: ['0.07', '0.035', '0.875', '0.0039'], why: '正號個數服從 n = 8、p = 0.5 的二項分佈：P(X ≥ 7) = 9/256 ≈ 0.035，雙尾 ≈ 0.07。' },
+      { q: 'Mann–Whitney U 檢定是怎麼比較兩組的？', o: ['把兩組資料合併排名，比較兩組的名次', '比較兩組的平均數與標準差', '只看每個值是正還是負', '比較兩組的變異數'], why: '它只用到名次，所以不受極端值的數值大小影響。' },
+      { q: '資料其實接近常態分佈時，Mann–Whitney 相對於 t 檢定？', o: ['檢定力略低，但差距不大', '檢定力一定比較高', '偽陽性率比較高', '完全不能用'], why: '無母數方法丟掉了部分數值資訊；常態時 t 檢定最有效率，但差距通常不大。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -2668,7 +2690,7 @@ const GLOSS = [
   ['偏差', [], '估計值平均起來偏離真值的程度；重複再多次也不會消失。', 'exp-design'],
   ['抽樣誤差', [], '每次抽樣得到的估計值隨機起伏的程度；樣本越大越小。', 'exp-design'],
   ['精確度', [], '估計值彼此有多接近（抽樣誤差有多小）。', 'exp-design'],
-  ['對照組', [], '除了處理本身，其他條件都相同的比較組。', 'exp-design'],
+  ['對照組', [], '沒有接受新處理、用來比較的那一組；設計良好時，除了處理本身，其他條件都和處理組相同。', 'c0-1'],
   ['安慰劑', [], '外觀相同但沒有有效成分的處理，讓兩組「接受處理」的經驗一樣。', 'exp-design'],
   ['隨機分派', [], '用亂數決定每個個體進哪一組，而不是由研究者挑選。', 'exp-design'],
   ['盲化', ['單盲', '雙盲'], '讓受試者、照顧者或量測者不知道組別。單盲是受試者不知道；雙盲是受試者與研究人員都不知道。', 'exp-design'],
@@ -2767,7 +2789,10 @@ const GLOSS = [
   ['Spearman', [], '先把資料換成名次再算的相關係數，較不受極端值影響。', 'c3-4'],
   ['r²', ['R²'], '相關係數的平方：一個變數的變異中，能被另一個變數以直線解釋的比例。', 'c3-4'],
   ['無母數方法', ['無母數'], '不假設資料是常態分佈的方法，通常以名次計算。', 'c3-5'],
-  ['Mann–Whitney', [], '兩組獨立樣本的無母數檢定（以名次比較）。', 'c3-5'],
+  ['Mann–Whitney', ['Wilcoxon 等級和'], '兩組獨立樣本的無母數檢定：合併排名後比較兩組的名次。', 'nonpar'],
+  ['符號檢定', [], '配對資料只看差值正負號的無母數檢定，以 p = 0.5 的二項檢定計算。', 'nonpar'],
+  ['Wilcoxon 符號等級檢定', ['Wilcoxon 符號等級', 'Wilcoxon'], '配對資料的無母數檢定：把差值的絕對值排名，加總正差值的名次。', 'nonpar'],
+  ['名次', ['等級'], '資料由小到大排序後的位置；相同的值給平均名次。', 'nonpar'],
   ['Kruskal–Wallis', [], '三組以上的無母數檢定（以名次比較）。', 'c3-5'],
   ['二元變數', ['二元'], '只有兩種結果的變數，例如有／無、存活／死亡。', 'c3-5'],
   ['線性迴歸', [], '用一條直線（或多個變數的組合）預測數值結果的方法。', 'c3-5'],
@@ -2809,7 +2834,7 @@ const ORDER = [
   ['c1-1', 'c1-2', 'c1-3', 'c1-4', 'c1-5'],
   ['prob-rules', 'c2-1', 'roc', 'rv', 'binom', 'poisson'],
   ['c2-2', 'c2-3', 'tdist', 'prop-ci', 'c2-4', 'one-t', 'binom-test', 'gof', 'boot', 'c4-5', 'c5-1'],
-  ['c3-1', 'two-assume', 'c3-3', 'c3-5'],
+  ['c3-1', 'two-assume', 'nonpar', 'c3-3', 'c3-5'],
   ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff', 'ancova'],
   ['c3-4', 'c4-1', 'c4-2'],
   ['c4-3'],
@@ -2822,7 +2847,7 @@ const REFS = {
   'c1-3': 'Whitlock 第 3 章；Rosner 2.4–2.5；Kirkwood 第 4 章', 'c1-4': 'Whitlock 第 10 章；Rosner 第 5 章；Kirkwood 第 5 章', 'c1-5': 'Kirkwood 第 34 章',
   'prob-rules': 'Whitlock 第 5 章；Rosner 3.2–3.6', 'roc': 'Rosner 3.9；UTHealth GSBS 課綱第 10 週', 'rv': 'Rosner 4.2–4.6', 'binom': 'Whitlock 7.1；Rosner 4.7–4.9、5.7；Kirkwood 第 15 章', 'poisson': 'Whitlock 8.4；Rosner 4.10–4.13；Kirkwood 第 22 章', 'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'tdist': 'Whitlock 11.1；Rosner 6.5', 'prop-ci': 'Whitlock 7.3；Rosner 6.8；Kirkwood 第 15 章', 'binom-test': 'Whitlock 7.2；Rosner 7.9', 'gof': 'Whitlock 8.1–8.3；Rosner 10.7', 'boot': 'Whitlock 13.8、第 19 章；Rosner 6.11、9.6', 'one-t': 'Whitlock 11.2；Rosner 7.3–7.5；UTHealth GSBS 課綱第 2 週', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
   'c2-4': 'Whitlock 第 6 章；Rosner 7.1–7.5；Kirkwood 第 8 章', 'c4-5': 'Whitlock 14.6；Rosner 7.6–7.7、8.9；Kirkwood 第 35 章', 'c5-1': 'Rosner 13.2；Kirkwood 第 34 章',
-  'two-assume': 'Whitlock 13.1–13.3；Rosner 8.6、8.10；Kirkwood 第 13 章', 'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
+  'nonpar': 'Whitlock 13.4–13.7；Rosner 9.2–9.4', 'two-assume': 'Whitlock 13.1–13.3；Rosner 8.6、8.10；Kirkwood 第 13 章', 'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
   'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
   'c4-2': 'Rosner 13.7–13.8；Kirkwood 第 19–20 章', 'c4-3': 'Whitlock 第 21 章；Rosner 14.8–14.11；Kirkwood 第 26–27 章', 'c4-4': 'Benjamini & Hochberg (1995), J R Stat Soc B 57:289–300',
   'c4-6': 'Rosner 12.10、13.13–13.14；Kirkwood 第 31 章', 'c5-2': 'Kirkwood 第 38 章；EQUATOR Network', 'c5-3': 'Kirkwood 第 38 章', 'c5-4': 'Kirkwood 第 34、38 章',
@@ -3944,6 +3969,32 @@ Object.assign(W, {
     };
     el.addEventListener('input', up); el.addEventListener('change', up); up();
   },
+  nonparw(el) {
+    const za = [0.2, -1.1, 0.7, -0.4, 1.5, -0.8, 0.1, -1.6], zb = [0.9, -0.3, 1.8, 0.4, -0.9, 1.2, 0.6, -0.1], zd = [0.6, -0.8, 1.4, 0.2, 1.9, -0.3, 0.9, 0.4];
+    el.innerHTML = `<div class="seg wrap" id="wnp-m"><button type="button" data-m="ind" aria-selected="true">兩組獨立：Mann–Whitney</button><button type="button" data-m="pair" aria-selected="false">配對：符號檢定與 Wilcoxon</button></div>
+<div class="w-row">${slider('wnp-s', '處理效果', -2, 3, 0.25, 1)}</div><label class="tog"><input type="checkbox" id="wnp-o"> 加入一個極端值</label>
+<div class="chart-wrap" id="wnp-c"></div><p class="w-cap" id="wnp-cap"></p><div class="kv" id="wnp-k"></div>`;
+    let mode = 'ind';
+    const up = () => {
+      const sh = sv('wnp-s', v => v.toFixed(2)), out = $('#wnp-o').checked;
+      if (mode === 'ind') {
+        const A = za.map(z => 10 + 2 * z), B = zb.map(z => 10 + sh * 2 + 2 * z); if (out) B[0] = 40;
+        const all = [...A, ...B], { r } = S.rank(all), mw = S.mannWhitney(A, B), w = S.welch(A, B), [lo, hi] = S.minmax(all);
+        $('#wnp-c').innerHTML = chart({ ycats: ['對照', '處理'], x: [lo - 1, hi + 1], h: 200, m: { l: 48 }, xlab: '測量值（圓圈中的數字是合併後的名次）', xgrid: true }, (X, Y) => [A, B].map((g, k) => g.map((v, i) => { const rk = r[k * 8 + i]; return `<g data-k="${k ? 'rb' : 'ra'}"><circle cx="${X(v)}" cy="${Y(k)}" r="11" style="fill:${col4(k)};fill-opacity:.85"/><text x="${X(v)}" y="${Y(k)}" dy=".35em" text-anchor="middle" style="fill:#fff;font-size:10px;font-weight:600">${Number.isInteger(rk) ? rk : rk.toFixed(1)}</text></g>`; }).join('')).join(''));
+        $('#wnp-cap').textContent = '兩組合併後由小到大排名。若兩組沒有差異，名次應該交錯分布。';
+        const RB = S.sum(r.slice(8));
+        $('#wnp-k').innerHTML = kvs([['處理組的名次總和', F.n(RB, 1), 'rb'], ['對照組的名次總和', F.n(S.sum(r.slice(0, 8)), 1), 'ra'], ['Mann–Whitney U', F.n(mw.U, 1), 'rb'], ['Mann–Whitney p 值', F.p(mw.p), 'rb'], ['Welch t 檢定 p 值（比較用）', F.p(w.p), 'ra']]);
+      } else {
+        const d = zd.map(z => sh + 1.2 * z); if (out) d[0] = 12;
+        const nz = d.map((v, i) => [v, i]).filter(([v]) => v !== 0), { r } = S.rank(nz.map(([v]) => Math.abs(v))), st = S.signTest(d), wl = S.wilcoxonSR(d), pt = S.oneT(d, 0), [lo, hi] = S.minmax([0, ...d]);
+        $('#wnp-c').innerHTML = chart({ xcats: d.map((_, i) => `#${i + 1}`), y: [Math.min(lo, -1), Math.max(hi, 1)], h: 240, ylab: '差值（後 − 前）' }, (X, Y, { M, iw }) => `<line class="keep" x1="${M.l}" x2="${M.l + iw}" y1="${Y(0)}" y2="${Y(0)}" style="stroke:var(--ink)"/>` + d.map((v, i) => { const rk = r[nz.findIndex(([, j]) => j === i)]; return `<g data-k="${v > 0 ? 'pos' : 'neg'}"><rect x="${X(i) - 12}" y="${Y(Math.max(0, v))}" width="24" height="${Math.abs(Y(v) - Y(0))}" style="fill:${v > 0 ? 'var(--c2)' : 'var(--c1)'};fill-opacity:.8"/><text x="${X(i)}" y="${v > 0 ? Y(v) - 6 : Y(v) + 14}" text-anchor="middle" style="fill:var(--ink);font-size:11px">${rk === undefined ? '' : (Number.isInteger(rk) ? rk : rk.toFixed(1))}</text></g>`; }).join(''));
+        $('#wnp-cap').textContent = '每根長條是一個個體的差值；數字是差值絕對值的名次。紅色為正、藍色為負。';
+        $('#wnp-k').innerHTML = kvs([['正號個數（符號檢定）', `${st.pos} / ${st.n}`, 'pos'], ['符號檢定 p 值', F.p(st.p), 'pos'], ['正差值的名次總和 V', F.n(wl.V, 1), 'pos'], ['Wilcoxon 符號等級 p 值', F.p(wl.p), 'pos'], ['配對 t 檢定 p 值（比較用）', F.p(pt.p), 'neg']]);
+      }
+    };
+    segBind(el, '#wnp-m', b => { mode = b.dataset.m; up(); });
+    el.addEventListener('input', up); el.addEventListener('change', up); up();
+  },
   mosaic(el) {
     el.innerHTML = `<p class="w-cap">正方形代表全部的人（面積 = 1）。左右寬度是吸菸與不吸菸的比例；每一欄內，紅色的高度是該群中有高血壓的比例。</p>
 <div class="w-row">${slider('wm2-a', 'P(吸菸)', 5, 95, 5, 30, '%')}${slider('wm2-ba', 'P(高血壓 | 吸菸)', 0, 100, 5, 30, '%')}${slider('wm2-bn', 'P(高血壓 | 不吸菸)', 0, 100, 5, 15, '%')}</div>
@@ -3961,13 +4012,18 @@ Object.assign(W, {
   },
 });
 
-const WMAP = { 'two-assume': ['twoassume', '轉換與極端值'], 'boot': ['bootw', '重抽 2000 次'], 'gof': ['gofw', '孟德爾的豌豆'], 'binom-test': ['binomtestw', '二項檢定'], 'one-t': ['onetw', '單一樣本 t 檢定'], 'prop-ci': ['propciw', '三種比例信賴區間'], 'tdist': ['tdistw', 't 分佈與常態分佈'], 'poisson': ['poissonw', 'Poisson 分佈與培養皿'], 'binom': ['binomw', '二項分佈'], 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
+const WMAP = { 'nonpar': ['nonparw', '用名次比較'], 'two-assume': ['twoassume', '轉換與極端值'], 'boot': ['bootw', '重抽 2000 次'], 'gof': ['gofw', '孟德爾的豌豆'], 'binom-test': ['binomtestw', '二項檢定'], 'one-t': ['onetw', '單一樣本 t 檢定'], 'prop-ci': ['propciw', '三種比例信賴區間'], 'tdist': ['tdistw', 't 分佈與常態分佈'], 'poisson': ['poissonw', 'Poisson 分佈與培養皿'], 'binom': ['binomw', '二項分佈'], 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
 for (const [id, [w, t]] of Object.entries(WMAP)) { const c = CH.find(x => x.id === id); c.widget = w; c.wtitle = t; }
 
 /* ---------- 練習題示範：把題目情境帶入同一章的互動圖 ----------
    每題的 demo：set = 設定輸入元件（id → 值）；click = 依序點擊的按鈕；custom = 交給互動圖自己的 _demo()；look = 示範時的觀察提示。
    有 q 的項目會整題替換（原題無法在圖上示範時）。 */
 const QD = {
+  'nonpar': [
+    { demo: { click: ['#wnp-m [data-m="pair"]'], set: { 'wnp-s': 0.75, 'wnp-o': false }, look: '配對模式：數一數紅色（正）長條有幾根，點「正號個數」與「符號檢定 p 值」。題目的 7 正 1 負也是同樣的計算。' } },
+    { demo: { click: ['#wnp-m [data-m="ind"]'], set: { 'wnp-s': 1, 'wnp-o': false }, look: '圓圈裡的數字是兩組合併後的名次：處理組的名次集中在右邊（大）時，p 值就小。' } },
+    { demo: { click: ['#wnp-m [data-m="ind"]'], set: { 'wnp-s': 1, 'wnp-o': true }, look: '加入極端值：它只是變成「第 16 名」，Mann–Whitney 幾乎不受影響；比較 Welch t 的 p 值如何改變。' } },
+  ],
   'two-assume': [
     { demo: { set: { 'wta-n': 15, 'wta-s': 0.8, 'wta-l': true, 'wta-o': false }, look: '取對數後兩組都變得對稱。點最後一張卡：幾何平均數比約 1.8，代表處理組約是對照組的 1.8 倍。' } },
     { demo: { set: { 'wta-n': 12, 'wta-s': 0.8, 'wta-l': false, 'wta-o': true }, look: '對照組多了一個極端值：比較 Welch t 與 Mann–Whitney 的 p 值，再勾選「先取自然對數」比較。這就是敏感度分析。' } },

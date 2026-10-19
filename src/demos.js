@@ -2,6 +2,11 @@
    每題的 demo：set = 設定輸入元件（id → 值）；click = 依序點擊的按鈕；custom = 交給互動圖自己的 _demo()；look = 示範時的觀察提示。
    有 q 的項目會整題替換（原題無法在圖上示範時）。 */
 const QD = {
+  'nonpar': [
+    { demo: { click: ['#wnp-m [data-m="pair"]'], set: { 'wnp-s': 0.75, 'wnp-o': false }, look: '配對模式：數一數紅色（正）長條有幾根，點「正號個數」與「符號檢定 p 值」。題目的 7 正 1 負也是同樣的計算。' } },
+    { demo: { click: ['#wnp-m [data-m="ind"]'], set: { 'wnp-s': 1, 'wnp-o': false }, look: '圓圈裡的數字是兩組合併後的名次：處理組的名次集中在右邊（大）時，p 值就小。' } },
+    { demo: { click: ['#wnp-m [data-m="ind"]'], set: { 'wnp-s': 1, 'wnp-o': true }, look: '加入極端值：它只是變成「第 16 名」，Mann–Whitney 幾乎不受影響；比較 Welch t 的 p 值如何改變。' } },
+  ],
   'two-assume': [
     { demo: { set: { 'wta-n': 15, 'wta-s': 0.8, 'wta-l': true, 'wta-o': false }, look: '取對數後兩組都變得對稱。點最後一張卡：幾何平均數比約 1.8，代表處理組約是對照組的 1.8 倍。' } },
     { demo: { set: { 'wta-n': 12, 'wta-s': 0.8, 'wta-l': false, 'wta-o': true }, look: '對照組多了一個極端值：比較 Welch t 與 Mann–Whitney 的 p 值，再勾選「先取自然對數」比較。這就是敏感度分析。' } },

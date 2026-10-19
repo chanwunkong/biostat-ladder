@@ -121,6 +121,11 @@ near('卡方適合度 p（均等）', S.gof([20, 15, 25], [1, 1, 1]).p, 0.2865);
 near('var.test F (sleep)', S.varTest(g1, g2).F, 0.7983);
 near('var.test p', S.varTest(g1, g2).p, 0.7427);
 
+const sd10 = g2.map((v, i) => v - g1[i]);
+near('符號檢定 p（sleep 差值）', S.signTest(sd10).p, 2 * Math.pow(0.5, 9));
+near('Wilcoxon 符號等級 V', S.wilcoxonSR(sd10).V, 45);
+near('Wilcoxon 符號等級 p (wilcox.test paired)', S.wilcoxonSR(sd10).p, 0.009091);
+
 const DS = {};
 for (const m of DATASETS) { const d = m.gen(); DS[m.id] = makeDS({ ...m, head: d.head, rows: d.rows }); }
 const runs = [

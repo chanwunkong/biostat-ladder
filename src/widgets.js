@@ -849,6 +849,32 @@ Object.assign(W, {
     };
     el.addEventListener('input', up); el.addEventListener('change', up); up();
   },
+  nonparw(el) {
+    const za = [0.2, -1.1, 0.7, -0.4, 1.5, -0.8, 0.1, -1.6], zb = [0.9, -0.3, 1.8, 0.4, -0.9, 1.2, 0.6, -0.1], zd = [0.6, -0.8, 1.4, 0.2, 1.9, -0.3, 0.9, 0.4];
+    el.innerHTML = `<div class="seg wrap" id="wnp-m"><button type="button" data-m="ind" aria-selected="true">兩組獨立：Mann–Whitney</button><button type="button" data-m="pair" aria-selected="false">配對：符號檢定與 Wilcoxon</button></div>
+<div class="w-row">${slider('wnp-s', '處理效果', -2, 3, 0.25, 1)}</div><label class="tog"><input type="checkbox" id="wnp-o"> 加入一個極端值</label>
+<div class="chart-wrap" id="wnp-c"></div><p class="w-cap" id="wnp-cap"></p><div class="kv" id="wnp-k"></div>`;
+    let mode = 'ind';
+    const up = () => {
+      const sh = sv('wnp-s', v => v.toFixed(2)), out = $('#wnp-o').checked;
+      if (mode === 'ind') {
+        const A = za.map(z => 10 + 2 * z), B = zb.map(z => 10 + sh * 2 + 2 * z); if (out) B[0] = 40;
+        const all = [...A, ...B], { r } = S.rank(all), mw = S.mannWhitney(A, B), w = S.welch(A, B), [lo, hi] = S.minmax(all);
+        $('#wnp-c').innerHTML = chart({ ycats: ['對照', '處理'], x: [lo - 1, hi + 1], h: 200, m: { l: 48 }, xlab: '測量值（圓圈中的數字是合併後的名次）', xgrid: true }, (X, Y) => [A, B].map((g, k) => g.map((v, i) => { const rk = r[k * 8 + i]; return `<g data-k="${k ? 'rb' : 'ra'}"><circle cx="${X(v)}" cy="${Y(k)}" r="11" style="fill:${col4(k)};fill-opacity:.85"/><text x="${X(v)}" y="${Y(k)}" dy=".35em" text-anchor="middle" style="fill:#fff;font-size:10px;font-weight:600">${Number.isInteger(rk) ? rk : rk.toFixed(1)}</text></g>`; }).join('')).join(''));
+        $('#wnp-cap').textContent = '兩組合併後由小到大排名。若兩組沒有差異，名次應該交錯分布。';
+        const RB = S.sum(r.slice(8));
+        $('#wnp-k').innerHTML = kvs([['處理組的名次總和', F.n(RB, 1), 'rb'], ['對照組的名次總和', F.n(S.sum(r.slice(0, 8)), 1), 'ra'], ['Mann–Whitney U', F.n(mw.U, 1), 'rb'], ['Mann–Whitney p 值', F.p(mw.p), 'rb'], ['Welch t 檢定 p 值（比較用）', F.p(w.p), 'ra']]);
+      } else {
+        const d = zd.map(z => sh + 1.2 * z); if (out) d[0] = 12;
+        const nz = d.map((v, i) => [v, i]).filter(([v]) => v !== 0), { r } = S.rank(nz.map(([v]) => Math.abs(v))), st = S.signTest(d), wl = S.wilcoxonSR(d), pt = S.oneT(d, 0), [lo, hi] = S.minmax([0, ...d]);
+        $('#wnp-c').innerHTML = chart({ xcats: d.map((_, i) => `#${i + 1}`), y: [Math.min(lo, -1), Math.max(hi, 1)], h: 240, ylab: '差值（後 − 前）' }, (X, Y, { M, iw }) => `<line class="keep" x1="${M.l}" x2="${M.l + iw}" y1="${Y(0)}" y2="${Y(0)}" style="stroke:var(--ink)"/>` + d.map((v, i) => { const rk = r[nz.findIndex(([, j]) => j === i)]; return `<g data-k="${v > 0 ? 'pos' : 'neg'}"><rect x="${X(i) - 12}" y="${Y(Math.max(0, v))}" width="24" height="${Math.abs(Y(v) - Y(0))}" style="fill:${v > 0 ? 'var(--c2)' : 'var(--c1)'};fill-opacity:.8"/><text x="${X(i)}" y="${v > 0 ? Y(v) - 6 : Y(v) + 14}" text-anchor="middle" style="fill:var(--ink);font-size:11px">${rk === undefined ? '' : (Number.isInteger(rk) ? rk : rk.toFixed(1))}</text></g>`; }).join(''));
+        $('#wnp-cap').textContent = '每根長條是一個個體的差值；數字是差值絕對值的名次。紅色為正、藍色為負。';
+        $('#wnp-k').innerHTML = kvs([['正號個數（符號檢定）', `${st.pos} / ${st.n}`, 'pos'], ['符號檢定 p 值', F.p(st.p), 'pos'], ['正差值的名次總和 V', F.n(wl.V, 1), 'pos'], ['Wilcoxon 符號等級 p 值', F.p(wl.p), 'pos'], ['配對 t 檢定 p 值（比較用）', F.p(pt.p), 'neg']]);
+      }
+    };
+    segBind(el, '#wnp-m', b => { mode = b.dataset.m; up(); });
+    el.addEventListener('input', up); el.addEventListener('change', up); up();
+  },
   mosaic(el) {
     el.innerHTML = `<p class="w-cap">正方形代表全部的人（面積 = 1）。左右寬度是吸菸與不吸菸的比例；每一欄內，紅色的高度是該群中有高血壓的比例。</p>
 <div class="w-row">${slider('wm2-a', 'P(吸菸)', 5, 95, 5, 30, '%')}${slider('wm2-ba', 'P(高血壓 | 吸菸)', 0, 100, 5, 30, '%')}${slider('wm2-bn', 'P(高血壓 | 不吸菸)', 0, 100, 5, 15, '%')}</div>
@@ -866,5 +892,5 @@ Object.assign(W, {
   },
 });
 
-const WMAP = { 'two-assume': ['twoassume', '轉換與極端值'], 'boot': ['bootw', '重抽 2000 次'], 'gof': ['gofw', '孟德爾的豌豆'], 'binom-test': ['binomtestw', '二項檢定'], 'one-t': ['onetw', '單一樣本 t 檢定'], 'prop-ci': ['propciw', '三種比例信賴區間'], 'tdist': ['tdistw', 't 分佈與常態分佈'], 'poisson': ['poissonw', 'Poisson 分佈與培養皿'], 'binom': ['binomw', '二項分佈'], 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
+const WMAP = { 'nonpar': ['nonparw', '用名次比較'], 'two-assume': ['twoassume', '轉換與極端值'], 'boot': ['bootw', '重抽 2000 次'], 'gof': ['gofw', '孟德爾的豌豆'], 'binom-test': ['binomtestw', '二項檢定'], 'one-t': ['onetw', '單一樣本 t 檢定'], 'prop-ci': ['propciw', '三種比例信賴區間'], 'tdist': ['tdistw', 't 分佈與常態分佈'], 'poisson': ['poissonw', 'Poisson 分佈與培養皿'], 'binom': ['binomw', '二項分佈'], 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
 for (const [id, [w, t]] of Object.entries(WMAP)) { const c = CH.find(x => x.id === id); c.widget = w; c.wtitle = t; }

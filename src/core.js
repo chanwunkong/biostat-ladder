@@ -198,6 +198,8 @@ const S = (() => {
   const pbinom = (k, n, p) => { let s = 0; for (let i = 0; i <= Math.min(k, n); i++) s += dbinom(i, n, p); return Math.min(1, s); };
   const dpois = (k, lam) => (k < 0 ? 0 : Math.exp(-lam + k * Math.log(lam) - lgamma(k + 1)));
   const ppois = (k, lam) => { let s = 0; for (let i = 0; i <= k; i++) s += dpois(i, lam); return Math.min(1, s); };
+  // 符號檢定：只看差值的正負號（0 不計），以 p = 0.5 的二項檢定計算
+  function signTest(d) { const nz = d.filter(v => v !== 0), x = nz.filter(v => v > 0).length; return { n: nz.length, pos: x, p: binomTest(x, nz.length, 0.5).p }; }
   // 卡方適合度檢定：obs 為各類觀察次數，probs 為預期比例（會自動標準化）
   function gof(obs, probs) { const n = sum(obs), ps = probs.map(p => p / sum(probs)), E = ps.map(p => n * p), chi2 = sum(obs.map((o, i) => (o - E[i]) ** 2 / E[i])), df = obs.length - 1; return { chi2, df, p: pchisq(chi2, df), E, minExp: Math.min(...E) }; }
   // 精確二項檢定（雙尾：加總機率不大於觀察結果的所有結果，與 R 的 binom.test 相同）
@@ -341,7 +343,7 @@ const S = (() => {
   const nProps = (p1, p2, alpha, power) => { const za = qnorm(1 - alpha / 2), zb = qnorm(power), pb = (p1 + p2) / 2; return Math.ceil((za * Math.sqrt(2 * pb * (1 - pb)) + zb * Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))) ** 2 / ((p1 - p2) ** 2)); };
   const powerProps = (p1, p2, n, alpha) => { const za = qnorm(1 - alpha / 2), pb = (p1 + p2) / 2; return pnorm((Math.abs(p1 - p2) * Math.sqrt(n) - za * Math.sqrt(2 * pb * (1 - pb))) / Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))); };
 
-  return { dbinom, pbinom, dpois, ppois, propCI, binomTest, gof, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, varTest, mannWhitney, oneT, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
+  return { dbinom, pbinom, dpois, ppois, propCI, binomTest, gof, signTest, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, varTest, mannWhitney, oneT, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
 })();
 
 /* ---------- 格式 ---------- */
