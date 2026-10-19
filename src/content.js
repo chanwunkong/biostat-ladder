@@ -1122,6 +1122,32 @@ const CH = [
       { q: '手術組前 3 個月風險較高、之後風險較低。較好的報告方式是？', o: ['分段報告前 3 個月與之後的危險比', '只報告整體的單一危險比', '刪掉前 3 個月死亡的病人', '改用 t 檢定比較存活時間'], why: '分段估計能呈現危險比隨時間的變化。' },
     ],
   },
+  {
+    id: 'missing', title: '缺失值',
+    body: `<p>真實資料幾乎都有缺失：病人沒回診、檢體不足、問卷漏答。統計軟體預設的做法是直接排除有缺值的列（<b>完全案例分析</b>），這不一定錯，但是否會造成偏差，取決於<b>資料為什麼缺失</b>。</p>
+<h3>三種缺失機制</h3>
+<div class="tbl-wrap"><table class="st"><thead><tr><th>機制</th><th>意思</th><th>例子</th><th>完全案例分析</th></tr></thead><tbody>
+<tr><td><b>完全隨機缺失</b>（MCAR）</td><td>缺不缺和任何變數都無關</td><td>檢體在運送途中隨機打破</td><td>沒有偏差，只是樣本變小</td></tr>
+<tr><td><b>隨機缺失</b>（MAR）</td><td>缺不缺和<b>已觀察到</b>的變數有關，但給定這些變數後，和缺失的值本身無關</td><td>年長者較常沒回診量血壓</td><td>可能有偏差；可用多重插補或校正修正</td></tr>
+<tr><td><b>非隨機缺失</b>（MNAR）</td><td>缺不缺和<b>缺失的值本身</b>有關</td><td>血壓很高的人不舒服、沒回診</td><td>有偏差，而且無法只靠資料修正</td></tr></tbody></table></div>
+<p>MAR 和 MNAR 無法從資料本身區分，要靠對研究情境的了解判斷。</p>
+<h3>常見的錯誤做法</h3>
+<ul><li><b>平均值填補</b>：用平均值補所有缺值。平均數看起來不變，但變異被人為壓縮、標準誤太小、和其他變數的關聯被削弱。</li>
+<li><b>單次迴歸填補</b>：用其他變數預測缺值，只補一次。補進去的值剛好落在迴歸線上，同樣低估了不確定性。</li>
+<li>把缺值當成 0 或某個特定值。</li></ul>
+<h3>多重插補</h3>
+<p><b>多重插補</b>（multiple imputation）的做法：</p>
+<ol><li>用其他變數建立預測模型，並<b>加上隨機誤差</b>，為每個缺值產生一個可能的值；重複 m 次（例如 20 次），得到 m 份完整資料。</li>
+<li>每一份資料分別做同樣的分析。</li>
+<li>用 <b>Rubin 法則</b>合併：估計值取平均；變異數 = 份內變異的平均 + (1 + 1/m) × 份與份之間的變異。份與份之間的差異，代表「因為不知道缺值是多少」而多出的不確定性。</li></ol>
+<p>多重插補在 MAR 之下可以修正偏差並得到正確的標準誤；在 MNAR 之下仍可能有偏差，所以要做<b>敏感度分析</b>（{{two-assume}} 章），例如假設缺值比觀察值高一些，看結論是否改變。</p>
+<p class="note">論文中要報告每個變數的缺失數量與比例、使用的處理方法，以及敏感度分析的結果。最好的方法永遠是在設計和執行階段就盡量減少缺失。</p>`,
+    quiz: [
+      { q: '年長的病人比較常沒回診量血壓；但在同樣年齡的人當中，沒回診和血壓高低無關。這是哪一種缺失機制？', o: ['隨機缺失（MAR）', '完全隨機缺失（MCAR）', '非隨機缺失（MNAR）', '不算缺失'], why: '缺失和已觀察到的年齡有關；給定年齡後和血壓本身無關，就是 MAR。' },
+      { q: '用平均值補所有缺值，最主要的問題是？', o: ['變異被人為壓縮，標準誤太小、關聯被削弱', '平均數一定會改變', '樣本數會減少', '沒有任何問題'], why: '補進去的值全部相同，資料看起來比實際更集中。' },
+      { q: '多重插補為什麼要補很多次，而不是補一次？', o: ['不同的補值之間的差異，反映了「不知道缺值是多少」的不確定性', '補越多次平均數越大', '為了讓樣本數變大', '因為第一次補的通常是錯的'], why: 'Rubin 法則把份與份之間的變異加進總變異數，標準誤才不會太小。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -1383,6 +1409,13 @@ const GLOSS = [
   ['單尾檢定', [], '只檢定一個方向（例如只看「變大」）的檢定。', 'c4-5'],
   ['群集', [], '彼此相關的一群觀察，例如同一隻小鼠的細胞、同一間醫院的病人。', 'c4-6'],
   ['偽重複', [], '把同一個實驗單位內的重複測量，誤當成獨立樣本。', 'c4-6'],
+  ['完全案例分析', [], '排除任何變數有缺值的觀察值，只分析完整的資料。', 'missing'],
+  ['完全隨機缺失', ['MCAR'], '缺不缺和任何變數都無關。', 'missing'],
+  ['隨機缺失', ['MAR'], '缺不缺和已觀察到的變數有關，但給定這些變數後，和缺失的值本身無關。', 'missing'],
+  ['非隨機缺失', ['MNAR'], '缺不缺和缺失的值本身有關。', 'missing'],
+  ['平均值填補', [], '用平均值補所有缺值；會壓縮變異、讓標準誤太小。', 'missing'],
+  ['多重插補', [], '為每個缺值產生多個帶隨機誤差的可能值，分別分析後以 Rubin 法則合併。', 'missing'],
+  ['Rubin 法則', [], '合併多重插補結果的規則：估計值取平均，變異數 = 份內變異平均 + (1 + 1/m) × 份間變異。', 'missing'],
   ['干擾因子', [], '同時影響暴露與結果的第三個變數，會讓兩者看起來有關。', 'c5-1'],
   ['中介變數', [], '位在暴露與結果之間、傳遞效果的變數。', 'c5-1'],
   ['選樣偏差', [], '研究對象不能代表想推論的族群。', 'c5-1'],
@@ -1404,7 +1437,7 @@ const ORDER = [
   ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff', 'ancova'],
   ['c3-4', 'simple-reg', 'c4-1', 'reg-diag', 'c4-2', 'poisson-reg', 'bland-altman'],
   ['mh', 'standardize', 'c4-3', 'ph-check'],
-  ['c4-4', 'c4-6'],
+  ['c4-4', 'c4-6', 'missing'],
   ['c5-2', 'c5-3', 'c5-4', 'c5-5'],
 ];
 // 對照教科書：W = Whitlock & Schluter 3e、R = Rosner 8e、K = Kirkwood & Sterne 2e（見 CURRICULUM.md）
@@ -1416,7 +1449,7 @@ const REFS = {
   'nonpar': 'Whitlock 13.4–13.7；Rosner 9.2–9.4', 'two-prop': 'Rosner 10.2、10.5；Kirkwood 第 16 章', 'kappa': 'Rosner 10.8；Landis & Koch (1977) Biometrics 33:159', 'mcnemar': 'Rosner 10.4；Kirkwood 第 21 章；Agresti, Categorical Data Analysis', 'two-assume': 'Whitlock 13.1–13.3；Rosner 8.6、8.10；Kirkwood 第 13 章', 'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
   'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'bland-altman': 'Kirkwood 第 36 章；Bland & Altman (1986) Lancet 327:307', 'poisson-reg': 'Kirkwood 第 22–24 章；Rosner 14.1–14.3', 'reg-diag': 'Kirkwood 第 12–13 章；Rosner 11.6；Whitlock 17.5–17.6', 'simple-reg': 'Whitlock 第 17 章；Rosner 11.2–11.6；Kirkwood 第 10 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
   'c4-2': 'Rosner 13.7–13.8；Kirkwood 第 19–20 章', 'ph-check': 'Rosner 14.11；Kirkwood 第 27 章', 'standardize': 'Rosner 13.4–13.5；Kirkwood 第 25、37 章', 'mh': 'Rosner 13.5–13.6；Kirkwood 第 18 章；Bickel 等 (1975) Science 187:398', 'c4-3': 'Whitlock 第 21 章；Rosner 14.8–14.11；Kirkwood 第 26–27 章', 'c4-4': 'Benjamini & Hochberg (1995), J R Stat Soc B 57:289–300',
-  'c4-6': 'Rosner 12.10、13.13–13.14；Kirkwood 第 31 章', 'c5-2': 'Kirkwood 第 38 章；EQUATOR Network', 'c5-3': 'Kirkwood 第 38 章', 'c5-4': 'Kirkwood 第 34、38 章',
+  'missing': 'Rosner 13.16；Little & Rubin, Statistical Analysis with Missing Data', 'c4-6': 'Rosner 12.10、13.13–13.14；Kirkwood 第 31 章', 'c5-2': 'Kirkwood 第 38 章；EQUATOR Network', 'c5-3': 'Kirkwood 第 38 章', 'c5-4': 'Kirkwood 第 34、38 章',
 };
 (() => {
   const by = Object.fromEntries(CH.map(c => [c.id, c])), out = [];
