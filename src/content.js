@@ -995,6 +995,28 @@ const CH = [
       { q: '資料的年齡範圍是 30 到 70 歲。用這條迴歸線預測 90 歲的人，有什麼問題？', o: ['外推：資料範圍之外的關係沒有根據，區間也會很寬', '沒有問題，直線可以無限延伸', '只要 R² 夠大就可以', '只要 p < 0.05 就可以'], why: '超出資料範圍時，真實關係可能完全不同。' },
     ],
   },
+  {
+    id: 'reg-diag', title: '迴歸診斷與轉換',
+    body: `<p>迴歸模型的係數和 p 值，只有在模型大致正確時才可信。檢查模型最主要的工具是<b>殘差圖</b>：把殘差（實際值 − 預測值）對預測值畫出來。模型合適時，點應該隨機散布在 0 的上下、寬度一致、沒有任何形狀。</p>
+<h3>三種常見的問題</h3>
+<div class="tbl-wrap"><table class="st"><thead><tr><th>殘差圖的樣子</th><th>代表</th><th>常見做法</th></tr></thead><tbody>
+<tr><td>U 形或弧形</td><td>關係不是直線</td><td>加入二次項（x²），或轉換 x、y</td></tr>
+<tr><td>喇叭形：預測值越大越分散</td><td>變異不齊一</td><td>對 y 取對數；或使用穩健標準誤</td></tr>
+<tr><td>少數點離其他點很遠</td><td>極端值或影響點</td><td>檢查資料、做敏感度分析</td></tr></tbody></table></div>
+<p>殘差的常態性用 Q-Q 圖檢查（{{anova-assume}} 章）；樣本大時影響較小。觀察值是否獨立則要從研究設計判斷。</p>
+<h3>影響點</h3>
+<p>有些點的 x 離其他點很遠，稱為高<b>槓桿值</b>；如果它同時離迴歸線很遠，就可能大幅改變斜率，這種點叫做<b>影響點</b>。<b>Cook 距離</b>綜合了殘差大小和槓桿值，衡量「刪掉這個點，所有預測值會改變多少」。Cook 距離特別大的點要先檢查是否有錯誤，再比較有、沒有它的結果（敏感度分析，{{two-assume}} 章）。</p>
+<h3>轉換</h3>
+<ul><li><b>對 y 取對數</b>：右偏、變異隨平均變大的結果（濃度、費用）。係數 b 的意思變成「x 增加 1，y 變成 e<sup>b</sup> 倍」。</li>
+<li><b>對 x 取對數</b>：x 的效果隨 x 變大而遞減（例如劑量反應）。</li>
+<li><b>加入二次項</b>：關係先升後降或彎曲。</li></ul>
+<p class="note">檢查模型是為了確認它合理，不是為了把 p 值變小。轉換或模型的選擇應該根據資料的性質與領域知識，並在論文中寫清楚。</p>`,
+    quiz: [
+      { q: '殘差圖呈喇叭形：預測值越大，殘差越分散。這代表什麼？', o: ['變異不齊一；可考慮對 y 取對數', '關係是直線，沒有問題', '有交互作用', '樣本數太少'], why: '殘差寬度隨預測值變大，違反變異齊一的前提；右偏的結果取對數常可改善。' },
+      { q: '殘差圖呈 U 形，代表什麼？', o: ['x 和 y 的關係不是直線；可加入二次項或做轉換', '殘差是常態', '有影響點', '資料不獨立'], why: '直線系統性地在中間高估、兩端低估（或相反），殘差就會呈弧形。' },
+      { q: '刪掉某一個點後，斜率從 0.8 變成 0.2。這個點最可能是？', o: ['影響點：Cook 距離很大，應檢查資料並做敏感度分析', '普通的點，可以忽略', '一定是輸入錯誤，直接刪除', '它讓模型更準確，應該複製一份'], why: '影響點會大幅改變估計；先檢查是否有錯，再報告有無它的結果。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -1208,6 +1230,11 @@ const GLOSS = [
   ['預測區間', [], '對某個 x 值，下一個個體的 y 可能落在的範圍；比平均反應的信賴區間寬。', 'simple-reg'],
   ['信賴帶', ['平均反應的信賴區間'], '迴歸線上每個 x 值的平均反應信賴區間連起來的帶狀範圍。', 'simple-reg'],
   ['外推', [], '用迴歸線預測資料範圍以外的 x 值；沒有資料根據。', 'simple-reg'],
+  ['殘差圖', [], '把殘差對預測值畫出的圖，用來檢查線性、變異齊一與極端值。', 'reg-diag'],
+  ['槓桿值', [], '觀察值的 x 離其他點多遠；越遠，對迴歸線的潛在影響越大。', 'reg-diag'],
+  ['影響點', [], '刪除後會大幅改變迴歸結果的觀察值。', 'reg-diag'],
+  ['Cook 距離', ['Cook'], '刪除某個觀察值後，所有預測值改變多少的綜合指標。', 'reg-diag'],
+  ['二次項', ['x²'], '在迴歸中加入 x 的平方，用來描述彎曲的關係。', 'reg-diag'],
   ['迴歸係數', ['係數', 'β'], '其他變數固定時，某變數增加 1 單位，結果平均改變多少。', 'c4-1'],
   ['虛擬變數', [], '把類別變數轉成 0／1 的欄位，才能放進迴歸。', 'c4-1'],
   ['參考組', [], '類別變數中被拿來當比較基準的那一組。', 'c4-1'],
@@ -1246,7 +1273,7 @@ const ORDER = [
   ['c2-2', 'c2-3', 'tdist', 'prop-ci', 'c2-4', 'one-t', 'binom-test', 'gof', 'boot', 'c4-5', 'c5-1'],
   ['c3-1', 'two-assume', 'nonpar', 'c3-3', 'two-prop', 'mcnemar', 'kappa', 'c3-5'],
   ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff', 'ancova'],
-  ['c3-4', 'simple-reg', 'c4-1', 'c4-2'],
+  ['c3-4', 'simple-reg', 'c4-1', 'reg-diag', 'c4-2'],
   ['c4-3'],
   ['c4-4', 'c4-6'],
   ['c5-2', 'c5-3', 'c5-4', 'c5-5'],
@@ -1258,7 +1285,7 @@ const REFS = {
   'prob-rules': 'Whitlock 第 5 章；Rosner 3.2–3.6', 'roc': 'Rosner 3.9；UTHealth GSBS 課綱第 10 週', 'rv': 'Rosner 4.2–4.6', 'binom': 'Whitlock 7.1；Rosner 4.7–4.9、5.7；Kirkwood 第 15 章', 'poisson': 'Whitlock 8.4；Rosner 4.10–4.13；Kirkwood 第 22 章', 'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'tdist': 'Whitlock 11.1；Rosner 6.5', 'prop-ci': 'Whitlock 7.3；Rosner 6.8；Kirkwood 第 15 章', 'binom-test': 'Whitlock 7.2；Rosner 7.9', 'gof': 'Whitlock 8.1–8.3；Rosner 10.7', 'boot': 'Whitlock 13.8、第 19 章；Rosner 6.11、9.6', 'one-t': 'Whitlock 11.2；Rosner 7.3–7.5；UTHealth GSBS 課綱第 2 週', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
   'c2-4': 'Whitlock 第 6 章；Rosner 7.1–7.5；Kirkwood 第 8 章', 'c4-5': 'Whitlock 14.6；Rosner 7.6–7.7、8.9；Kirkwood 第 35 章', 'c5-1': 'Rosner 13.2；Kirkwood 第 34 章',
   'nonpar': 'Whitlock 13.4–13.7；Rosner 9.2–9.4', 'two-prop': 'Rosner 10.2、10.5；Kirkwood 第 16 章', 'kappa': 'Rosner 10.8；Landis & Koch (1977) Biometrics 33:159', 'mcnemar': 'Rosner 10.4；Kirkwood 第 21 章；Agresti, Categorical Data Analysis', 'two-assume': 'Whitlock 13.1–13.3；Rosner 8.6、8.10；Kirkwood 第 13 章', 'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
-  'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'simple-reg': 'Whitlock 第 17 章；Rosner 11.2–11.6；Kirkwood 第 10 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
+  'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'reg-diag': 'Kirkwood 第 12–13 章；Rosner 11.6；Whitlock 17.5–17.6', 'simple-reg': 'Whitlock 第 17 章；Rosner 11.2–11.6；Kirkwood 第 10 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
   'c4-2': 'Rosner 13.7–13.8；Kirkwood 第 19–20 章', 'c4-3': 'Whitlock 第 21 章；Rosner 14.8–14.11；Kirkwood 第 26–27 章', 'c4-4': 'Benjamini & Hochberg (1995), J R Stat Soc B 57:289–300',
   'c4-6': 'Rosner 12.10、13.13–13.14；Kirkwood 第 31 章', 'c5-2': 'Kirkwood 第 38 章；EQUATOR Network', 'c5-3': 'Kirkwood 第 38 章', 'c5-4': 'Kirkwood 第 34、38 章',
 };

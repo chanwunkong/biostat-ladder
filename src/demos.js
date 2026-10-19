@@ -2,6 +2,11 @@
    每題的 demo：set = 設定輸入元件（id → 值）；click = 依序點擊的按鈕；custom = 交給互動圖自己的 _demo()；look = 示範時的觀察提示。
    有 q 的項目會整題替換（原題無法在圖上示範時）。 */
 const QD = {
+  'reg-diag': [
+    { demo: { click: ['#wrd-m [data-m="funnel"]', '#wrd-t [data-t="none"]'], look: '右邊殘差圖：預測值越大越分散（喇叭形）。再按「對 y 取對數」，看殘差變得平均。' } },
+    { demo: { click: ['#wrd-m [data-m="curve"]', '#wrd-t [data-t="none"]'], look: '殘差圖呈 U 形：直線在中間高估、兩端低估。按「加入 x²」比較。' } },
+    { demo: { click: ['#wrd-m [data-m="infl"]', '#wrd-t [data-t="none"]'], look: '紅點是 Cook 距離最大的點：它的 x 遠離其他點，把整條線拉平了。比較「合適」時的斜率。' } },
+  ],
   'simple-reg': [
     { demo: { set: { 'wsr-n': 40, 'wsr-x': 60 }, look: '點「斜率（95% CI）」：黑線的斜率，以及它的信賴區間。' } },
     { demo: { set: { 'wsr-n': 40, 'wsr-x': 60 }, look: '比較兩張數字卡：橘色預測區間遠比紅色信賴區間寬。把樣本數拉到 80，信賴區間變窄，預測區間幾乎不變。' } },

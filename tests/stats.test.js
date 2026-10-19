@@ -145,6 +145,9 @@ const sp = S.slrPredict(cs, cdist, S.mean(cs));
 near('x̄ 處的信賴區間半寬 = t·s/√n', (sp.ci[1] - sp.ci[0]) / 2, sp.tc * sp.s / Math.sqrt(cs.length));
 near('簡單迴歸斜率標準誤 = lm', sp.seB, 0.4155);
 
+near('Cook 距離最大值 (cars 第 49 筆)', Math.max(...lmc.cook), 0.3403);
+if (lmc.cook.indexOf(Math.max(...lmc.cook)) !== 48) { fail++; console.log('FAIL Cook 距離最大的不是第 49 筆'); } else console.log('ok   Cook 距離最大的是第 49 筆');
+
 const DS = {};
 for (const m of DATASETS) { const d = m.gen(); DS[m.id] = makeDS({ ...m, head: d.head, rows: d.rows }); }
 const runs = [

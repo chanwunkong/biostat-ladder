@@ -264,7 +264,8 @@ const S = (() => {
     const se = V.map((r, j) => Math.sqrt(r[j] * s2)), tc = qt(0.975, df);
     const t = b.map((v, j) => v / se[j]), pv = t.map(v => pt2(v, df));
     const r2 = 1 - rss / tss, F = p > 1 ? ((tss - rss) / (p - 1)) / s2 : NaN;
-    return { b, se, t, p: pv, ci: b.map((v, j) => [v - tc * se[j], v + tc * se[j]]), r2, adj: 1 - (1 - r2) * (n - 1) / df, F, df1: p - 1, df2: df, pF: p > 1 ? pf(F, p - 1, df) : NaN, sigma: Math.sqrt(s2), fitted, resid, n };
+    const lev = X.map(xi => dot(xi, V.map(r => dot(r, xi)))), cook = resid.map((r, i) => r * r / (p * s2) * lev[i] / (1 - lev[i]) ** 2);
+    return { lev, cook, b, se, t, p: pv, ci: b.map((v, j) => [v - tc * se[j], v + tc * se[j]]), r2, adj: 1 - (1 - r2) * (n - 1) / df, F, df1: p - 1, df2: df, pF: p > 1 ? pf(F, p - 1, df) : NaN, sigma: Math.sqrt(s2), fitted, resid, n };
   }
   // 簡單線性迴歸在 x0 的預測：平均反應的信賴區間與個體的預測區間
   function slrPredict(x, y, x0) {
@@ -540,6 +541,7 @@ const DEF = {
   rdDef: '風險差：第二列的事件比例減第一列的事件比例（百分點）；信賴區間以 Wald 法計算。',
   mcDef: 'McNemar 檢定只用兩次結果不一致的人數 b、c：χ² = (b − c)² ÷ (b + c)。精確 p 值把 b 視為 b + c 次中、成功機率 0.5 的二項結果。',
   kapDef: 'Cohen κ：(觀察一致率 − 機遇一致率) ÷ (1 − 機遇一致率)。機遇一致率 = Σ(兩者各類比例的乘積)。信賴區間使用近似標準誤 √(po(1 − po) ÷ (n(1 − pe)²))。',
+  cookDef: 'Cook 距離：刪除某個觀察值後，所有預測值會改變多少的綜合指標；結合殘差大小與槓桿值（x 離平均多遠）。',
   n: '分析使用的觀察數。', ev: '結果為事件（編碼 1）的人數。',
 };
 const cd = (k, l, v, d) => ({ k, l, v, d });
@@ -1122,12 +1124,13 @@ const AN = {
         charts.push({ svg: chart({ x: [x0, x1], y: [by0, by1], xlab: xs[0], ylab: s.y, h: 320 }, (Xs, Ys) => band(Xs, Ys, 'pi', 'sigma', 0.08) + band(Xs, Ys, 'ci', 'b1', 0.2) + x.map((v, i) => `<circle data-k="r2" cx="${Xs(v).toFixed(1)}" cy="${Ys(y[i]).toFixed(1)}" r="3" style="fill:var(--c1);fill-opacity:.45"/>`).join('') + `<line data-k="b1 r2" x1="${Xs(x0)}" x2="${Xs(x1)}" y1="${Ys(m.b[0] + m.b[1] * x0)}" y2="${Ys(m.b[0] + m.b[1] * x1)}" style="stroke:var(--c2);stroke-width:2.5"/>`), cap: '散佈圖與迴歸直線。深色帶＝平均反應的 95% 信賴帶；淺色帶＝個體的 95% 預測帶。' });
       }
       const [f0, f1] = S.minmax(m.fitted), [r0, r1] = S.minmax(m.resid), ra = Math.max(Math.abs(r0), Math.abs(r1));
-      charts.push({ svg: chart({ x: [f0, f1], y: [-ra, ra], xlab: '預測值', ylab: '殘差', h: 280 }, (Xs, Ys, { M, iw }) => `<line x1="${M.l}" x2="${M.l + iw}" y1="${Ys(0)}" y2="${Ys(0)}" style="stroke:var(--muted);stroke-dasharray:5 4"/>` + m.fitted.map((v, i) => `<circle data-k="r2 sigma" cx="${Xs(v).toFixed(1)}" cy="${Ys(m.resid[i]).toFixed(1)}" r="3" style="fill:var(--c1);fill-opacity:.45"/>`).join('') + `<g class="hlx" data-k="sigma"><rect x="${M.l}" y="${Ys(m.sigma)}" width="${iw}" height="${Ys(-m.sigma) - Ys(m.sigma)}" style="fill:var(--c2);fill-opacity:.12"/></g>`), cap: '殘差（實際值 − 預測值）對預測值；虛線＝0。' });
+      const iCook = m.cook.indexOf(Math.max(...m.cook));
+      charts.push({ svg: chart({ x: [f0, f1], y: [-ra, ra], xlab: '預測值', ylab: '殘差', h: 280 }, (Xs, Ys, { M, iw }) => `<line x1="${M.l}" x2="${M.l + iw}" y1="${Ys(0)}" y2="${Ys(0)}" style="stroke:var(--muted);stroke-dasharray:5 4"/>` + m.fitted.map((v, i) => `<circle data-k="r2 sigma${i === iCook ? ' cook' : ''}" cx="${Xs(v).toFixed(1)}" cy="${Ys(m.resid[i]).toFixed(1)}" r="${i === iCook ? 6 : 3}" style="fill:${i === iCook ? 'var(--c2)' : 'var(--c1)'};fill-opacity:${i === iCook ? 0.9 : 0.45}"/>`).join('') + `<g class="hlx" data-k="sigma"><rect x="${M.l}" y="${Ys(m.sigma)}" width="${iw}" height="${Ys(-m.sigma) - Ys(m.sigma)}" style="fill:var(--c2);fill-opacity:.12"/></g>`), cap: '殘差（實際值 − 預測值）對預測值；虛線＝0；紅點為 Cook 距離最大的觀察值。' });
       charts.push({ svg: distChart('F', m.F, [m.df1, m.df2], `F（自由度 ${m.df1}, ${m.df2}）`), cap: distCap.F + '（整體模型）' });
       const others = xs.slice(1);
       return {
         title: `線性迴歸：${esc(s.y)}`, meta: meta(idx.length, dropped), facts: D.refs.map(esc),
-        charts, cards: [...rowsB.map(r => cd(r.k, `β：${esc(r.label)}`, `${F.n(r.est)}（${F.ci(r.lo, r.hi)}）`, 'beta')), cd('r2', 'R²', F.n(m.r2, 3), 'r2'), cd('sigma', '殘差標準誤', F.n(m.sigma), 'sigma'), cd('F', 'F（整體模型）', `${F.n(m.F, 2)}（df ${m.df1}, ${m.df2}）`, 'F'), cd('p', 'p 值（整體模型）', F.p(m.pF), 'p')],
+        charts, cards: [...rowsB.map(r => cd(r.k, `β：${esc(r.label)}`, `${F.n(r.est)}（${F.ci(r.lo, r.hi)}）`, 'beta')), cd('r2', 'R²', F.n(m.r2, 3), 'r2'), cd('sigma', '殘差標準誤', F.n(m.sigma), 'sigma'), cd('cook', '最大的 Cook 距離', `${F.n(m.cook[iCook], 3)}（第 ${idx[iCook] + 1} 列）`, 'cookDef'), cd('F', 'F（整體模型）', `${F.n(m.F, 2)}（df ${m.df1}, ${m.df2}）`, 'F'), cd('p', 'p 值（整體模型）', F.p(m.pF), 'p')],
         tables: [{ head: ['變數', 'β', '95% CI', 't', 'p 值'], rows: ['截距', ...D.names].map((nm, j) => [j ? `<b>${esc(nm)}</b>` : `<span class="mut">${nm}</span>`, F.n(m.b[j]), F.ci(...m.ci[j]), F.n(m.t[j], 2), F.p(m.p[j])]), foot: `R² = ${F.n(m.r2, 3)}；調整後 R² = ${F.n(m.adj, 3)}；F(${m.df1}, ${m.df2}) = ${F.n(m.F, 2)}，${F.peq(m.pF)}；殘差標準誤 = ${F.n(m.sigma)}` }],
         write: W2(`以多元線性迴歸分析 ${s.y} 與 ${joinZh(xs)}${D.refs.length ? '（類別變數以虛擬變數編碼）' : ''}，結果以迴歸係數 β 與 95% 信賴區間表示。`,
           `${D.names[0]}：β = ${F.n(m.b[1])}（95% CI ${F.ci(...m.ci[1])}，${F.peq(m.p[1])}）${others.length ? `，模型中同時納入 ${joinZh(others)}` : ''}；R² = ${F.n(m.r2, 3)}；n = ${idx.length}。`,
