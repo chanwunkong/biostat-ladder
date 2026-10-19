@@ -320,7 +320,7 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 
 .road li::before { content: counter(rd); position: absolute; left: 0; top: 0; width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-family: var(--mono); font-weight: 600; }
 .road li:not(:last-child)::after { content: ""; position: absolute; left: 15px; top: 34px; bottom: 2px; width: 2px; background: var(--line); }
 .road b { font-size: 16px; } .road span { color: var(--muted); font-size: 14px; }
-.seg.wrap { flex-wrap: wrap; }
+.seg.wrap { flex-wrap: wrap; padding: 0; margin: 0 0 12px; max-width: none; }
 .seg button { min-height: 38px; }
 .pn a { display: flex; flex-direction: column; }
 .pn a small { font-size: 12px; color: var(--muted); }
