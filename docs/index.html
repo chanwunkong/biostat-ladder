@@ -433,6 +433,7 @@ tr.sub td { border-top: 0; padding-top: 0; }
 .wterms .lbl { display: block; margin-bottom: 6px; }
 .tdef .tvals { margin: 4px 0 0; font-size: 13.5px; }
 .tlink { color: var(--accent); text-decoration: underline dotted; text-underline-offset: 3px; cursor: pointer; }
+.dt td.on, .dt th.on { background: var(--eosin-soft); box-shadow: inset 0 0 0 2px var(--eosin); }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 </head>
@@ -2074,7 +2075,7 @@ const CH = [
 <p><b>偏態</b>是指分佈不對稱。<b>右偏</b>是右邊拖著一條長尾巴：大部分的值都小，少數很大（例如住院天數、收入），這時平均數會被大數拉到中位數的右邊。<b>左偏</b>相反。</p>
 <p>上方工具還會算出兩個描述「分散程度」的數字，下一章（{{c1-3}}）會詳細介紹：<b>標準差</b>（SD）描述每個值離平均多遠；<b>IQR</b> 是排在中間那一半資料的範圍，Q1 是排在 25% 位置的值、Q3 是排在 75% 位置的值。</p>
 <p>經驗法則：資料大致對稱時報告平均數；明顯偏態時（住院天數、病毒量、收入）報告中位數。在上方工具中改動數字，觀察兩者怎麼變。</p>`,
-    widget: 'mm', wtitle: '平均數與中位數',
+    widget: 'mm', wtitle: '平均數與中位數：收縮壓、CRP',
     quiz: [
       { q: '在上方工具輸入 1, 2, 3, 4, 100，哪個說法正確？', o: ['平均數被 100 拉高到 22，中位數仍是 3', '中位數被拉高', '兩者都是 22', '兩者都是 3'], why: '一個極端值就能大幅移動平均數，但中位數只看排在中間的值。' },
       { q: '右偏（長尾在右）的分佈中，通常？', o: ['平均數 > 中位數', '平均數 < 中位數', '兩者相等', '無法判斷'], why: '右側的大數值把平均數往右拉。' },
@@ -2110,7 +2111,7 @@ const CH = [
 <p class="note">常態是一個模型，不保證真實資料符合。檢查方式是畫直方圖或 Q–Q 圖。樣本夠大時，t 檢定與迴歸對非常態相當耐受；樣本小又很偏時，考慮取對數或無母數方法。</p>`,
     widget: 'normal', wtitle: '常態曲線與累積機率',
     quiz: [
-      { q: '成人收縮壓 μ = 120、σ = 15，某人 150 mmHg，z 分數是？', o: ['2', '30', '1.5', '−2'], why: '(150 − 120) ÷ 15 = 2。' },
+      { q: '本研究 400 位病人的基線收縮壓平均 150.4、標準差 13.7。病人 S001 的收縮壓 178 mmHg，z 分數約是？', o: ['2.0', '27.6', '1.3', '−2.0'], why: '(178 − 150.4) ÷ 13.7 ≈ 2.0：比平均高約 2 個標準差。' },
       { q: 'z = 2 大約位於第幾百分位？', o: ['約第 97.7 百分位', '第 2 百分位', '第 50 百分位', '第 68 百分位'], why: 'P(Z ≤ 2) ≈ 0.977。可用上方工具驗證。' },
     ],
   },
@@ -3973,37 +3974,40 @@ Object.assign(W, {
     $('#wl-g', el).addEventListener('change', upData); el.addEventListener('input', e => { if (e.target.id === 'wl-a' || e.target.id === 'wl-b') up(); }); upData(); up();
   },
   types(el) {
-    const items = [['血型', 'A、B、O、AB', '名目'], ['收縮壓', '128、141、117 mmHg', '連續'], ['癌症分期', 'I、II、III、IV', '順序'], ['一年內住院次數', '0、1、3、0', '計數'], ['處理組別', '藥物、安慰劑', '名目'], ['疼痛程度', '無、輕、中、重', '順序'], ['基因表現量', '5.21、7.84（log2）', '連續'], ['診斷到死亡的月數', '14、32+、8、60+', '時間至事件'], ['菌落數', '23、118、0', '計數'], ['體重', '62.5、80.1 kg', '連續']];
+    const d = STUDY(), ag = a => ['40–49', '50–59', '60–69', '70–80'][Math.min(3, Math.floor((a - 40) / 10))], P = [0, 1, 2, 3, 4, 5, 6, 7], vs = (f, n = 4) => P.slice(0, n).map(f).join('、');
+    const items = [['醫院', vs(i => d.hospital[i * 47]), '名目'], ['基線收縮壓（mmHg）', vs(i => d.sbp_0[i]), '連續'], ['分派組別', '新藥、安慰劑', '名目'], ['12 週內不良事件次數', vs(i => d.ae_count[i + 2]), '計數'], ['BMI（kg/m²）', vs(i => d.bmi[i]), '連續'], ['年齡組', '40–49、50–59、60–69、70–80', '順序'], ['吸菸', '是、否', '名目'], ['追蹤到心血管事件的月數', vs(i => d.time_months[i] + (d.cvd_event[i] ? '' : '+')), '時間至事件'], ['CRP（mg/L）', vs(i => d.crp[i]), '連續'], ['醫師判讀心電圖', '陽性、陰性', '名目']];
     const cats = ['名目', '順序', '連續', '計數', '時間至事件'], why = { 名目: '類別之間沒有順序。', 順序: '類別有高低順序，但間距不一定相等。', 連續: '可以是任何數值（含小數），有單位。', 計數: '只能是 0、1、2… 的整數次數。', 時間至事件: '追蹤到事件發生的時間；「+」代表還沒發生就結束追蹤（設限）。' };
+    const cols = [['hospital', '醫院', 'nom', i => d.hospital[i]], ['age', '年齡組', 'ord', i => ag(d.age[i])], ['bmi', 'BMI', 'cont', i => d.bmi[i]], ['ae', '不良事件', 'count', i => d.ae_count[i]], ['t', '月數', 'tte', i => d.time_months[i]], ['e', '事件', 'tte cens', i => d.cvd_event[i]]];
+    const table = `<div class="tbl-wrap"><table class="st dt"><thead><tr>${cols.map(c => `<th data-k="${c[2]}">${c[1]}</th>`).join('')}</tr></thead><tbody>${P.slice(0, 6).map(i => `<tr>${cols.map(c => `<td data-k="${c[2]}${c[0] === 'e' && !d.cvd_event[i] ? ' cens' : ''}"${c[0] === 'e' && !d.cvd_event[i] ? ' style="color:var(--c2)"' : ''}>${c[3](i)}</td>`).join('')}</tr>`).join('')}</tbody></table></div><p class="w-cap">資料表的前 6 列：每列一位病人、每欄一個變數。紅色的 0 代表追蹤結束時還沒發生事件。</p>`;
     let k = 0; const res = [];
     const draw = () => {
       const it = items[k];
-      el.innerHTML = `<div class="dots" aria-hidden="true">${items.map((_, i) => `<i class="${res[i] === true ? 'ok' : res[i] === false ? 'no' : i === k ? 'cur' : ''}"></i>`).join('')}</div>` + (it ? `<div class="vcard"><p class="lbl">第 ${k + 1} / ${items.length} 個變數</p><h4>${it[0]}</h4><div class="vals">${it[1].split('、').map(v => `<span>${v}</span>`).join('')}</div></div><p class="w-cap">這是哪一種變數？</p><div class="choice">${cats.map(c => `<button type="button" class="opt" data-c="${c}">${c}</button>`).join('')}</div><div class="why" id="wt-why" hidden></div>` : `<div class="vcard"><h4>答對 ${res.filter(Boolean).length} / ${items.length}</h4><p>${res.every(Boolean) ? '全部答對。' : '錯的題目再挑戰一次吧。'}</p><button class="btn" type="button" id="wt-re">重來一次</button></div>`);
-      $$('[data-c]', el).forEach(b => { b.onclick = () => { if (res[k] !== undefined) return; const ok = b.dataset.c === it[2]; res[k] = ok; b.classList.add(ok ? 'right' : 'wrong'); if (!ok) $(`[data-c="${it[2]}"]`, el).classList.add('right'); const w = $('#wt-why', el); w.hidden = false; w.innerHTML = `<p><b>${ok ? '答對了。' : '正確答案：' + it[2] + '。'}</b>${why[it[2]]}</p><button type="button" class="btn pri" id="wt-next">下一個 →</button>`; $('#wt-next', el).onclick = () => { k++; draw(); }; }; });
+      el.innerHTML = SRC_NOTE + table + `<h4>分類挑戰</h4><div class="dots" aria-hidden="true">${items.map((_, i) => `<i class="${res[i] === true ? 'ok' : res[i] === false ? 'no' : i === k ? 'cur' : ''}"></i>`).join('')}</div>` + (it ? `<div class="vcard"><p class="lbl">第 ${k + 1} / ${items.length} 個變數</p><h4>${it[0]}</h4><div class="vals">${it[1].split('、').map(v => `<span>${v}</span>`).join('')}</div></div><p class="w-cap">這是哪一種變數？</p><div class="choice">${cats.map(c => `<button type="button" class="opt" data-c="${c}">${c}</button>`).join('')}</div><div class="why" id="wt-why" hidden></div>` : `<div class="vcard"><h4>答對 ${res.filter(Boolean).length} / ${items.length}</h4><p>${res.every(Boolean) ? '全部答對。' : '錯的題目再挑戰一次吧。'}</p><button class="btn" type="button" id="wt-re">重來一次</button></div>`);
+      $$('[data-c]', el).forEach(b => { b.onclick = () => { if (res[k] !== undefined) return; const ok = b.dataset.c === it[2]; res[k] = ok; b.classList.add(ok ? 'right' : 'wrong'); if (!ok) $(`[data-c="${it[2]}"]`, el).classList.add('right'); const ww = $('#wt-why', el); ww.hidden = false; ww.innerHTML = `<p><b>${ok ? '答對了。' : '正確答案：' + it[2] + '。'}</b>${why[it[2]]}</p><button type="button" class="btn pri" id="wt-next">下一個 →</button>`; $('#wt-next', el).onclick = () => { k++; draw(); }; }; });
       const re = $('#wt-re', el); if (re) re.onclick = () => { k = 0; res.length = 0; draw(); };
     };
-    el._demo = d => { k = d.k; delete res[k]; draw(); };
+    el._demo = dd => { k = dd.k; delete res[k]; draw(); };
     draw();
   },
   spread(el) {
-    const r = rngOf(3), N = normOf(r), z = std(Array.from({ length: 30 }, () => N()));
-    el.innerHTML = `<div class="w-row">${slider('wv-s', '乙組標準差', 1, 25, 1, 12)}<label class="tog"><input type="checkbox" id="wv-o"> 乙組加入一個極端值</label></div><div class="chart-wrap" id="wv-c"></div><p class="w-cap">紅線 = 平均；深色帶 = 平均 ± 1 SD；淺色帶 = ± 2 SD；方框 = 中間 50%（IQR）。</p><div class="kv" id="wv-k"></div>`;
+    const d = STUDY(), I = [...Array(d.n).keys()], V = { sbp_0: ['基線收縮壓（mmHg）', 240], crp: ['CRP（mg/L）', 40] }, hs = sel => ['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'H7', 'H8'].map(h => `<option${h === sel ? ' selected' : ''}>${h}</option>`).join('');
+    el.innerHTML = SRC_NOTE + `<div class="w-row"><label class="fld"><span>變數</span><select id="wv-v">${Object.entries(V).map(([k, v]) => `<option value="${k}">${v[0]}</option>`).join('')}</select></label><label class="fld"><span>甲組</span><select id="wv-a">${hs('H1')}</select></label><label class="fld"><span>乙組</span><select id="wv-b">${hs('H8')}</select></label></div><label class="tog"><input type="checkbox" id="wv-o"> 乙組加入一個極端值</label><div class="chart-wrap" id="wv-c"></div><p class="w-cap">紅線 = 平均；深色帶 = 平均 ± 1 SD；淺色帶 = ± 2 SD；方框 = 中間 50%（IQR）。</p><div class="kv" id="wv-k"></div>`;
     const up = () => {
-      const s = sv('wv-s'), A = z.map(v => 120 + 4 * v), B = z.map(v => 120 + s * v); if ($('#wv-o').checked) B.push(200);
-      const rows = [['甲組', A], ['乙組', B]], cl = a => Math.max(40, Math.min(205, a));
-      $('#wv-c').innerHTML = chart({ ycats: rows.map(r => r[0]), x: [40, 205], h: 220, xlab: '收縮壓 (mmHg)', m: { l: 48 }, xgrid: true }, (X, Y, { ih }) => rows.map(([, v], i) => {
+      const vk = $('#wv-v').value, ext = V[vk][1], get = h => I.filter(i => d.hospital[i] === h).map(i => d[vk][i]), A = get($('#wv-a').value), B = get($('#wv-b').value); if ($('#wv-o').checked) B.push(ext);
+      const rows = [[`甲組 ${$('#wv-a').value}`, A], [`乙組 ${$('#wv-b').value}`, B]], all = [...A, ...B], lo0 = Math.min(...all), hi0 = Math.max(...all), pad = (hi0 - lo0) * 0.05, cl = a => Math.max(lo0 - pad, Math.min(hi0 + pad, a));
+      $('#wv-c').innerHTML = chart({ ycats: rows.map(r => r[0]), x: [lo0 - pad, hi0 + pad], h: 220, xlab: V[vk][0], m: { l: 64 }, xgrid: true }, (X, Y, { ih }) => rows.map(([, v], i) => {
         const y = Y(i), hh = ih / 2 * 0.72, m = S.mean(v), sd = S.sd(v), q1 = S.quantile(v, 0.25), q3 = S.quantile(v, 0.75);
-        const t = i ? 'B' : 'A'; return `<rect data-k="sd${t}" x="${X(cl(m - 2 * sd))}" y="${y - hh / 2}" width="${X(cl(m + 2 * sd)) - X(cl(m - 2 * sd))}" height="${hh}" style="fill:var(--c1);fill-opacity:.08"/><rect data-k="sd${t}" x="${X(cl(m - sd))}" y="${y - hh / 2}" width="${X(cl(m + sd)) - X(cl(m - sd))}" height="${hh}" style="fill:var(--c1);fill-opacity:.17"/><rect data-k="iqr${t}" x="${X(q1)}" y="${y - hh / 4}" width="${X(q3) - X(q1)}" height="${hh / 2}" style="fill:none;stroke:var(--ink);stroke-width:1.3"/>` + v.map((x, k) => `<circle cx="${X(cl(x))}" cy="${y + (((k * 0.618) % 1) - 0.5) * hh * 0.8}" r="3.2" style="fill:${x === 200 ? 'var(--c2)' : 'var(--c1)'}"/>`).join('') + `<line x1="${X(m)}" x2="${X(m)}" y1="${y - hh / 2}" y2="${y + hh / 2}" style="stroke:var(--c2);stroke-width:2.5"/>`;
+        const t = i ? 'B' : 'A'; return `<rect data-k="sd${t}" x="${X(cl(m - 2 * sd))}" y="${y - hh / 2}" width="${X(cl(m + 2 * sd)) - X(cl(m - 2 * sd))}" height="${hh}" style="fill:var(--c1);fill-opacity:.08"/><rect data-k="sd${t}" x="${X(cl(m - sd))}" y="${y - hh / 2}" width="${X(cl(m + sd)) - X(cl(m - sd))}" height="${hh}" style="fill:var(--c1);fill-opacity:.17"/><rect data-k="iqr${t}" x="${X(q1)}" y="${y - hh / 4}" width="${X(q3) - X(q1)}" height="${hh / 2}" style="fill:none;stroke:var(--ink);stroke-width:1.3"/>` + v.map((x, k) => `<circle cx="${X(cl(x))}" cy="${y + (((k * 0.618) % 1) - 0.5) * hh * 0.8}" r="3.2" style="fill:${x === ext && i ? 'var(--c2)' : 'var(--c1)'}"/>`).join('') + `<line x1="${X(m)}" x2="${X(m)}" y1="${y - hh / 2}" y2="${y + hh / 2}" style="stroke:var(--c2);stroke-width:2.5"/>`;
       }).join(''));
-      $('#wv-k').innerHTML = kvs([['甲組 SD', F.n(S.sd(A), 1), 'sdA'], ['乙組 SD', F.n(S.sd(B), 1), 'sdB'], ['甲組 IQR', F.n(S.quantile(A, 0.75) - S.quantile(A, 0.25), 1), 'iqrA'], ['乙組 IQR', F.n(S.quantile(B, 0.75) - S.quantile(B, 0.25), 1), 'iqrB'], ['甲組變異係數 CV', F.n(100 * S.sd(A) / S.mean(A), 1) + '%', 'sdA'], ['乙組變異係數 CV', F.n(100 * S.sd(B) / S.mean(B), 1) + '%', 'sdB']]);
+      $('#wv-k').innerHTML = kvs([['甲組 SD', F.n(S.sd(A), 2), 'sdA'], ['乙組 SD', F.n(S.sd(B), 2), 'sdB'], ['甲組 IQR', F.n(S.quantile(A, 0.75) - S.quantile(A, 0.25), 2), 'iqrA'], ['乙組 IQR', F.n(S.quantile(B, 0.75) - S.quantile(B, 0.25), 2), 'iqrB'], ['甲組變異係數 CV', F.n(100 * S.sd(A) / S.mean(A), 1) + '%', 'sdA'], ['乙組變異係數 CV', F.n(100 * S.sd(B) / S.mean(B), 1) + '%', 'sdB']]);
     };
     el.addEventListener('input', up); el.addEventListener('change', up); up();
   },
   table1w(el) {
-    el.innerHTML = `<p class="w-cap">資料：降血壓藥隨機試驗（120 人）。切換分組方式；點表格中的變數，下方會畫出它的分佈。</p><div class="seg wrap" id="wt1-g"><button type="button" data-g="" aria-selected="false">不分組</button><button type="button" data-g="group" aria-selected="true">依治療組別</button><button type="button" data-g="sex" aria-selected="false">依性別</button></div><label class="tog"><input type="checkbox" id="wt1-p" checked> 顯示 p 值欄</label><div id="wt1-t"></div>`;
+    el.innerHTML = SRC_NOTE + `<p class="w-cap">切換分組方式；點表格中的變數，下方會畫出它的分佈。</p><div class="seg wrap" id="wt1-g"><button type="button" data-g="" aria-selected="false">不分組</button><button type="button" data-g="group" aria-selected="true">依治療組別</button><button type="button" data-g="sex" aria-selected="false">依性別</button></div><label class="tog"><input type="checkbox" id="wt1-p" checked> 顯示 p 值欄</label><div id="wt1-t"></div>`;
     let g = 'group';
     const up = () => {
-      const r = AN.table1.run(getDS('bp_trial'), { g, vars: ['age', 'sex', 'bmi', 'sbp_base', 'ae'] }), t = r.table1, show = $('#wt1-p').checked || !g, cut = a => (g && !show ? a.slice(0, -1) : a);
+      const r = AN.table1.run(getDS('study'), { g, vars: ['age', 'sex', 'bmi', 'smoker', 'diabetes', 'sbp_0', 'crp'] }), t = r.table1, show = $('#wt1-p').checked || !g, cut = a => (g && !show ? a.slice(0, -1) : a);
       $('#wt1-p').disabled = !g;
       $('#wt1-t').innerHTML = tableHTML({ head: cut(t.head), rows: t.rows.map(x => ({ ...x, cells: cut(x.cells) })), foot: show ? t.foot : '' }) + `<div class="picks">${r.picks.map(p => `<div class="pick" data-k="${p.k}">${figHTML(p)}</div>`).join('')}</div>`;
       if (!el._k) el._k = 'v0';
@@ -4246,35 +4250,48 @@ Object.assign(W, {
     up();
   },
   mm(el) {
-    el.innerHTML = `<label class="fld"><span>輸入數字（以逗號或空白分隔）</span><input id="wm-in" type="text" inputmode="decimal" value="3, 4, 4, 5, 34"></label><div class="chart-wrap" id="wm-c"></div><div class="kv" id="wm-o"></div>`;
+    const d = STUDY(), I = [...Array(d.n).keys()], V = { sbp_0: ['基線收縮壓（mmHg）', 1], crp: ['CRP（mg/L）', 0.5], ae_count: ['不良事件次數', 1] };
+    el.innerHTML = SRC_NOTE + `<div class="seg wrap" id="wm-m"><button type="button" data-m="data" aria-selected="true">用研究資料</button><button type="button" data-m="own" aria-selected="false">自己輸入數字</button></div>
+<div class="w-row" id="wm-dr"><label class="fld"><span>變數</span><select id="wm-v">${Object.entries(V).map(([k, v]) => `<option value="${k}">${v[0]}</option>`).join('')}</select></label><label class="fld"><span>醫院</span><select id="wm-h">${HOSP_OPTS('全部')}</select></label></div>
+<label class="fld" id="wm-or" hidden><span>輸入數字（以逗號或空白分隔）</span><input id="wm-in" type="text" inputmode="decimal" value="3, 4, 4, 5, 34"></label><div class="chart-wrap" id="wm-c"></div><div class="kv" id="wm-o"></div>`;
+    let mode = 'data';
     const up = () => {
-      const v = $('#wm-in').value.split(/[\s,，、;；]+/).filter(x => x !== '').map(Number).filter(Number.isFinite);
+      $('#wm-dr').hidden = mode !== 'data'; $('#wm-or').hidden = mode === 'data';
+      const vk = $('#wm-v').value, h = $('#wm-h').value, v = mode === 'data' ? I.filter(i => !h || d.hospital[i] === h).map(i => d[vk][i]) : $('#wm-in').value.split(/[\s,，、;；]+/).filter(x => x !== '').map(Number).filter(Number.isFinite);
       if (v.length < 2) { $('#wm-o').innerHTML = '<p class="w-out">至少輸入 2 個數字。</p>'; $('#wm-c').innerHTML = ''; return; }
-      const m = S.mean(v), md = S.median(v), s = S.sd(v), q1 = S.quantile(v, 0.25), q3 = S.quantile(v, 0.75), [lo, hi] = S.minmax(v), cnt = {};
-      $('#wm-c').innerHTML = chart({ x: [Math.min(lo, m - s), Math.max(hi, m + s)], y: [0, 1], noY: true, h: 170, m: { t: 30 } }, (X, Y) =>
-        `<rect class="hlx" data-k="sd" x="${X(m - s)}" y="${Y(1) - 18}" width="${X(m + s) - X(m - s)}" height="${Y(0) - Y(1) + 18}" style="fill:var(--c2);fill-opacity:.12"/><rect class="hlx" data-k="iqr" x="${X(q1)}" y="${Y(1) - 18}" width="${X(q3) - X(q1)}" height="${Y(0) - Y(1) + 18}" style="fill:var(--c3);fill-opacity:.15"/>`
-        + v.map(x => { const k = (cnt[x] = (cnt[x] || 0) + 1); return `<circle data-k="n" cx="${X(x)}" cy="${Y(0) - 8 - (k - 1) * 13}" r="5.5" style="fill:var(--c1);fill-opacity:.75"/>`; }).join('')
-        + `<g data-k="mean sd"><line x1="${X(m)}" x2="${X(m)}" y1="${Y(1) - 18}" y2="${Y(0)}" style="stroke:var(--c2);stroke-width:2"/><text class="mk" x="${X(m)}" y="${Y(1) - 22}" text-anchor="middle" style="fill:var(--c2)">平均 ${F.n(m)}</text></g>`
-        + `<g data-k="med iqr"><line x1="${X(md)}" x2="${X(md)}" y1="${Y(1) + 2}" y2="${Y(0)}" style="stroke:var(--c3);stroke-width:2;stroke-dasharray:5 3"/><text class="mk" x="${X(md)}" y="${Y(1) - 2}" text-anchor="middle" style="fill:var(--c3)">中位數 ${F.n(md)}</text></g>`);
+      const m = S.mean(v), md = S.median(v), s = S.sd(v), q1 = S.quantile(v, 0.25), q3 = S.quantile(v, 0.75), q95 = S.quantile(v, 0.95), [lo, hi] = S.minmax(v), cnt = {};
+      const marks = (X, Y, top, base) => `<rect class="hlx" data-k="sd" x="${X(Math.max(lo, m - s))}" y="${Y(top)}" width="${X(Math.min(hi, m + s)) - X(Math.max(lo, m - s))}" height="${Y(base) - Y(top)}" style="fill:var(--c2);fill-opacity:.12"/><rect class="hlx" data-k="iqr" x="${X(q1)}" y="${Y(top)}" width="${X(q3) - X(q1)}" height="${Y(base) - Y(top)}" style="fill:var(--c3);fill-opacity:.15"/>`
+        + `<g data-k="mean sd"><line x1="${X(m)}" x2="${X(m)}" y1="${Y(top)}" y2="${Y(base)}" style="stroke:var(--c2);stroke-width:2.5"/><text class="mk" x="${X(m)}" y="${Y(top) - 4}" text-anchor="middle" style="fill:var(--c2)">平均 ${F.n(m)}</text></g>`
+        + `<g data-k="med iqr"><line x1="${X(md)}" x2="${X(md)}" y1="${Y(top * 0.86)}" y2="${Y(base)}" style="stroke:var(--c3);stroke-width:2.5;stroke-dasharray:5 3"/><text class="mk" x="${X(md)}" y="${Y(top * 0.86) - 4}" text-anchor="middle" style="fill:var(--c3)">中位數 ${F.n(md)}</text></g>`;
+      if (mode === 'data') {
+        const bw = V[vk][1] * (vk === 'sbp_0' ? 4 : 1), a = Math.floor(lo / bw) * bw, nb = Math.ceil((hi - a) / bw + 1e-9) || 1, c = new Array(nb).fill(0); v.forEach(x => { c[Math.min(nb - 1, Math.floor((x - a) / bw))]++; });
+        const top = Math.max(...c) * 1.25;
+        $('#wm-c').innerHTML = chart({ x: [a, a + nb * bw], y: [0, top], h: 230, xlab: V[vk][0], ylab: '人數', m: { t: 30 } }, (X, Y) => c.map((n, i) => { const mid = a + (i + 0.5) * bw, t = mid > q95 ? 'n tail' : 'n'; return `<rect data-k="${t}" x="${X(a + i * bw) + 0.5}" y="${Y(n)}" width="${Math.max(0, X(a + (i + 1) * bw) - X(a + i * bw) - 1)}" height="${Y(0) - Y(n)}" style="fill:${mid > q95 ? 'var(--c4)' : 'var(--c1)'};fill-opacity:.75"/>`; }).join('') + marks(X, Y, top * 0.92, 0));
+      } else {
+        $('#wm-c').innerHTML = chart({ x: [Math.min(lo, m - s), Math.max(hi, m + s)], y: [0, 1], noY: true, h: 170, m: { t: 30 } }, (X, Y) => v.map(x => { const k = (cnt[x] = (cnt[x] || 0) + 1); return `<circle data-k="n${x > q95 ? ' tail' : ''}" cx="${X(x)}" cy="${Y(0) - 8 - (k - 1) * 13}" r="5.5" style="fill:var(--c1);fill-opacity:.75"/>`; }).join('') + marks(X, Y, 1, 0));
+      }
       $('#wm-o').innerHTML = kvs([['n', v.length, 'n'], ['平均數', F.n(m), 'mean'], ['中位數', F.n(md), 'med'], ['標準差 SD', F.n(s), 'sd'], ['IQR（Q1–Q3）', `${F.n(q3 - q1)}（${F.n(q1)}–${F.n(q3)}）`, 'iqr']]);
     };
-    el.addEventListener('input', up); up();
+    segBind(el, '#wm-m', b => { mode = b.dataset.m; up(); }); el.addEventListener('input', up); el.addEventListener('change', up); up();
   },
   normal(el) {
-    el.innerHTML = `<div class="w-row">${slider('wz-m', '平均 μ', 80, 160, 1, 120)}${slider('wz-s', '標準差 σ', 5, 30, 1, 15)}${slider('wz-x', '觀察值 x', 60, 200, 1, 150)}</div><div class="chart-wrap" id="wz-c"></div><div class="kv" id="wz-o"></div>`;
+    const d = STUDY(), I = [...Array(d.n).keys()];
+    el.innerHTML = SRC_NOTE + `<p class="w-cap">長條：400 位病人的基線收縮壓；曲線：同樣平均與標準差的常態分佈。拖動 x，比較「常態曲線算出的比例」與「實際的病人比例」。</p><div class="w-row"><label class="fld"><span>醫院</span><select id="wz-h">${HOSP_OPTS('全部')}</select></label>${slider('wz-x', '收縮壓 x', 110, 195, 1, 170)}</div><div class="chart-wrap" id="wz-c"></div><div class="kv" id="wz-o"></div>`;
     const up = () => {
-      const m = sv('wz-m'), s = sv('wz-s'), x = sv('wz-x'), z = (x - m) / s, P = S.pnorm(z), lo = m - 4 * s, hi = m + 4 * s, pdf = t => Math.exp(-0.5 * ((t - m) / s) ** 2) / (s * Math.sqrt(2 * Math.PI)), pk = pdf(m), xc = Math.max(lo, Math.min(hi, x));
-      $('#wz-c').innerHTML = chart({ x: [lo, hi], y: [0, pk * 1.25], noY: true, h: 240, xlab: '測量值' }, (X, Y) => {
-        const path = (a, b) => { let d = `M${X(a)} ${Y(0)}`; for (let i = 0; i <= 80; i++) { const t = a + (b - a) * i / 80; d += `L${X(t).toFixed(1)} ${Y(pdf(t)).toFixed(1)}`; } return d + `L${X(b)} ${Y(0)}Z`; };
-        let c = ''; for (let i = 0; i <= 160; i++) { const t = lo + (hi - lo) * i / 160; c += `${i ? 'L' : 'M'}${X(t).toFixed(1)} ${Y(pdf(t)).toFixed(1)}`; }
-        return `<path data-k="pl" d="${path(lo, xc)}" style="fill:var(--c1);fill-opacity:.25"/><path class="hlx" data-k="pr" d="${path(xc, hi)}" style="fill:var(--c2);fill-opacity:.3"/><path class="keep" d="${c}" style="fill:none;stroke:var(--c1);stroke-width:2"/>`
-          + [-2, -1, 1, 2].map(k => `<line data-k="z" x1="${X(m + k * s)}" x2="${X(m + k * s)}" y1="${Y(0)}" y2="${Y(pdf(m + k * s))}" style="stroke:var(--muted);stroke-dasharray:3 3"/>`).join('')
-          + `<g class="hlx" data-k="z"><line x1="${X(m)}" x2="${X(xc)}" y1="${Y(pk * 1.12)}" y2="${Y(pk * 1.12)}" style="stroke:var(--c4);stroke-width:3"/><text x="${(X(m) + X(xc)) / 2}" y="${Y(pk * 1.12) - 6}" text-anchor="middle" style="fill:var(--c4)">${F.n(z, 2)} 個 σ</text></g>`
-          + `<line class="keep" x1="${X(xc)}" x2="${X(xc)}" y1="${Y(0)}" y2="${Y(pk * 1.05)}" style="stroke:var(--c2);stroke-width:2"/>`;
+      const h = $('#wz-h').value, v = I.filter(i => !h || d.hospital[i] === h).map(i => d.sbp_0[i]), m = S.mean(v), s = S.sd(v), x = sv('wz-x'), z = (x - m) / s, P = S.pnorm(z), emp = v.filter(t => t <= x).length / v.length, lo = 105, hi = 200, bw = 5, pdf = t => Math.exp(-0.5 * ((t - m) / s) ** 2) / (s * Math.sqrt(2 * Math.PI)), sc = v.length * bw;
+      const c = new Array(19).fill(0); v.forEach(t => { const k = Math.floor((t - lo) / bw); if (k >= 0 && k < 19) c[k]++; }); const top = Math.max(pdf(m) * sc, ...c) * 1.2;
+      $('#wz-c').innerHTML = chart({ x: [lo, hi], y: [0, top], h: 250, xlab: '基線收縮壓（mmHg）', ylab: '人數' }, (X, Y) => {
+        const path = (a, b) => { let p = `M${X(a)} ${Y(0)}`; for (let i = 0; i <= 80; i++) { const t = a + (b - a) * i / 80; p += `L${X(t).toFixed(1)} ${Y(pdf(t) * sc).toFixed(1)}`; } return p + `L${X(b)} ${Y(0)}Z`; };
+        let cv = ''; for (let i = 0; i <= 160; i++) { const t = lo + (hi - lo) * i / 160; cv += `${i ? 'L' : 'M'}${X(t).toFixed(1)} ${Y(pdf(t) * sc).toFixed(1)}`; }
+        return c.map((n, i) => `<rect data-k="${lo + (i + 1) * bw <= x ? 'emp bar' : 'bar'}" x="${X(lo + i * bw) + 0.5}" y="${Y(n)}" width="${X(lo + (i + 1) * bw) - X(lo + i * bw) - 1}" height="${Y(0) - Y(n)}" style="fill:var(--c1);fill-opacity:.35"/>`).join('')
+          + `<path data-k="pl" d="${path(lo, Math.min(hi, x))}" style="fill:var(--c2);fill-opacity:.18"/><path class="hlx" data-k="pr" d="${path(Math.min(hi, x), hi)}" style="fill:var(--c3);fill-opacity:.3"/><path data-k="curve" d="${cv}" style="fill:none;stroke:var(--c2);stroke-width:2.5"/>`
+          + [-2, -1, 1, 2].map(k => `<line data-k="z" x1="${X(m + k * s)}" x2="${X(m + k * s)}" y1="${Y(0)}" y2="${Y(pdf(m + k * s) * sc)}" style="stroke:var(--muted);stroke-dasharray:3 3"/>`).join('')
+          + `<g class="hlx" data-k="z"><line x1="${X(m)}" x2="${X(x)}" y1="${Y(top * 0.93)}" y2="${Y(top * 0.93)}" style="stroke:var(--c4);stroke-width:3"/><text x="${(X(m) + X(x)) / 2}" y="${Y(top * 0.93) - 6}" text-anchor="middle" style="fill:var(--c4)">${F.n(z, 2)} 個 SD</text></g>`
+          + `<line class="keep" x1="${X(x)}" x2="${X(x)}" y1="${Y(0)}" y2="${Y(top * 0.9)}" style="stroke:var(--ink);stroke-width:2"/>`;
       });
-      $('#wz-o').innerHTML = kvs([['z 分數', F.n(z, 2), 'z'], ['P(X ≤ x)', F.n(100 * P, 1) + '%', 'pl'], ['P(X > x)', F.n(100 * (1 - P), 1) + '%', 'pr'], ['百分位', '第 ' + F.n(100 * P, 1), 'pl']]);
+      $('#wz-o').innerHTML = kvs([['平均 μ（這裡用樣本平均）', F.n(m, 1), 'curve'], ['標準差 σ', F.n(s, 1), 'z'], ['z 分數', F.n(z, 2), 'z'], ['P(X ≤ x)：常態曲線', F.n(100 * P, 1) + '%', 'pl'], ['P(X ≤ x)：實際病人比例', F.n(100 * emp, 1) + '%', 'emp'], ['P(X > x)：常態曲線', F.n(100 * (1 - P), 1) + '%', 'pr'], ['百分位', '第 ' + F.n(100 * P, 1), 'pl']]);
     };
-    el.addEventListener('input', up); up();
+    el.addEventListener('input', up); el.addEventListener('change', up); up();
   },
   diag(el) {
     el.innerHTML = `<div class="w-row">${slider('wd-se', '敏感度', 50, 100, 0.5, 90, '%')}${slider('wd-sp', '特異度', 50, 100, 0.5, 95, '%')}${slider('wd-pr', '盛行率', 0.1, 50, 0.1, 1, '%')}</div><div class="tbl-wrap" id="wd-t"></div><div id="wd-bar"></div><div class="kv" id="wd-o"></div>`;
@@ -4826,21 +4843,21 @@ Object.assign(W, {
     el.addEventListener('input', up); up();
   },
   graphsw(el) {
-    const r = rngOf(401), N = normOf(r), stay = Array.from({ length: 80 }, (_, i) => Math.max(1, Math.round(Math.exp(1.3 + 0.55 * N()) + (i % 9 === 0 ? 8 : 0))));
-    el.innerHTML = `<p class="w-cap">同一份資料：80 位病人的住院天數。切換圖的種類。</p>
+    const stay = STUDY().crp;
+    el.innerHTML = SRC_NOTE + `<p class="w-cap">同一份資料：400 位病人的 CRP（發炎指標）。切換圖的種類。</p>
 <div class="seg wrap" id="wgr-m"><button type="button" data-m="hist" aria-selected="true">直方圖</button><button type="button" data-m="box" aria-selected="false">箱型圖</button><button type="button" data-m="dot" aria-selected="false">點圖</button><button type="button" data-m="bar" aria-selected="false">平均值長條圖</button></div>
 <div class="w-row">${slider('wgr-b', '直方圖的組數', 2, 40, 1, 12)}</div><div class="chart-wrap" id="wgr-c"></div><div class="kv" id="wgr-k"></div>`;
     let mode = 'hist';
     const up = () => {
       const bins = sv('wgr-b'), m = S.mean(stay), md = S.median(stay), [lo, hi] = S.minmax(stay), sd = S.sd(stay);
       let svg = '';
-      if (mode === 'hist') svg = histChart(stay, { lo: 0, hi: hi + 1, bins, h: 260, xlab: '住院天數', ylab: '人數', tag: () => 'bins', extra: (X, Y) => `<line data-k="mean" x1="${X(m)}" x2="${X(m)}" y1="${Y(0)}" y2="${Y(0) - 190}" style="stroke:var(--c2);stroke-width:2.5"/><line data-k="med" x1="${X(md)}" x2="${X(md)}" y1="${Y(0)}" y2="${Y(0) - 190}" style="stroke:var(--c3);stroke-width:2.5;stroke-dasharray:5 4"/>` });
-      else if (mode === 'box') svg = boxStrip([{ label: '全部病人', v: stay }], '住院天數');
-      else if (mode === 'dot') { const cnt = {}; svg = chart({ x: [0, hi + 1], y: [0, 1], noY: true, h: 260, xlab: '住院天數' }, (X, Y) => stay.map(v => { const k = (cnt[v] = (cnt[v] || 0) + 1); return `<circle data-k="bins" cx="${X(v)}" cy="${Y(0) - 6 - (k - 1) * 9}" r="4" style="fill:var(--c1);fill-opacity:.75"/>`; }).join('') + `<line data-k="mean" x1="${X(m)}" x2="${X(m)}" y1="${Y(0)}" y2="${Y(1)}" style="stroke:var(--c2);stroke-width:2"/><line data-k="med" x1="${X(md)}" x2="${X(md)}" y1="${Y(0)}" y2="${Y(1)}" style="stroke:var(--c3);stroke-width:2;stroke-dasharray:5 4"/>`); }
-      else svg = chart({ xcats: ['全部病人'], y: [0, m + sd], h: 260, ylab: '住院天數' }, (X, Y) => `<rect data-k="mean" x="${X(0) - 40}" y="${Y(m)}" width="80" height="${Y(0) - Y(m)}" style="fill:var(--c1);fill-opacity:.8"/><line x1="${X(0)}" x2="${X(0)}" y1="${Y(m - sd / Math.sqrt(80))}" y2="${Y(m + sd / Math.sqrt(80))}" class="ink" style="stroke-width:2"/>`);
+      if (mode === 'hist') svg = histChart(stay, { lo: 0, hi: Math.ceil(hi), bins, h: 260, xlab: 'CRP（mg/L）', ylab: '人數', tag: () => 'bins', extra: (X, Y) => `<line data-k="mean" x1="${X(m)}" x2="${X(m)}" y1="${Y(0)}" y2="${Y(0) - 190}" style="stroke:var(--c2);stroke-width:2.5"/><line data-k="med" x1="${X(md)}" x2="${X(md)}" y1="${Y(0)}" y2="${Y(0) - 190}" style="stroke:var(--c3);stroke-width:2.5;stroke-dasharray:5 4"/>` });
+      else if (mode === 'box') svg = boxStrip([{ label: '全部病人', v: stay }], 'CRP（mg/L）');
+      else if (mode === 'dot') { const cnt = {}; svg = chart({ x: [0, Math.ceil(hi)], y: [0, 1], noY: true, h: 260, xlab: 'CRP（mg/L）' }, (X, Y) => stay.map(v => { const vv = Math.round(v * 2) / 2, k = (cnt[vv] = (cnt[vv] || 0) + 1); return `<circle data-k="bins" cx="${X(vv)}" cy="${Y(0) - 6 - (k - 1) * 4}" r="2.4" style="fill:var(--c1);fill-opacity:.75"/>`; }).join('') + `<line data-k="mean" x1="${X(m)}" x2="${X(m)}" y1="${Y(0)}" y2="${Y(1)}" style="stroke:var(--c2);stroke-width:2"/><line data-k="med" x1="${X(md)}" x2="${X(md)}" y1="${Y(0)}" y2="${Y(1)}" style="stroke:var(--c3);stroke-width:2;stroke-dasharray:5 4"/>`); }
+      else svg = chart({ xcats: ['全部病人'], y: [0, m + sd], h: 260, ylab: 'CRP（mg/L）' }, (X, Y) => `<rect data-k="mean" x="${X(0) - 40}" y="${Y(m)}" width="80" height="${Y(0) - Y(m)}" style="fill:var(--c1);fill-opacity:.8"/><line x1="${X(0)}" x2="${X(0)}" y1="${Y(m - sd / Math.sqrt(stay.length))}" y2="${Y(m + sd / Math.sqrt(stay.length))}" class="ink" style="stroke-width:2"/>`);
       $('#wgr-c').innerHTML = svg;
-      const items = { hist: [['平均數', F.n(m, 1), 'mean'], ['中位數', F.n(md, 1), 'med'], ['組距（每組寬度）', F.n((hi + 1) / bins, 1) + ' 天', 'bins']], box: [['中位數', F.n(md, 1), 'med0'], ['四分位距 IQR', F.n(S.quantile(stay, 0.75) - S.quantile(stay, 0.25), 1), 'iqr0'], ['平均數（◇）', F.n(m, 1), 'mean0']], dot: [['平均數', F.n(m, 1), 'mean'], ['中位數', F.n(md, 1), 'med'], ['人數', stay.length, 'bins']], bar: [['平均數（長條高度）', F.n(m, 1), 'mean']] }[mode];
-      $('#wgr-k').innerHTML = kvs([...items, ['最小值 – 最大值', `${lo} – ${hi}`]]);
+      const items = { hist: [['平均數', F.n(m, 1), 'mean'], ['中位數', F.n(md, 1), 'med'], ['組距（每組寬度）', F.n(Math.ceil(hi) / bins, 2) + ' mg/L', 'bins']], box: [['中位數', F.n(md, 1), 'med0'], ['四分位距 IQR', F.n(S.quantile(stay, 0.75) - S.quantile(stay, 0.25), 1), 'iqr0'], ['平均數（◇）', F.n(m, 1), 'mean0']], dot: [['平均數', F.n(m, 1), 'mean'], ['中位數', F.n(md, 1), 'med'], ['人數', stay.length, 'bins']], bar: [['平均數（長條高度）', F.n(m, 1), 'mean']] }[mode];
+      $('#wgr-k').innerHTML = kvs([...items, ['最小值 – 最大值', `${F.n(lo)} – ${F.n(hi)}`]]);
       $('#wgr-b').disabled = mode !== 'hist';
     };
     segBind(el, '#wgr-m', b => { mode = b.dataset.m; up(); }); el.addEventListener('input', up); up();
@@ -5855,6 +5872,12 @@ const WTERM = {
   'c0-1': { '百分點': 'ard', '絕對差': 'ard', '相對變化': 'rrr', '風險比': 'rr', '需治療人數': 'nnt', '事件率': 'pa pb', '對照組': 'pa' },
   'c0-2': { 'Σ': 'sum', '離均差': 'ss' },
   'c0-3': { '對數': 'lfc', '倍數變化': 'fc', 'log₂FC': 'lfc' },
+  'c1-1': { '名目變數': 'nom', '順序變數': 'ord', '連續變數': 'cont', '計數變數': 'count', '時間至事件': 'tte', '設限': 'cens' },
+  'c1-2': { '平均數': 'mean', '中位數': 'med', '極端值': 'tail', '偏態': 'tail mean med', '穩健': 'med tail' },
+  'c1-3': { '標準差': 'sdA sdB', '變異數': 'sdA sdB', '四分位距': 'iqrA iqrB', '四分位數': 'iqrA iqrB', '變異係數': 'sdA sdB' },
+  'graphs': { '直方圖': 'bins', '組數': 'bins', '箱型圖': 'iqr0 med0', '長條圖': 'mean' },
+  'c1-4': { '常態分佈': 'curve', 'z 分數': 'z', '百分位': 'pl', 'P(X ≤ x)': 'pl' },
+  'c1-5': { 'Table 1': 'v0' },
   'c0-4': { '斜率': 'b', '截距': 'a', '殘差': 'ssr', '殘差平方和': 'ssr', '最小平方法': 'best' },
 };
 
@@ -5903,7 +5926,7 @@ const QD = {
     { demo: { set: { 'wsr-n': 40, 'wsr-x': 92 }, look: '灰色區域是資料範圍之外。預測 92 歲時，兩條帶都變得很寬。' } },
   ],
   'graphs': [
-    { demo: { click: ['#wgr-m [data-m="hist"]'], set: { 'wgr-b': 12 }, look: '直方圖：大多數人住幾天、少數人住很久，右邊拖著長尾巴。' } },
+    { demo: { click: ['#wgr-m [data-m="hist"]'], set: { 'wgr-b': 12 }, look: '直方圖：大多數人的 CRP 很低、少數人很高，右邊拖著長尾巴。' } },
     { demo: { click: ['#wgr-m [data-m="hist"]'], set: { 'wgr-b': 3 }, look: '只有 3 組：右偏的長尾巴幾乎看不出來。把組數拉回 12 或 40 比較。' } },
     { demo: { click: ['#wgr-m [data-m="bar"]'], look: '平均值長條圖只剩一個數字和很短的誤差線，看不到偏態與極端值。再切到「點圖」比較。' } },
   ],
@@ -6047,21 +6070,21 @@ const QD = {
     { demo: { set: { 'wn-a': 134, 'wn-b': 0.4 }, look: '截距是直線在 x = 0 碰到 y 軸的高度。這裡是「0 歲」時的收縮壓，資料中根本沒有這種人：截距只是數學上的起點。' } },
   ],
   'c1-1': [
-    { demo: { custom: { k: 5 }, look: '圖上換成「疼痛程度」這張卡片，先自己分類看看。' } },
-    { q: '「診斷到死亡的月數：14、32+、8、60+」是哪一種變數？', o: ['時間至事件', '連續', '計數', '順序'], why: '有些人追蹤結束時還沒發生事件（標成 +），這是設限，要用存活分析處理。', demo: { custom: { k: 7 }, look: '圖上換成這個變數，注意數字後面的「+」。' } },
+    { demo: { custom: { k: 5 }, look: '圖上換成「年齡組」這張卡片：它和疼痛分數一樣有順序，但組與組之間的「距離」不一定相等。' } },
+    { q: '本研究「追蹤到心血管事件的月數：35.4+、25.1+、3.9、31.6+」是哪一種變數？', o: ['時間至事件', '連續', '計數', '順序'], why: '有些人追蹤結束時還沒發生事件（標成 +），這是設限，要用存活分析處理。', demo: { custom: { k: 7 }, look: '圖上換成這個變數，注意數字後面的「+」；上方資料表裡紅色的 0 就是這些人。' } },
   ],
   'c1-2': [
-    { demo: { set: { 'wm-in': '1, 2, 3, 4, 100' }, look: '比較紅線（平均）與綠色虛線（中位數）的位置。' } },
-    { demo: { set: { 'wm-in': '2, 3, 3, 4, 5, 6, 30, 45' }, look: '右邊有長尾時，平均被拉向右邊的大數。' } },
+    { demo: { click: ['#wm-m [data-m="own"]'], set: { 'wm-in': '1, 2, 3, 4, 100' }, look: '比較紅線（平均）與綠色虛線（中位數）的位置。' } },
+    { demo: { click: ['#wm-m [data-m="data"]'], set: { 'wm-v': 'crp', 'wm-h': '' }, look: 'CRP 是右偏的：大多數人很低，少數人很高（右邊黃色長條）。平均被拉向右邊，比中位數大。再換成「基線收縮壓」比較：左右對稱時兩者幾乎重疊。' } },
   ],
   'c1-3': [
-    { q: '乙組加入一個 200 mmHg 的極端值後，哪個數字變化比較大？', o: ['SD 明顯增加，IQR 幾乎不變', 'IQR 明顯增加，SD 不變', '兩者都不變', '兩者增加一樣多'], why: 'SD 用到每個值與平均的距離平方，一個極端值影響很大；IQR 只看中間 50% 的資料。', demo: { set: { 'wv-s': 12, 'wv-o': true }, look: '比較下方乙組 SD 與 IQR 兩格，以及紅點的位置。' } },
-    { demo: { set: { 'wv-s': 4, 'wv-o': false }, look: '深色帶就是平均 ± 1 SD：它描述的是「個體之間」的分散程度。' } },
-    { demo: { set: { 'wv-s': 6, 'wv-o': false }, look: '看最後兩張數字卡：CV = SD ÷ 平均。題目中兩台血糖儀：4 ÷ 100 = 4%、6 ÷ 200 = 3%。' } },
+    { q: '在乙組（H8）加入一個 240 mmHg 的極端值後，哪個數字變化比較大？', o: ['SD 明顯增加，IQR 幾乎不變', 'IQR 明顯增加，SD 不變', '兩者都不變', '兩者增加一樣多'], why: 'SD 用到每個值與平均的距離平方，一個極端值影響很大；IQR 只看中間 50% 的資料。', demo: { set: { 'wv-v': 'sbp_0', 'wv-a': 'H1', 'wv-b': 'H8', 'wv-o': true }, look: '比較乙組 SD 與 IQR 兩張卡（打勾前後），以及紅點的位置。' } },
+    { demo: { set: { 'wv-v': 'sbp_0', 'wv-o': false }, look: '深色帶就是平均 ± 1 SD：它描述的是「病人之間」血壓的分散程度。' } },
+    { demo: { set: { 'wv-v': 'crp', 'wv-o': false }, look: '看最後兩張數字卡：CV = SD ÷ 平均。CRP 的 CV 遠大於收縮壓（切回收縮壓比較），表示相對於自己的平均，CRP 分散得多。' } },
   ],
   'c1-4': [
-    { demo: { set: { 'wz-m': 120, 'wz-s': 15, 'wz-x': 150 }, look: '紅線落在平均右邊第幾條虛線（每條是 1 個 SD）？' } },
-    { demo: { set: { 'wz-m': 100, 'wz-s': 10, 'wz-x': 120 }, look: 'x 比平均多 2 個 SD，即 z = 2。看「百分位」那一格。' } },
+    { demo: { set: { 'wz-h': '', 'wz-x': 178 }, look: '黑線（178）落在平均右邊第二條虛線附近：每條虛線是 1 個 SD。點「z 分數」卡片。' } },
+    { demo: { set: { 'wz-h': '', 'wz-x': 178 }, look: 'z ≈ 2。比較「常態曲線」算出的 P(X ≤ x) 與「實際比例」：常態曲線是近似，真實資料大致吻合。' } },
   ],
   'c1-5': [
     { demo: { click: ['#wt1-g [data-g="group"]'], set: { 'wt1-p': true }, look: '這是隨機試驗的 Table 1，最右邊有 p 值欄。把「顯示 p 值欄」關掉，看看表格是否仍然完整。' } },
