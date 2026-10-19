@@ -268,21 +268,33 @@ Object.assign(W, {
     $('#wps-go', el).onclick = up; el.addEventListener('change', up); up();
   },
   dag(el) {
-    el.innerHTML = `<div class="dag" id="wdg-g"></div><div class="w-row">${slider('wdg-s', '吸菸者比不吸菸者更常喝咖啡', 0, 0.6, 0.05, 0.4)}${slider('wdg-t', '咖啡的真實效果（OR）', 0.5, 2, 0.1, 1)}</div><div class="seg wrap" id="wdg-m"><button type="button" data-m="0" aria-selected="true">不校正</button><button type="button" data-m="1" aria-selected="false">校正吸菸</button></div><div class="chart-wrap" id="wdg-c"></div><p class="w-cap" id="wdg-x"></p>`;
-    let adj = 0;
+    const D = STUDY(), I = [...Array(D.n).keys()], ag = i => (D.age[i] < 60 ? 0 : D.age[i] < 70 ? 1 : 2), tb = ix => { const c = (a, b) => ix.filter(i => D.diabetes[i] === a && D.cvd_event[i] === b).length; return [c(1, 1), c(1, 0), c(0, 1), c(0, 0)]; };
+    el.innerHTML = SRC_NOTE + MODE_SEG('wdg-mode') + `<div class="dag" id="wdg-g"></div><div class="w-row" id="wdg-or" hidden>${slider('wdg-s', '吸菸者比不吸菸者更常喝咖啡', 0, 0.6, 0.05, 0.4)}${slider('wdg-t', '咖啡的真實效果（OR）', 0.5, 2, 0.1, 1)}</div><div class="seg wrap" id="wdg-m"><button type="button" data-m="0" aria-selected="true">不校正</button><button type="button" data-m="1" aria-selected="false">校正干擾因子</button></div><div class="chart-wrap" id="wdg-c"></div><div class="kv" id="wdg-k"></div><p class="w-cap" id="wdg-x"></p>`;
+    let adj = 0, mode = 'data';
     const up = () => {
-      const sd = sv('wdg-s', v => '+' + Math.round(v * 100) + ' 個百分點'), tor = sv('wdg-t', v => v.toFixed(1)), r = rngOf(99), t = [[[0, 0], [0, 0]], [[0, 0], [0, 0]]];
-      for (let i = 0; i < 20000; i++) { const s = r() < 0.3 ? 1 : 0, c = r() < 0.3 + (s ? sd : 0) ? 1 : 0, base = 0.02 * (s ? 6 : 1), od = base / (1 - base) * (c ? tor : 1); t[s][c][r() < od / (1 + od) ? 1 : 0]++; }
-      const A = t[0][1][1] + t[1][1][1], B = t[0][1][0] + t[1][1][0], C = t[0][0][1] + t[1][0][1], D = t[0][0][0] + t[1][0][0], crude = A * D / (B * C);
-      let nu = 0, de = 0; for (const s of [0, 1]) { const [a, b, c, d] = [t[s][1][1], t[s][1][0], t[s][0][1], t[s][0][0]], n = a + b + c + d; nu += a * d / n; de += b * c / n; } const mh = nu / de;
-      const node = (x, y, s, on) => `<rect x="${x - 46}" y="${y - 18}" width="92" height="36" rx="18" style="fill:${on ? 'var(--soft)' : 'var(--surface)'};stroke:${on ? 'var(--accent)' : 'var(--ink)'};stroke-width:${on ? 2.5 : 1.5}"/><text x="${x}" y="${y}" dy=".35em" text-anchor="middle" style="fill:var(--ink);font-size:14px;font-family:var(--body)">${s}</text>`;
-      const arr = (x1, y1, x2, y2, c, dash) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" marker-end="url(#wdg-ah)" style="stroke:${c};stroke-width:2.2${dash ? ';stroke-dasharray:6 4' : ''}"/>`;
-      $('#wdg-g').innerHTML = `<svg viewBox="0 0 320 170" class="dag-svg" role="img" aria-label="因果圖：吸菸影響喝咖啡與肺癌"><defs><marker id="wdg-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" style="fill:var(--muted)"/></marker></defs>${arr(140, 46, 82, 118, adj ? 'var(--line)' : 'var(--c2)')}${arr(180, 46, 238, 118, adj ? 'var(--line)' : 'var(--c2)')}${arr(108, 140, 210, 140, 'var(--c1)', Math.abs(tor - 1) < 1e-9)}${node(160, 30, adj ? '吸菸（已校正）' : '吸菸', adj)}${node(60, 140, '喝咖啡')}${node(260, 140, '肺癌')}</svg>`;
-      const rows = [['未校正 OR', crude, 'var(--c2)'], ['校正吸菸後 OR', mh, 'var(--c1)'], ['真實 OR', tor, 'var(--ink)']];
-      $('#wdg-c').innerHTML = chart({ ycats: rows.map(r => r[0]), xlog: true, x: [0.4, 4], h: 170, m: { l: 110 }, xlab: '勝算比（對數尺度）' }, (X, Y, { M, ih }) => `<line x1="${X(1)}" x2="${X(1)}" y1="${M.t}" y2="${M.t + ih}" style="stroke:var(--muted);stroke-dasharray:4 3"/>` + rows.map(([, e, c], i) => { const v = Math.max(0.4, Math.min(4, e)); return `<circle cx="${X(v)}" cy="${Y(i)}" r="${(adj ? i === 1 : i === 0) ? 9 : 6}" style="fill:${c}"/><text x="${X(v) + 13}" y="${Y(i)}" dy=".32em" style="fill:var(--ink)">${F.n(e, 2)}</text>`; }).join(''));
-      $('#wdg-x').textContent = adj ? '在吸菸者與不吸菸者中各自比較再合併（Mantel–Haenszel 法），擋住了經過吸菸的後門路徑，估計回到真實值附近。' : '喝咖啡與肺癌之間，除了直接的箭頭，還有一條經過吸菸的「後門路徑」（紅色）。不校正時，吸菸的影響混進了咖啡的估計。';
+      $('#wdg-or').hidden = mode === 'data';
+      let crude, mh, tor = null, L;
+      if (mode === 'data') {
+        L = ['年齡', '糖尿病', '心血管事件', '年齡（已分層）'];
+        const [a, b, c, d] = tb(I); crude = a * d / (b * c); let nu = 0, de = 0; for (const k of [0, 1, 2]) { const [a2, b2, c2, d2] = tb(I.filter(i => ag(i) === k)), n = a2 + b2 + c2 + d2; nu += a2 * d2 / n; de += b2 * c2 / n; } mh = nu / de;
+      } else {
+        L = ['吸菸', '喝咖啡', '肺癌', '吸菸（已校正）'];
+        const sd = sv('wdg-s', v => '+' + Math.round(v * 100) + ' 個百分點'); tor = sv('wdg-t', v => v.toFixed(1)); const r = rngOf(99), t = [[[0, 0], [0, 0]], [[0, 0], [0, 0]]];
+        for (let i = 0; i < 20000; i++) { const s = r() < 0.3 ? 1 : 0, c = r() < 0.3 + (s ? sd : 0) ? 1 : 0, base = 0.02 * (s ? 6 : 1), od = base / (1 - base) * (c ? tor : 1); t[s][c][r() < od / (1 + od) ? 1 : 0]++; }
+        const A = t[0][1][1] + t[1][1][1], B = t[0][1][0] + t[1][1][0], C = t[0][0][1] + t[1][0][1], Dd = t[0][0][0] + t[1][0][0]; crude = A * Dd / (B * C);
+        let nu = 0, de = 0; for (const s of [0, 1]) { const [a, b, c, d] = [t[s][1][1], t[s][1][0], t[s][0][1], t[s][0][0]], n = a + b + c + d; nu += a * d / n; de += b * c / n; } mh = nu / de;
+      }
+      const node = (x, y, s, on, k) => `<g data-k="${k}"><rect x="${x - 50}" y="${y - 18}" width="100" height="36" rx="18" style="fill:${on ? 'var(--soft)' : 'var(--surface)'};stroke:${on ? 'var(--accent)' : 'var(--ink)'};stroke-width:${on ? 2.5 : 1.5}"/><text x="${x}" y="${y}" dy=".35em" text-anchor="middle" style="fill:var(--ink);font-size:14px;font-family:var(--body)">${s}</text></g>`;
+      const arr = (x1, y1, x2, y2, c, k, dash) => `<line data-k="${k}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" marker-end="url(#wdg-ah)" style="stroke:${c};stroke-width:2.2${dash ? ';stroke-dasharray:6 4' : ''}"/>`;
+      $('#wdg-g').innerHTML = `<svg viewBox="0 0 320 170" class="dag-svg" role="img" aria-label="因果圖：${L[0]}影響${L[1]}與${L[2]}"><defs><marker id="wdg-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" style="fill:var(--muted)"/></marker></defs>${arr(140, 46, 82, 118, adj ? 'var(--line)' : 'var(--c2)', 'back conf')}${arr(180, 46, 238, 118, adj ? 'var(--line)' : 'var(--c2)', 'back conf')}${arr(108, 140, 206, 140, 'var(--c1)', 'eff', tor !== null && Math.abs(tor - 1) < 1e-9)}${node(160, 30, adj ? L[3] : L[0], adj, 'conf')}${node(56, 140, L[1], false, 'exp')}${node(264, 140, L[2], false, 'out')}</svg>`;
+      const rows = [['未校正 OR', crude, 'var(--c2)', 'crude'], [`校正${L[0]}後 OR`, mh, 'var(--c1)', 'adj']]; if (tor !== null) rows.push(['真實 OR', tor, 'var(--ink)', 'true']);
+      $('#wdg-c').innerHTML = chart({ ycats: rows.map(r => r[0]), xlog: true, x: [0.4, 5], h: 60 + rows.length * 36, m: { l: 110 }, xlab: '勝算比（對數尺度）' }, (X, Y, { M, ih }) => `<line x1="${X(1)}" x2="${X(1)}" y1="${M.t}" y2="${M.t + ih}" style="stroke:var(--muted);stroke-dasharray:4 3"/>` + rows.map(([, e, c, k], i) => { const v = Math.max(0.4, Math.min(5, e)); return `<g data-k="${k}"><circle cx="${X(v)}" cy="${Y(i)}" r="${(adj ? i === 1 : i === 0) ? 9 : 6}" style="fill:${c}"/><text x="${X(v) + 13}" y="${Y(i)}" dy=".32em" style="fill:var(--ink)">${F.n(e, 2)}</text></g>`; }).join(''));
+      $('#wdg-k').innerHTML = kvs([['未校正（粗）OR', F.n(crude, 2), 'crude'], [`校正${L[0]}後的 OR`, F.n(mh, 2), 'adj']]);
+      $('#wdg-x').textContent = mode === 'data'
+        ? (adj ? '把病人分成 60 歲以下、60–69、70 歲以上三層，各層內比較糖尿病與心血管事件再合併：擋住經過年齡的後門路徑，OR 從 2.81 降到 2.31。' : '年齡越大越容易有糖尿病，也越容易發生心血管事件。不校正時，年齡的影響混進了糖尿病的估計。')
+        : (adj ? '在吸菸者與不吸菸者中各自比較再合併（Mantel–Haenszel 法），擋住了經過吸菸的後門路徑，估計回到真實值附近。' : '喝咖啡與肺癌之間，除了直接的箭頭，還有一條經過吸菸的「後門路徑」（紅色）。不校正時，吸菸的影響混進了咖啡的估計。');
     };
-    segBind(el, '#wdg-m', b => { adj = +b.dataset.m; up(); }); el.addEventListener('input', up); up();
+    segBind(el, '#wdg-mode', b => { mode = b.dataset.m; up(); }); segBind(el, '#wdg-m', b => { adj = +b.dataset.m; up(); }); el.addEventListener('input', up); up();
   },
   phack(el) {
     const ways = ['換成次要結果變數', '刪除 3 個「極端值」', '只分析女性', '只分析 60 歲以上', '改用中位數比較', '多校正一個變數', '少校正一個變數', '改看 6 個月的資料', '排除沒按時服藥的人', '把年齡切成兩組', '換一種檢定方法', '只看第二家醫院'];
