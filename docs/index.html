@@ -2281,6 +2281,30 @@ const CH = [
       { q: '「組別 × 共變數」交互作用顯著，代表什麼？', o: ['各組的迴歸斜率不同，處理效果會隨共變數大小而改變', '共變數和結果無關', '校正後兩組一定沒有差異', '資料不是常態'], why: 'ANCOVA 假設斜率平行；交互作用顯著時，要分別描述不同共變數值下的處理效果。' },
     ],
   },
+  {
+    id: 'prob-rules', title: '機率法則',
+    body: `<p>機率描述某件事發生的可能性，介於 0（不可能）到 1（一定發生）之間。一件可能發生的事叫做<b>事件</b>，例如「抽到的人有吸菸」。統計方法背後都靠以下幾條規則。</p>
+<h3>餘事件</h3>
+<div class="formula">P(非 A) = 1 − P(A)</div>
+<p>「A 沒有發生」叫做 A 的<b>餘事件</b>。吸菸率 30%，不吸菸率就是 70%。</p>
+<h3>加法法則：A 或 B</h3>
+<div class="formula">P(A 或 B) = P(A) + P(B) − P(A 且 B)</div>
+<p>直接把兩個機率相加，會把「兩者都有」的人算兩次，所以要減掉一次。如果 A 和 B 不可能同時發生（例如血型 A 和血型 O），稱為<b>互斥</b>，這時 P(A 且 B) = 0，機率可以直接相加。</p>
+<h3>條件機率</h3>
+<div class="formula">P(B | A) = P(A 且 B) ÷ P(A)</div>
+<p>「在 A 發生的人當中，B 也發生的比例」。例如吸菸者中有高血壓的比例。</p>
+<h3>乘法法則與獨立</h3>
+<div class="formula">P(A 且 B) = P(A) × P(B | A)<br>若 A、B 獨立：P(A 且 B) = P(A) × P(B)</div>
+<p>如果知道 A 有沒有發生，完全不會改變 B 的機率，也就是 P(B | A) = P(B | 非 A) = P(B)，就稱 A、B 為<b>獨立事件</b>。例：父母都是帶因者（Aa），每個孩子各自從父親、母親得到 a 的機率都是 1/2，而且兩者獨立，所以孩子是 aa 的機率是 1/2 × 1/2 = 1/4。</p>
+<h3>全機率法則</h3>
+<div class="formula">P(B) = P(A) × P(B | A) + P(非 A) × P(B | 非 A)</div>
+<p>把母體依 A 分成兩群，各群的 B 比例按人數加權平均，就是整體的 B 比例。下一章的診斷檢查（貝氏定理）就是把這幾條規則組合起來。</p>`,
+    quiz: [
+      { q: '父母都是隱性疾病的帶因者（Aa）。孩子是 aa 的機率是多少？', o: ['1/4', '1/2', '1/3', '3/4'], why: '從父親得到 a 的機率 1/2、從母親得到 a 的機率 1/2，兩者獨立：1/2 × 1/2 = 1/4。' },
+      { q: '吸菸率 30%、高血壓盛行率 20%，兩者獨立。隨機抽一人，「吸菸或有高血壓」的機率是？', o: ['44%', '50%', '6%', '24%'], why: '0.3 + 0.2 − 0.3 × 0.2 = 0.44。要減掉兩者都有的 6%，否則會重複計算。' },
+      { q: '吸菸者中有 30% 有高血壓，不吸菸者中有 15%。吸菸和高血壓是獨立事件嗎？', o: ['不是：知道是否吸菸，會改變有高血壓的機率', '是：兩個都是比例', '是：只要兩者都小於 50% 就獨立', '無法判斷'], why: '獨立代表 P(高血壓 | 吸菸) = P(高血壓 | 不吸菸)；30% ≠ 15%，所以不獨立。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -2378,6 +2402,15 @@ const GLOSS = [
   ['隨機分派試驗', ['RCT', '隨機試驗', '隨機化'], '用抽籤般的隨機方式決定每個人接受哪一種處理的研究。', 'c1-5'],
   ['校正', [], '在比較兩組時，把其他會影響結果的變數（例如年齡）一併納入計算，讓比較像是在「這些變數相同」的人之間進行。', 'c1-5'],
   ['臨床意義', ['臨床上', '臨床重要性'], '差異大到對病人或治療決策真正有影響；和統計上的 p 值是兩回事。', 'c1-5'],
+  ['機率', ['P('], '某事件發生的可能性，介於 0 到 1；P(A) 讀作「A 的機率」。', 'prob-rules'],
+  ['事件', [], '一件可能發生的事，例如「抽到的人有吸菸」。', 'prob-rules'],
+  ['餘事件', [], '「A 沒有發生」：P(非 A) = 1 − P(A)。', 'prob-rules'],
+  ['互斥', [], '兩個事件不可能同時發生，例如血型 A 與血型 O。', 'prob-rules'],
+  ['條件機率', ['P(B | A)', 'P(B|A)'], '在 A 發生的人當中，B 也發生的比例：P(A 且 B) ÷ P(A)。', 'prob-rules'],
+  ['獨立事件', [], '知道 A 有沒有發生，不會改變 B 的機率；此時 P(A 且 B) = P(A) × P(B)。', 'prob-rules'],
+  ['加法法則', [], 'P(A 或 B) = P(A) + P(B) − P(A 且 B)。', 'prob-rules'],
+  ['乘法法則', [], 'P(A 且 B) = P(A) × P(B | A)。', 'prob-rules'],
+  ['全機率法則', [], 'P(B) = P(A) × P(B | A) + P(非 A) × P(B | 非 A)。', 'prob-rules'],
   ['敏感度', [], '有病的人中，檢驗為陽性的比例。', 'c2-1'],
   ['特異度', [], '沒病的人中，檢驗為陰性的比例。', 'c2-1'],
   ['陽性預測值', ['PPV'], '檢驗陽性的人中，真正有病的比例。', 'c2-1'],
@@ -2458,7 +2491,7 @@ const GLOSS = [
 const ORDER = [
   ['c0-1', 'c0-2', 'c0-3', 'c0-4'],
   ['c1-1', 'c1-2', 'c1-3', 'c1-4', 'c1-5'],
-  ['c2-1'],
+  ['prob-rules', 'c2-1'],
   ['c2-2', 'c2-3', 'c2-4', 'c4-5', 'c5-1'],
   ['c3-1', 'c3-3', 'c3-5'],
   ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff', 'ancova'],
@@ -2471,7 +2504,7 @@ const ORDER = [
 const REFS = {
   'c0-1': 'Rosner 3.10', 'c1-1': 'Whitlock 第 1 章；Kirkwood 第 2 章', 'c1-2': 'Whitlock 第 3 章；Rosner 2.2–2.3；Kirkwood 第 4 章',
   'c1-3': 'Whitlock 第 3 章；Rosner 2.4–2.5；Kirkwood 第 4 章', 'c1-4': 'Whitlock 第 10 章；Rosner 第 5 章；Kirkwood 第 5 章', 'c1-5': 'Kirkwood 第 34 章',
-  'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
+  'prob-rules': 'Whitlock 第 5 章；Rosner 3.2–3.6', 'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
   'c2-4': 'Whitlock 第 6 章；Rosner 7.1–7.5；Kirkwood 第 8 章', 'c4-5': 'Whitlock 14.6；Rosner 7.6–7.7、8.9；Kirkwood 第 35 章', 'c5-1': 'Rosner 13.2；Kirkwood 第 34 章',
   'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
   'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
@@ -3380,13 +3413,38 @@ Object.assign(W, {
   },
 });
 
-const WMAP = { 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
+
+/* ---------- 第 2、3 階段：機率與推論 ---------- */
+Object.assign(W, {
+  mosaic(el) {
+    el.innerHTML = `<p class="w-cap">正方形代表全部的人（面積 = 1）。左右寬度是吸菸與不吸菸的比例；每一欄內，紅色的高度是該群中有高血壓的比例。</p>
+<div class="w-row">${slider('wm2-a', 'P(吸菸)', 5, 95, 5, 30, '%')}${slider('wm2-ba', 'P(高血壓 | 吸菸)', 0, 100, 5, 30, '%')}${slider('wm2-bn', 'P(高血壓 | 不吸菸)', 0, 100, 5, 15, '%')}</div>
+<div class="chart-wrap" id="wm2-c"></div><div class="kv" id="wm2-k"></div>`;
+    const up = () => {
+      const a = sv('wm2-a', v => v + '%') / 100, ba = sv('wm2-ba', v => v + '%') / 100, bn = sv('wm2-bn', v => v + '%') / 100, ab = a * ba, b = ab + (1 - a) * bn, aob = a + b - ab;
+      $('#wm2-c').innerHTML = chart({ x: [0, 1], y: [0, 1], h: 300, noY: true, xlab: '左：吸菸　｜　右：不吸菸', m: { t: 20 } }, (X, Y) => {
+        const rect = (x0, x1, y0, y1, fill, k, op = 1) => `<rect data-k="${k}" x="${X(x0)}" y="${Y(y1)}" width="${X(x1) - X(x0)}" height="${Y(y0) - Y(y1)}" style="fill:${fill};fill-opacity:${op};stroke:var(--surface);stroke-width:2"/>`;
+        return rect(0, a, 0, ba, 'var(--c2)', 'pa pab pb pbga paob') + rect(0, a, ba, 1, 'var(--c1)', 'pa paob', 0.35) + rect(a, 1, 0, bn, 'var(--c2)', 'pb pbgn paob', 0.75) + rect(a, 1, bn, 1, 'var(--muted)', 'pn', 0.25)
+          + `<g class="hlx" data-k="ind"><line x1="${X(0)}" x2="${X(1)}" y1="${Y(b)}" y2="${Y(b)}" style="stroke:var(--ink);stroke-width:2.5;stroke-dasharray:6 4"/><text x="${X(1) - 4}" y="${Y(b) - 6}" text-anchor="end" style="fill:var(--ink)">獨立時兩欄的紅色應一樣高</text></g>`;
+      });
+      $('#wm2-k').innerHTML = kvs([['P(吸菸)', F.n(100 * a, 0) + '%', 'pa'], ['P(高血壓)', F.n(100 * b, 1) + '%', 'pb'], ['P(吸菸 且 高血壓)', F.n(100 * ab, 1) + '%', 'pab'], ['P(吸菸 或 高血壓)', F.n(100 * aob, 1) + '%', 'paob'], ['P(高血壓 | 吸菸)', F.n(100 * ba, 0) + '%', 'pbga'], ['P(高血壓 | 不吸菸)', F.n(100 * bn, 0) + '%', 'pbgn'], ['若獨立：P(吸菸) × P(高血壓)', F.n(100 * a * b, 1) + '%', 'ind']]);
+    };
+    el.addEventListener('input', up); up();
+  },
+});
+
+const WMAP = { 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
 for (const [id, [w, t]] of Object.entries(WMAP)) { const c = CH.find(x => x.id === id); c.widget = w; c.wtitle = t; }
 
 /* ---------- 練習題示範：把題目情境帶入同一章的互動圖 ----------
    每題的 demo：set = 設定輸入元件（id → 值）；click = 依序點擊的按鈕；custom = 交給互動圖自己的 _demo()；look = 示範時的觀察提示。
    有 q 的項目會整題替換（原題無法在圖上示範時）。 */
 const QD = {
+  'prob-rules': [
+    { demo: { set: { 'wm2-a': 50, 'wm2-ba': 50, 'wm2-bn': 50 }, look: '把「從父親得到 a」當成橫向、「從母親得到 a」當成縱向，各 50% 且獨立：左下角紅色面積就是 1/2 × 1/2 = 25%。' } },
+    { demo: { set: { 'wm2-a': 30, 'wm2-ba': 20, 'wm2-bn': 20 }, look: '兩欄紅色一樣高（20%）代表獨立。點「P(吸菸 或 高血壓)」，看亮起的面積：吸菸那一整欄加上右邊紅色。' } },
+    { demo: { set: { 'wm2-a': 30, 'wm2-ba': 30, 'wm2-bn': 15 }, look: '兩欄紅色高度不同：知道是否吸菸，會改變有高血壓的機率。點「若獨立」看獨立時應有的高度。' } },
+  ],
   'ancova': [
     { demo: { set: { 'wc3-e': 2, 'wc3-r': 0.9, 'wc3-d': 2, 'wc3-i': false }, look: '處理組起始體重比較重。點「ANCOVA 校正後差異」：兩條平行線在灰色虛線（起始體重的全體平均）位置的距離，就是校正後差異。' } },
     { demo: { set: { 'wc3-e': 2, 'wc3-r': 1.2, 'wc3-d': 0, 'wc3-i': false }, look: '起始體重平均相同時，校正後差異的標準誤仍然比未校正小：共變數解釋掉了個體差異。' } },

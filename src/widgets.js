@@ -642,5 +642,25 @@ Object.assign(W, {
   },
 });
 
-const WMAP = { 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
+
+/* ---------- 第 2、3 階段：機率與推論 ---------- */
+Object.assign(W, {
+  mosaic(el) {
+    el.innerHTML = `<p class="w-cap">正方形代表全部的人（面積 = 1）。左右寬度是吸菸與不吸菸的比例；每一欄內，紅色的高度是該群中有高血壓的比例。</p>
+<div class="w-row">${slider('wm2-a', 'P(吸菸)', 5, 95, 5, 30, '%')}${slider('wm2-ba', 'P(高血壓 | 吸菸)', 0, 100, 5, 30, '%')}${slider('wm2-bn', 'P(高血壓 | 不吸菸)', 0, 100, 5, 15, '%')}</div>
+<div class="chart-wrap" id="wm2-c"></div><div class="kv" id="wm2-k"></div>`;
+    const up = () => {
+      const a = sv('wm2-a', v => v + '%') / 100, ba = sv('wm2-ba', v => v + '%') / 100, bn = sv('wm2-bn', v => v + '%') / 100, ab = a * ba, b = ab + (1 - a) * bn, aob = a + b - ab;
+      $('#wm2-c').innerHTML = chart({ x: [0, 1], y: [0, 1], h: 300, noY: true, xlab: '左：吸菸　｜　右：不吸菸', m: { t: 20 } }, (X, Y) => {
+        const rect = (x0, x1, y0, y1, fill, k, op = 1) => `<rect data-k="${k}" x="${X(x0)}" y="${Y(y1)}" width="${X(x1) - X(x0)}" height="${Y(y0) - Y(y1)}" style="fill:${fill};fill-opacity:${op};stroke:var(--surface);stroke-width:2"/>`;
+        return rect(0, a, 0, ba, 'var(--c2)', 'pa pab pb pbga paob') + rect(0, a, ba, 1, 'var(--c1)', 'pa paob', 0.35) + rect(a, 1, 0, bn, 'var(--c2)', 'pb pbgn paob', 0.75) + rect(a, 1, bn, 1, 'var(--muted)', 'pn', 0.25)
+          + `<g class="hlx" data-k="ind"><line x1="${X(0)}" x2="${X(1)}" y1="${Y(b)}" y2="${Y(b)}" style="stroke:var(--ink);stroke-width:2.5;stroke-dasharray:6 4"/><text x="${X(1) - 4}" y="${Y(b) - 6}" text-anchor="end" style="fill:var(--ink)">獨立時兩欄的紅色應一樣高</text></g>`;
+      });
+      $('#wm2-k').innerHTML = kvs([['P(吸菸)', F.n(100 * a, 0) + '%', 'pa'], ['P(高血壓)', F.n(100 * b, 1) + '%', 'pb'], ['P(吸菸 且 高血壓)', F.n(100 * ab, 1) + '%', 'pab'], ['P(吸菸 或 高血壓)', F.n(100 * aob, 1) + '%', 'paob'], ['P(高血壓 | 吸菸)', F.n(100 * ba, 0) + '%', 'pbga'], ['P(高血壓 | 不吸菸)', F.n(100 * bn, 0) + '%', 'pbgn'], ['若獨立：P(吸菸) × P(高血壓)', F.n(100 * a * b, 1) + '%', 'ind']]);
+    };
+    el.addEventListener('input', up); up();
+  },
+});
+
+const WMAP = { 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
 for (const [id, [w, t]] of Object.entries(WMAP)) { const c = CH.find(x => x.id === id); c.widget = w; c.wtitle = t; }

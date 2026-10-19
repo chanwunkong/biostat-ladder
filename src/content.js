@@ -647,6 +647,30 @@ const CH = [
       { q: '「組別 × 共變數」交互作用顯著，代表什麼？', o: ['各組的迴歸斜率不同，處理效果會隨共變數大小而改變', '共變數和結果無關', '校正後兩組一定沒有差異', '資料不是常態'], why: 'ANCOVA 假設斜率平行；交互作用顯著時，要分別描述不同共變數值下的處理效果。' },
     ],
   },
+  {
+    id: 'prob-rules', title: '機率法則',
+    body: `<p>機率描述某件事發生的可能性，介於 0（不可能）到 1（一定發生）之間。一件可能發生的事叫做<b>事件</b>，例如「抽到的人有吸菸」。統計方法背後都靠以下幾條規則。</p>
+<h3>餘事件</h3>
+<div class="formula">P(非 A) = 1 − P(A)</div>
+<p>「A 沒有發生」叫做 A 的<b>餘事件</b>。吸菸率 30%，不吸菸率就是 70%。</p>
+<h3>加法法則：A 或 B</h3>
+<div class="formula">P(A 或 B) = P(A) + P(B) − P(A 且 B)</div>
+<p>直接把兩個機率相加，會把「兩者都有」的人算兩次，所以要減掉一次。如果 A 和 B 不可能同時發生（例如血型 A 和血型 O），稱為<b>互斥</b>，這時 P(A 且 B) = 0，機率可以直接相加。</p>
+<h3>條件機率</h3>
+<div class="formula">P(B | A) = P(A 且 B) ÷ P(A)</div>
+<p>「在 A 發生的人當中，B 也發生的比例」。例如吸菸者中有高血壓的比例。</p>
+<h3>乘法法則與獨立</h3>
+<div class="formula">P(A 且 B) = P(A) × P(B | A)<br>若 A、B 獨立：P(A 且 B) = P(A) × P(B)</div>
+<p>如果知道 A 有沒有發生，完全不會改變 B 的機率，也就是 P(B | A) = P(B | 非 A) = P(B)，就稱 A、B 為<b>獨立事件</b>。例：父母都是帶因者（Aa），每個孩子各自從父親、母親得到 a 的機率都是 1/2，而且兩者獨立，所以孩子是 aa 的機率是 1/2 × 1/2 = 1/4。</p>
+<h3>全機率法則</h3>
+<div class="formula">P(B) = P(A) × P(B | A) + P(非 A) × P(B | 非 A)</div>
+<p>把母體依 A 分成兩群，各群的 B 比例按人數加權平均，就是整體的 B 比例。下一章的診斷檢查（貝氏定理）就是把這幾條規則組合起來。</p>`,
+    quiz: [
+      { q: '父母都是隱性疾病的帶因者（Aa）。孩子是 aa 的機率是多少？', o: ['1/4', '1/2', '1/3', '3/4'], why: '從父親得到 a 的機率 1/2、從母親得到 a 的機率 1/2，兩者獨立：1/2 × 1/2 = 1/4。' },
+      { q: '吸菸率 30%、高血壓盛行率 20%，兩者獨立。隨機抽一人，「吸菸或有高血壓」的機率是？', o: ['44%', '50%', '6%', '24%'], why: '0.3 + 0.2 − 0.3 × 0.2 = 0.44。要減掉兩者都有的 6%，否則會重複計算。' },
+      { q: '吸菸者中有 30% 有高血壓，不吸菸者中有 15%。吸菸和高血壓是獨立事件嗎？', o: ['不是：知道是否吸菸，會改變有高血壓的機率', '是：兩個都是比例', '是：只要兩者都小於 50% 就獨立', '無法判斷'], why: '獨立代表 P(高血壓 | 吸菸) = P(高血壓 | 不吸菸)；30% ≠ 15%，所以不獨立。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -744,6 +768,15 @@ const GLOSS = [
   ['隨機分派試驗', ['RCT', '隨機試驗', '隨機化'], '用抽籤般的隨機方式決定每個人接受哪一種處理的研究。', 'c1-5'],
   ['校正', [], '在比較兩組時，把其他會影響結果的變數（例如年齡）一併納入計算，讓比較像是在「這些變數相同」的人之間進行。', 'c1-5'],
   ['臨床意義', ['臨床上', '臨床重要性'], '差異大到對病人或治療決策真正有影響；和統計上的 p 值是兩回事。', 'c1-5'],
+  ['機率', ['P('], '某事件發生的可能性，介於 0 到 1；P(A) 讀作「A 的機率」。', 'prob-rules'],
+  ['事件', [], '一件可能發生的事，例如「抽到的人有吸菸」。', 'prob-rules'],
+  ['餘事件', [], '「A 沒有發生」：P(非 A) = 1 − P(A)。', 'prob-rules'],
+  ['互斥', [], '兩個事件不可能同時發生，例如血型 A 與血型 O。', 'prob-rules'],
+  ['條件機率', ['P(B | A)', 'P(B|A)'], '在 A 發生的人當中，B 也發生的比例：P(A 且 B) ÷ P(A)。', 'prob-rules'],
+  ['獨立事件', [], '知道 A 有沒有發生，不會改變 B 的機率；此時 P(A 且 B) = P(A) × P(B)。', 'prob-rules'],
+  ['加法法則', [], 'P(A 或 B) = P(A) + P(B) − P(A 且 B)。', 'prob-rules'],
+  ['乘法法則', [], 'P(A 且 B) = P(A) × P(B | A)。', 'prob-rules'],
+  ['全機率法則', [], 'P(B) = P(A) × P(B | A) + P(非 A) × P(B | 非 A)。', 'prob-rules'],
   ['敏感度', [], '有病的人中，檢驗為陽性的比例。', 'c2-1'],
   ['特異度', [], '沒病的人中，檢驗為陰性的比例。', 'c2-1'],
   ['陽性預測值', ['PPV'], '檢驗陽性的人中，真正有病的比例。', 'c2-1'],
@@ -824,7 +857,7 @@ const GLOSS = [
 const ORDER = [
   ['c0-1', 'c0-2', 'c0-3', 'c0-4'],
   ['c1-1', 'c1-2', 'c1-3', 'c1-4', 'c1-5'],
-  ['c2-1'],
+  ['prob-rules', 'c2-1'],
   ['c2-2', 'c2-3', 'c2-4', 'c4-5', 'c5-1'],
   ['c3-1', 'c3-3', 'c3-5'],
   ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff', 'ancova'],
@@ -837,7 +870,7 @@ const ORDER = [
 const REFS = {
   'c0-1': 'Rosner 3.10', 'c1-1': 'Whitlock 第 1 章；Kirkwood 第 2 章', 'c1-2': 'Whitlock 第 3 章；Rosner 2.2–2.3；Kirkwood 第 4 章',
   'c1-3': 'Whitlock 第 3 章；Rosner 2.4–2.5；Kirkwood 第 4 章', 'c1-4': 'Whitlock 第 10 章；Rosner 第 5 章；Kirkwood 第 5 章', 'c1-5': 'Kirkwood 第 34 章',
-  'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
+  'prob-rules': 'Whitlock 第 5 章；Rosner 3.2–3.6', 'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
   'c2-4': 'Whitlock 第 6 章；Rosner 7.1–7.5；Kirkwood 第 8 章', 'c4-5': 'Whitlock 14.6；Rosner 7.6–7.7、8.9；Kirkwood 第 35 章', 'c5-1': 'Rosner 13.2；Kirkwood 第 34 章',
   'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
   'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
