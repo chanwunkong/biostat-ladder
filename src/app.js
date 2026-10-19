@@ -61,24 +61,49 @@ function termsOf(q) {
   GLOSS.forEach((g, gi) => { const pos = [g[0], ...g[1]].map(f => text.indexOf(f)).filter(i => i >= 0); if (pos.length) hits.push([Math.min(...pos), gi]); });
   return hits.sort((x, y) => x[0] - y[0]).map(h => h[1]);
 }
-const termsHTML = q => { const t = termsOf(q); return t.length ? `<div class="terms"><span class="lbl">這題的名詞（點一下看圖解）</span><div class="tchips">${t.map(gi => `<button type="button" class="tchip" data-g="${gi}" aria-pressed="false">${esc(GLOSS[gi][0])}</button>`).join('')}</div><div class="tdef" hidden></div></div>` : ''; };
+// 本章名詞：本章教的名詞＋練習題用到的名詞
+function chapterTerms(c) {
+  const out = []; GLOSS.forEach((g, gi) => { if (g[3] === c.id) out.push(gi); });
+  c.quiz.forEach(q => termsOf(q).forEach(gi => { if (!out.includes(gi)) out.push(gi); }));
+  return out;
+}
+const wtermsHTML = c => { const t = chapterTerms(c); return t.length ? `<div class="wterms" id="wterms"><span class="lbl">${c.widget ? '這張圖的名詞（點一下在圖上看）' : '本章名詞（點一下看圖解）'}</span><div class="tchips">${t.map(gi => `<button type="button" class="tchip" data-g="${gi}" aria-pressed="false">${esc(GLOSS[gi][0])}</button>`).join('')}</div><div class="tdef" hidden></div></div>` : ''; };
+// 把文字中的名詞變成可以點的連結（點了捲回上方名詞列）
+function linkTerms(text, q) {
+  const forms = termsOf(q).flatMap(gi => [GLOSS[gi][0], ...GLOSS[gi][1]].map(f => [f, gi])).filter(([f]) => f.length > 1 || /[^\x00-\x7F]/.test(f)).sort((x, y) => y[0].length - x[0].length);
+  if (!forms.length) return esc(text);
+  const re = new RegExp(forms.map(([f]) => esc(f).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'g'), gi = Object.fromEntries(forms.map(([f, g]) => [esc(f), g]));
+  return esc(text).replace(re, m => `<span class="tlink" role="button" tabindex="0" data-g="${gi[m]}">${m}</span>`);
+}
 function bindTerms(c) {
-  $$('.terms').forEach(box => {
-    $$('.tchip', box).forEach(b => {
-      b.onclick = () => {
-        const on = b.getAttribute('aria-pressed') !== 'true', d = $('.tdef', box), [term, , def, ch] = GLOSS[+b.dataset.g], t = CH.find(x => x.id === ch);
-        $$('.tchip', box).forEach(x => x.setAttribute('aria-pressed', String(x === b && on)));
-        d.hidden = !on;
-        if (on) { d.innerHTML = (typeof TFIG !== 'undefined' ? TFIG.html(term, box.clientWidth - 24) : '') + `<p class="tline"><b>${esc(term)}</b>　${esc(def)}</p><span class="tsrc">${ch === c.id ? '本章內容有說明' : `<a href="#${ch}">${t.num} 章「${esc(t.title)}」</a>${CH.indexOf(t) > CH.indexOf(c) ? '會詳細說明' : '學過'}`}</span>`; if (typeof TFIG !== 'undefined') TFIG.mark(d); }
-      };
-    });
+  const box = $('#wterms'); if (!box) return;
+  const wg = $('#widget'), d = $('.tdef', box), map = (typeof WTERM !== 'undefined' && WTERM[c.id]) || {};
+  const show = (b, on) => {
+    $$('.tchip', box).forEach(x => x.setAttribute('aria-pressed', String(x === b && on)));
+    d.hidden = !on; if (wg) { wg._k = null; applyFocus(wg); }
+    if (!on) return;
+    const [term, , def, ch] = GLOSS[+b.dataset.g], t = CH.find(x => x.id === ch), keys = map[term], src = `<span class="tsrc">${ch === c.id ? '本章內容有說明' : `<a href="#${ch}">${t.num} 章「${esc(t.title)}」</a>${CH.indexOf(t) > CH.indexOf(c) ? '會詳細說明' : '學過'}`}</span>`;
+    const hit = wg && keys && keys.split(' ').some(k => wg.querySelector(`[data-k~="${k}"], [data-card="${k}"]`));
+    if (hit) {
+      wg._k = keys; applyFocus(wg);
+      const vals = $$('[data-card]', wg).filter(x => keys.split(' ').includes(x.dataset.card)).map(x => `${esc((x.querySelector('span') || x).textContent.trim())}：<b>${esc((x.querySelector('b') || x).textContent.trim())}</b>`);
+      d.innerHTML = `<p class="tline"><b>${esc(term)}</b>　${esc(def)}</p>${vals.length ? `<p class="tvals">圖上亮起的部分　${vals.join('　')}</p>` : '<p class="tvals">圖上亮起的部分就是它。</p>'}${src}`;
+    } else {
+      d.innerHTML = (typeof TFIG !== 'undefined' ? TFIG.html(term, box.clientWidth - 24) : '') + `<p class="tline"><b>${esc(term)}</b>　${esc(def)}</p>${src}`;
+      if (typeof TFIG !== 'undefined') TFIG.mark(d);
+    }
+  };
+  $$('.tchip', box).forEach(b => { b.onclick = () => show(b, b.getAttribute('aria-pressed') !== 'true'); });
+  $$('.tlink').forEach(l => {
+    const go = () => { const b = $(`.tchip[data-g="${l.dataset.g}"]`, box); if (!b) return; show(b, true); ($('.widget-box') || box).scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+    l.onclick = go; l.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } };
   });
 }
 function renderChapter(id) {
   const i = CH.findIndex(c => c.id === id), c = CH[i], L = LEVELS[c.lv], prev = CH[i - 1], next = CH[i + 1];
-  const quiz = c.quiz.map((q, qi) => { const ord = q.o.map((_, k) => k).sort(() => Math.random() - 0.5); return `<div class="q" data-q="${qi}"><p class="q-t"><span class="mono">Q${qi + 1}</span>${esc(q.q)}</p>${termsHTML(q)}${q.demo && c.widget ? `<button type="button" class="demo-btn" data-demo="${qi}"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 15V5M5 9l5-5 5 5" style="fill:none;stroke:currentColor;stroke-width:2"/></svg>在上方圖表示範這題</button>` : ''}<div class="opts">${ord.map(k => `<button type="button" class="opt" data-k="${k}">${esc(q.o[k])}</button>`).join('')}</div><p class="why" hidden></p></div>`; }).join('');
+  const quiz = c.quiz.map((q, qi) => { const ord = q.o.map((_, k) => k).sort(() => Math.random() - 0.5); return `<div class="q" data-q="${qi}"><p class="q-t"><span class="mono">Q${qi + 1}</span>${linkTerms(q.q, q)}</p>${q.demo && c.widget ? `<button type="button" class="demo-btn" data-demo="${qi}"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 15V5M5 9l5-5 5 5" style="fill:none;stroke:currentColor;stroke-width:2"/></svg>在上方圖表示範這題</button>` : ''}<div class="opts">${ord.map(k => `<button type="button" class="opt" data-k="${k}">${esc(q.o[k])}</button>`).join('')}</div><p class="why" hidden></p></div>`; }).join('');
   $('#article').innerHTML = `<div class="ch-top"><p class="eyebrow">Level ${L.n} · ${L.name} · 第 ${c.num} 章</p><button class="toc-btn" type="button" data-toc>☰ 目錄</button></div><h1>${c.title}</h1>
-${c.widget ? `<section class="widget-box"><p class="lbl">動手玩 · ${c.wtitle}</p><div class="demo-note" id="demoNote" hidden></div><div class="widget" id="widget"></div></section>` : ''}
+${c.widget ? `<section class="widget-box"><p class="lbl">動手玩 · ${c.wtitle}</p><div class="demo-note" id="demoNote" hidden></div><div class="widget" id="widget"></div>${wtermsHTML(c)}</section>` : `<section class="widget-box">${wtermsHTML(c)}</section>`}
 <div class="prose">${chRef(c.body)}</div>${c.refs ? `<p class="refs"><span class="lbl">對照教科書</span>${esc(c.refs)}</p>` : ''}
 ${c.labs ? `<section class="labs"><p class="lbl">到實驗室用真的資料做</p><div class="lab-btns">${c.labs.map((l, k) => `<button class="btn" type="button" data-lab="${k}">${l.label}<span aria-hidden="true">→</span></button>`).join('')}</div></section>` : ''}
 ${c.quiz.length ? `<section class="quiz"><h2>小測驗</h2>${quiz}</section>` : ''}
@@ -95,7 +120,7 @@ ${c.quiz.length ? `<section class="quiz"><h2>小測驗</h2>${quiz}</section>` : 
       b.onclick = () => {
         const ok = +b.dataset.k === 0, why = $('.why', qe);
         b.classList.add(ok ? 'right' : 'wrong'); why.hidden = false;
-        if (ok) { $$('.opt', qe).forEach(x => { x.disabled = true; }); why.innerHTML = `<b>答對了。</b>${esc(q.why)}`; why.className = 'why ok'; right.add(qe.dataset.q); if (right.size === c.quiz.length && !state.done[id]) { setDone(id, true); $('#doneBtn').textContent = '已完成 ✓'; $('#doneBtn').classList.add('done'); } }
+        if (ok) { $$('.opt', qe).forEach(x => { x.disabled = true; }); why.innerHTML = `<b>答對了。</b>${linkTerms(q.why, q)}`; bindTerms(c); why.className = 'why ok'; right.add(qe.dataset.q); if (right.size === c.quiz.length && !state.done[id]) { setDone(id, true); $('#doneBtn').textContent = '已完成 ✓'; $('#doneBtn').classList.add('done'); } }
         else { b.disabled = true; why.textContent = '不對，再想想看。'; why.className = 'why no'; }
       };
     });
@@ -169,10 +194,10 @@ function renderForm() {
 /* ---------- 數字與圖連動（SPEC 第二條） ---------- */
 const cardHTML = c => `<div data-card="${c.k}" role="button" tabindex="0" aria-pressed="false"><span>${c.l}</span><b>${c.v}</b></div>`;
 function applyFocus(root) {
-  const k = root._k;
-  $$('[data-card]', root).forEach(c => c.setAttribute('aria-pressed', String(c.dataset.card === k)));
-  $$('[data-k]', root).forEach(e => { const on = !!k && (e.getAttribute('data-k') || '').split(' ').includes(k); e.classList.toggle('on', on); });
-  $$('svg', root).forEach(s => s.classList.toggle('focus', !!k && !!s.querySelector('.on')));
+  const ks = root._k ? root._k.split(' ') : [];
+  $$('[data-card]', root).forEach(c => c.setAttribute('aria-pressed', String(ks.includes(c.dataset.card))));
+  $$('[data-k]', root).forEach(e => { const on = ks.length > 0 && (e.getAttribute('data-k') || '').split(' ').some(x => ks.includes(x)); e.classList.toggle('on', on); });
+  $$('svg', root).forEach(s => s.classList.toggle('focus', ks.length > 0 && !!s.querySelector('.on')));
 }
 function linkify(root, initial) {
   if (root._linked) { applyFocus(root); return; }
