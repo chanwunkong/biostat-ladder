@@ -893,6 +893,24 @@ const CH = [
       { q: '資料其實接近常態分佈時，Mann–Whitney 相對於 t 檢定？', o: ['檢定力略低，但差距不大', '檢定力一定比較高', '偽陽性率比較高', '完全不能用'], why: '無母數方法丟掉了部分數值資訊；常態時 t 檢定最有效率，但差距通常不大。' },
     ],
   },
+  {
+    id: 'two-prop', title: '兩比例的比較',
+    body: `<p>比較兩組的比例（例如新藥組與安慰劑組的反應率）時，除了卡方檢定（{{c3-3}} 章）給出的 p 值，更重要的是估計兩組<b>差多少</b>。</p>
+<h3>風險差與它的信賴區間</h3>
+<div class="formula">風險差 = p₂ − p₁<br>標準誤 = √(p₁(1 − p₁) ÷ n₁ + p₂(1 − p₂) ÷ n₂)<br>95% CI = 風險差 ± 1.96 × 標準誤</div>
+<p>例：安慰劑組 50 人中 15 人有反應（30%），新藥組 50 人中 25 人（50%）。<b>風險差</b> = 20 個百分點，95% CI 約 1.2 到 38.8 個百分點。區間不包含 0，但下限很接近 0：資料和「幾乎沒差」到「差很多」都相容，需要更大的樣本才能估得更準。</p>
+<h3>兩比例的 z 檢定</h3>
+<div class="formula">合併比例 p̄ = (x₁ + x₂) ÷ (n₁ + n₂)<br>z = (p₂ − p₁) ÷ √(p̄(1 − p̄)(1/n₁ + 1/n₂))</div>
+<p>檢定時用合併比例計算標準誤，因為虛無假設認為兩組比例相同。上例 z ≈ 2.04、p ≈ 0.041。這個 z 的平方剛好等於同一份資料 2×2 卡方檢定的 χ²（不做連續性校正時），兩者是同一個檢定。</p>
+<h3>絕對差還是相對差？</h3>
+<p>同一組資料可以用三種方式表達：風險差 20 個百分點、風險比 1.67（{{c0-1}} 章）、勝算比 2.33。臨床意義通常要同時看絕對差與相對差：罕見事件的相對差可能很大，絕對差卻很小。風險差的倒數就是需治療人數（NNT）。</p>
+<p class="note">樣本小或比例接近 0、1 時，Wald 法的區間不夠準確，可改用 Newcombe 等改良方法；計數很小時則用 Fisher 精確檢定。兩比例研究的樣本數計算見 {{c4-5}} 章。</p>`,
+    quiz: [
+      { q: '安慰劑組 50 人中 15 人有反應，新藥組 50 人中 25 人。兩組反應率的差是多少？', o: ['20 個百分點', '10 人', '67%', '0.5'], why: '25/50 − 15/50 = 0.5 − 0.3 = 0.2，也就是 20 個百分點。' },
+      { q: '2×2 表做兩比例 z 檢定得到 z = 2.04。同一份資料做卡方檢定（不做連續性校正），χ² 約是多少？', o: ['4.17', '2.04', '1.43', '0.04'], why: 'z² = 2.04² ≈ 4.17；兩者是同一個檢定，p 值相同。' },
+      { q: '風險差 20 個百分點，95% CI 1.2 到 38.8。最恰當的解讀是？', o: ['差異可能從很小到很大，估計還不夠精確', '新藥一定讓反應率增加 20 個百分點', '因為下限接近 0，所以沒有差異', 'p 值一定大於 0.05'], why: '區間不含 0（p < 0.05），但很寬，代表真實差異的不確定性還很大。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -1075,6 +1093,8 @@ const GLOSS = [
   ['勝算比', ['OR'], '兩組「勝算」的比值。勝算 = 發生的人數 ÷ 沒發生的人數。', 'c3-3'],
   ['世代研究', [], '先依暴露分組，再往後追蹤看誰發生事件的研究。', 'c3-3'],
   ['病例對照研究', [], '先找有病的人（病例）和沒病的人（對照），再回頭比較過去暴露的研究。', 'c3-3'],
+  ['風險差', ['比例差'], '兩組事件比例相減，單位是百分點；它的倒數是需治療人數。', 'two-prop'],
+  ['合併比例', ['p̄'], '把兩組合在一起算出的比例，用於兩比例 z 檢定的標準誤。', 'two-prop'],
   ['相關係數', ['Pearson'], '−1 到 +1，描述兩個數值變數直線關係的強弱與方向。', 'c3-4'],
   ['Spearman', [], '先把資料換成名次再算的相關係數，較不受極端值影響。', 'c3-4'],
   ['r²', ['R²'], '相關係數的平方：一個變數的變異中，能被另一個變數以直線解釋的比例。', 'c3-4'],
@@ -1124,7 +1144,7 @@ const ORDER = [
   ['c1-1', 'c1-2', 'c1-3', 'c1-4', 'c1-5'],
   ['prob-rules', 'c2-1', 'roc', 'rv', 'binom', 'poisson'],
   ['c2-2', 'c2-3', 'tdist', 'prop-ci', 'c2-4', 'one-t', 'binom-test', 'gof', 'boot', 'c4-5', 'c5-1'],
-  ['c3-1', 'two-assume', 'nonpar', 'c3-3', 'c3-5'],
+  ['c3-1', 'two-assume', 'nonpar', 'c3-3', 'two-prop', 'c3-5'],
   ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff', 'ancova'],
   ['c3-4', 'c4-1', 'c4-2'],
   ['c4-3'],
@@ -1137,7 +1157,7 @@ const REFS = {
   'c1-3': 'Whitlock 第 3 章；Rosner 2.4–2.5；Kirkwood 第 4 章', 'c1-4': 'Whitlock 第 10 章；Rosner 第 5 章；Kirkwood 第 5 章', 'c1-5': 'Kirkwood 第 34 章',
   'prob-rules': 'Whitlock 第 5 章；Rosner 3.2–3.6', 'roc': 'Rosner 3.9；UTHealth GSBS 課綱第 10 週', 'rv': 'Rosner 4.2–4.6', 'binom': 'Whitlock 7.1；Rosner 4.7–4.9、5.7；Kirkwood 第 15 章', 'poisson': 'Whitlock 8.4；Rosner 4.10–4.13；Kirkwood 第 22 章', 'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'tdist': 'Whitlock 11.1；Rosner 6.5', 'prop-ci': 'Whitlock 7.3；Rosner 6.8；Kirkwood 第 15 章', 'binom-test': 'Whitlock 7.2；Rosner 7.9', 'gof': 'Whitlock 8.1–8.3；Rosner 10.7', 'boot': 'Whitlock 13.8、第 19 章；Rosner 6.11、9.6', 'one-t': 'Whitlock 11.2；Rosner 7.3–7.5；UTHealth GSBS 課綱第 2 週', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
   'c2-4': 'Whitlock 第 6 章；Rosner 7.1–7.5；Kirkwood 第 8 章', 'c4-5': 'Whitlock 14.6；Rosner 7.6–7.7、8.9；Kirkwood 第 35 章', 'c5-1': 'Rosner 13.2；Kirkwood 第 34 章',
-  'nonpar': 'Whitlock 13.4–13.7；Rosner 9.2–9.4', 'two-assume': 'Whitlock 13.1–13.3；Rosner 8.6、8.10；Kirkwood 第 13 章', 'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
+  'nonpar': 'Whitlock 13.4–13.7；Rosner 9.2–9.4', 'two-prop': 'Rosner 10.2、10.5；Kirkwood 第 16 章', 'two-assume': 'Whitlock 13.1–13.3；Rosner 8.6、8.10；Kirkwood 第 13 章', 'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
   'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
   'c4-2': 'Rosner 13.7–13.8；Kirkwood 第 19–20 章', 'c4-3': 'Whitlock 第 21 章；Rosner 14.8–14.11；Kirkwood 第 26–27 章', 'c4-4': 'Benjamini & Hochberg (1995), J R Stat Soc B 57:289–300',
   'c4-6': 'Rosner 12.10、13.13–13.14；Kirkwood 第 31 章', 'c5-2': 'Kirkwood 第 38 章；EQUATOR Network', 'c5-3': 'Kirkwood 第 38 章', 'c5-4': 'Kirkwood 第 34、38 章',

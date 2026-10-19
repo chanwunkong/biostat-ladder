@@ -126,6 +126,12 @@ near('符號檢定 p（sleep 差值）', S.signTest(sd10).p, 2 * Math.pow(0.5, 9
 near('Wilcoxon 符號等級 V', S.wilcoxonSR(sd10).V, 45);
 near('Wilcoxon 符號等級 p (wilcox.test paired)', S.wilcoxonSR(sd10).p, 0.009091);
 
+const tp2 = S.twoProp(15, 50, 25, 50);
+near('兩比例 χ² (prop.test, correct=F)', tp2.chi2, 4.1667);
+near('兩比例 p', tp2.p, 0.04123);
+near('差值 CI 下限', tp2.ci[0], 0.0120);
+near('差值 CI 上限', tp2.ci[1], 0.3880);
+
 const DS = {};
 for (const m of DATASETS) { const d = m.gen(); DS[m.id] = makeDS({ ...m, head: d.head, rows: d.rows }); }
 const runs = [

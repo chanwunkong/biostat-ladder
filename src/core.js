@@ -200,6 +200,11 @@ const S = (() => {
   const ppois = (k, lam) => { let s = 0; for (let i = 0; i <= k; i++) s += dpois(i, lam); return Math.min(1, s); };
   // 符號檢定：只看差值的正負號（0 不計），以 p = 0.5 的二項檢定計算
   function signTest(d) { const nz = d.filter(v => v !== 0), x = nz.filter(v => v > 0).length; return { n: nz.length, pos: x, p: binomTest(x, nz.length, 0.5).p }; }
+  // 兩比例比較：合併比例的 z 檢定（z² = 無連續性校正的 2×2 卡方）與風險差的 Wald 信賴區間（R 的 prop.test(correct = FALSE)）
+  function twoProp(x1, n1, x2, n2) {
+    const p1 = x1 / n1, p2 = x2 / n2, pb = (x1 + x2) / (n1 + n2), z = (p2 - p1) / Math.sqrt(pb * (1 - pb) * (1 / n1 + 1 / n2)), se = Math.sqrt(p1 * (1 - p1) / n1 + p2 * (1 - p2) / n2), d = p2 - p1;
+    return { p1, p2, diff: d, se, ci: [d - 1.959964 * se, d + 1.959964 * se], z, chi2: z * z, p: pz2(z) };
+  }
   // 卡方適合度檢定：obs 為各類觀察次數，probs 為預期比例（會自動標準化）
   function gof(obs, probs) { const n = sum(obs), ps = probs.map(p => p / sum(probs)), E = ps.map(p => n * p), chi2 = sum(obs.map((o, i) => (o - E[i]) ** 2 / E[i])), df = obs.length - 1; return { chi2, df, p: pchisq(chi2, df), E, minExp: Math.min(...E) }; }
   // 精確二項檢定（雙尾：加總機率不大於觀察結果的所有結果，與 R 的 binom.test 相同）
@@ -343,7 +348,7 @@ const S = (() => {
   const nProps = (p1, p2, alpha, power) => { const za = qnorm(1 - alpha / 2), zb = qnorm(power), pb = (p1 + p2) / 2; return Math.ceil((za * Math.sqrt(2 * pb * (1 - pb)) + zb * Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))) ** 2 / ((p1 - p2) ** 2)); };
   const powerProps = (p1, p2, n, alpha) => { const za = qnorm(1 - alpha / 2), pb = (p1 + p2) / 2; return pnorm((Math.abs(p1 - p2) * Math.sqrt(n) - za * Math.sqrt(2 * pb * (1 - pb))) / Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))); };
 
-  return { dbinom, pbinom, dpois, ppois, propCI, binomTest, gof, signTest, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, varTest, mannWhitney, oneT, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
+  return { dbinom, pbinom, dpois, ppois, propCI, binomTest, gof, signTest, twoProp, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, varTest, mannWhitney, oneT, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
 })();
 
 /* ---------- 格式 ---------- */
@@ -518,6 +523,7 @@ const DEF = {
   rmDef: '重複測量 ANOVA：把每個個體當成區集，扣除個體之間的差異後，比較各時間點的平均。', ggDef: 'Greenhouse–Geisser ε：用各時間點的共變異數矩陣估計違反球形假設的程度，介於 1/(時間點數 − 1) 與 1；自由度乘上 ε 後重新計算 p 值。', friedDef: 'Friedman 檢定：在每個個體內把各時間點的值排名，再比較各時間點的名次總和。',
   adjMean: '校正後平均：用 ANCOVA 模型預測「共變數等於全體平均時」各組的平均；括號內是未校正的原始平均。', parallel: '斜率平行性檢定：在模型中加入「組別 × 共變數」交互作用，檢定各組的迴歸斜率是否相同；ANCOVA 假設斜率相同。',
   gmr: '幾何平均數比：取對數後的平均差，再取 e 的次方換回原尺度，代表第二組的幾何平均數是第一組的幾倍。',
+  rdDef: '風險差：第二列的事件比例減第一列的事件比例（百分點）；信賴區間以 Wald 法計算。',
   n: '分析使用的觀察數。', ev: '結果為事件（編碼 1）的人數。',
 };
 const cd = (k, l, v, d) => ({ k, l, v, d });
@@ -997,19 +1003,20 @@ const AN = {
       if (R.length < 2 || C.length < 2) throw new Error('兩個變數都至少需要兩個類別。'); if (R.length > 10 || C.length > 10) throw new Error('類別超過 10 個，請選擇類別較少的變數。');
       const tab = R.map(r => C.map(c => idx.filter(i => lab(rc.values[i]) === r && lab(cc.values[i]) === c).length)), t = S.chisq(tab), is22 = R.length === 2 && C.length === 2, N = idx.length;
       const colTot = C.map((_, j) => S.sum(tab.map(r => r[j]))), facts = [], rl = l => (/^-?\d+(\.\d+)?$/.test(l) ? `${s.r} = ${l}` : l);
-      let fp = NaN, or = null, rr = null;
+      let fp = NaN, or = null, rr = null, rd = null;
       if (is22) {
         const [[a, b], [c, d]] = tab; fp = S.fisher(a, b, c, d);
         const h = a * b * c * d === 0 ? 0.5 : 0, [A, B, Cc, D] = [a + h, b + h, c + h, d + h], lor = Math.log(A * D / (B * Cc)), se = Math.sqrt(1 / A + 1 / B + 1 / Cc + 1 / D);
         or = { est: Math.exp(lor), lo: Math.exp(lor - 1.96 * se), hi: Math.exp(lor + 1.96 * se) };
         const r1 = D / (Cc + D), r0 = B / (A + B), lrr = Math.log(r1 / r0), ser = Math.sqrt(1 / D - 1 / (Cc + D) + 1 / B - 1 / (A + B));
         rr = { est: r1 / r0, lo: Math.exp(lrr - 1.96 * ser), hi: Math.exp(lrr + 1.96 * ser), p1: d / (c + d), p0: b / (a + b) };
+        rd = S.twoProp(b, a + b, d, c + d);
         facts.push(`OR 與 RR：${esc(C[1])} 的比較，${esc(R[1])} 相對於 ${esc(R[0])}`); if (h) facts.push('表中有 0 的格子，OR 與 RR 以每格加 0.5 計算');
       }
-      const tag = (i, j) => (is22 && j === 1 ? `prop${i} or rr fisher` : '');
+      const tag = (i, j) => (is22 && j === 1 ? `prop${i} or rr fisher rd` : '');
       const bars = stackChart(R, C, tab, `${s.c} 的比例（%）`, tag, (X, Y, { bw }) => { let acc = 0, g = ''; C.slice(0, -1).forEach((_, j) => { acc += 100 * colTot[j] / N; R.forEach((__, i) => { g += `<line class="hlx" data-k="exp chi2 cv" x1="${X(i) - bw / 2 - 6}" x2="${X(i) + bw / 2 + 6}" y1="${Y(acc)}" y2="${Y(acc)}" style="stroke:var(--ink);stroke-width:2.5;stroke-dasharray:5 3"/>`; }); }); return g; });
       const cards = [];
-      if (is22) cards.push(cd('prop1', `${esc(rl(R[1]))}：${esc(C[1])} 比例`, `${F.n(100 * rr.p1, 1)}%`, 'prop'), cd('prop0', `${esc(rl(R[0]))}：${esc(C[1])} 比例`, `${F.n(100 * rr.p0, 1)}%`, 'prop'), cd('or', '勝算比 OR', `${F.n(or.est, 2)}（${F.ci(or.lo, or.hi, 2)}）`, 'or'), cd('rr', '風險比 RR', `${F.n(rr.est, 2)}（${F.ci(rr.lo, rr.hi, 2)}）`, 'rr'), cd('fisher', 'p 值（Fisher）', F.p(fp), 'fisher'));
+      if (is22) cards.push(cd('prop1', `${esc(rl(R[1]))}：${esc(C[1])} 比例`, `${F.n(100 * rr.p1, 1)}%`, 'prop'), cd('prop0', `${esc(rl(R[0]))}：${esc(C[1])} 比例`, `${F.n(100 * rr.p0, 1)}%`, 'prop'), cd('or', '勝算比 OR', `${F.n(or.est, 2)}（${F.ci(or.lo, or.hi, 2)}）`, 'or'), cd('rr', '風險比 RR', `${F.n(rr.est, 2)}（${F.ci(rr.lo, rr.hi, 2)}）`, 'rr'), cd('rd', '風險差（比例差）', `${F.n(100 * rd.diff, 1)} 個百分點（${F.ci(100 * rd.ci[0], 100 * rd.ci[1], 1)}）`, 'rdDef'), cd('fisher', 'p 值（Fisher）', F.p(fp), 'fisher'));
       cards.push(cd('chi2', 'χ²', `${F.n(t.chi2, 2)}（df ${t.df}）`, 'chi2'), cd('p', 'p 值（卡方）', F.p(t.p), 'p'), cd('cv', "Cramér's V", F.n(t.V, 3), 'cv'), cd('exp', '最小期望次數', F.n(t.minExp, 2), 'minexp'));
       const rows = R.map((r, i) => { const tot = S.sum(tab[i]); return [`<b>${esc(r)}</b>`, ...tab[i].map((k, j) => `${k} <span class="mut">(${tot ? (100 * k / tot).toFixed(1) : '—'}%)</span><br><span class="mut small">期望 ${F.n(t.E[i] ? S.sum(tab[i]) * colTot[j] / N : NaN, 1)}</span>`), tot]; });
       rows.push(['合計', ...colTot, N]);

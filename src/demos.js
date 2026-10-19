@@ -2,6 +2,11 @@
    每題的 demo：set = 設定輸入元件（id → 值）；click = 依序點擊的按鈕；custom = 交給互動圖自己的 _demo()；look = 示範時的觀察提示。
    有 q 的項目會整題替換（原題無法在圖上示範時）。 */
 const QD = {
+  'two-prop': [
+    { demo: { set: { 'wp2-n': 50, 'wp2-a': 15, 'wp2-b': 25 }, look: '30% 對 50%：點「風險差」看紅色區間。' } },
+    { demo: { set: { 'wp2-n': 50, 'wp2-a': 15, 'wp2-b': 25 }, look: '看最後兩張數字卡：z ≈ 2.04，χ² = z² ≈ 4.17。' } },
+    { demo: { set: { 'wp2-n': 200, 'wp2-a': 60, 'wp2-b': 100 }, look: '同樣的 30% 對 50%，但每組 200 人：風險差的區間窄了一半左右。' } },
+  ],
   'nonpar': [
     { demo: { click: ['#wnp-m [data-m="pair"]'], set: { 'wnp-s': 0.75, 'wnp-o': false }, look: '配對模式：數一數紅色（正）長條有幾根，點「正號個數」與「符號檢定 p 值」。題目的 7 正 1 負也是同樣的計算。' } },
     { demo: { click: ['#wnp-m [data-m="ind"]'], set: { 'wnp-s': 1, 'wnp-o': false }, look: '圓圈裡的數字是兩組合併後的名次：處理組的名次集中在右邊（大）時，p 值就小。' } },
