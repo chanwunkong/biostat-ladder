@@ -1036,6 +1036,26 @@ const CH = [
       { q: 'Poisson 迴歸中某變數的係數 β = 0.693。這代表什麼？', o: ['率比約為 2：其他變數固定時，發生率約為參考組的 2 倍', '發生率增加 0.693 例', '有 69.3% 的人發生事件', '勝算比為 0.693'], why: 'Poisson 迴歸在對數尺度上，e^0.693 ≈ 2。' },
     ],
   },
+  {
+    id: 'bland-altman', title: '測量一致性：Bland–Altman',
+    body: `<p>新的快速檢驗能不能取代傳統方法？兩台儀器的讀數能不能互換？這是「一致性」的問題，不是「相關」的問題。</p>
+<h3>為什麼不能用相關係數</h3>
+<p>相關係數只看兩者是否「一起變動」。如果新方法的讀數永遠比舊方法高 10，或永遠是舊方法的 1.2 倍，兩者仍然可以完全相關（r ≈ 1），但讀數顯然不能互換。另外，樣本的數值範圍越大，r 就越高，和一致性無關。</p>
+<h3>Bland–Altman 圖</h3>
+<ol><li>每個樣本算出兩方法的<b>差值</b>（B − A）與<b>平均</b>((A + B) ÷ 2)。</li>
+<li>以平均為 x 軸、差值為 y 軸作圖。</li>
+<li>畫出差值的平均（<b>偏差</b>）：兩方法平均差多少，也就是系統性偏差。</li>
+<li>畫出 <b>95% 一致性界限</b>：偏差 ± 1.96 × 差值的標準差，約 95% 的樣本，兩方法的差會落在這個範圍內。</li></ol>
+<p>一致性界限是否「夠窄」，要由臨床或實驗上能接受的誤差來判斷，例如血糖差 ±10 mg/dL 以內可接受，統計方法本身無法決定。</p>
+<h3>其他要看的</h3>
+<ul><li><b>比例偏差</b>：差值隨數值變大而變大（點呈斜線或喇叭形），代表兩方法在高值和低值的關係不同；可以對差值取百分比或對數後再分析。</li>
+<li>連續數值的另一個一致性指標是 ICC（{{random-eff}} 章）；類別資料用 κ（{{kappa}} 章）。</li></ul>`,
+    quiz: [
+      { q: '新血糖儀的讀數永遠比舊方法高 10 mg/dL，兩者的相關係數 r = 0.99。這代表兩者一致嗎？', o: ['不一致：有固定偏差 10，但相關係數看不出來', '一致：r 接近 1', '無法判斷', '一致：因為只差 10'], why: '相關係數只看一起變動，不看是否相等；Bland–Altman 的偏差會直接顯示 10。' },
+      { q: '平均差 2、差值的標準差 5。95% 一致性界限約是？', o: ['−7.8 至 11.8', '−3 至 7', '2 ± 5', '0 至 10'], why: '2 ± 1.96 × 5 = −7.8 至 11.8。' },
+      { q: 'Bland–Altman 圖上，差值隨兩方法的平均變大而變大。這代表什麼？', o: ['比例偏差：兩方法的差異隨數值大小改變', '沒有偏差', '樣本數太少', '兩方法完全一致'], why: '固定的一致性界限不適用；可改用百分比差或對數尺度。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -1259,6 +1279,11 @@ const GLOSS = [
   ['Poisson 迴歸', [], '計數結果的迴歸，在對數尺度上建模；加上位移項時描述的是率，結果為率比 e^β。', 'poisson-reg'],
   ['位移項', ['offset'], 'Poisson 迴歸中係數固定為 1 的 log(人時)，讓模型描述率。', 'poisson-reg'],
   ['離散度', [], 'Pearson χ² ÷ 自由度；Poisson 模型假設約為 1。', 'poisson-reg'],
+  ['一致性', [], '兩種測量的數值是否可以互換，和「是否相關」是不同的問題。', 'bland-altman'],
+  ['偏差（一致性）', ['系統性偏差'], '兩方法差值的平均：一個方法平均比另一個高或低多少。', 'bland-altman'],
+  ['一致性界限', [], '偏差 ± 1.96 × 差值的標準差；約 95% 樣本的兩方法差值落在其中。', 'bland-altman'],
+  ['比例偏差', [], '兩方法的差值隨數值大小而改變。', 'bland-altman'],
+  ['Bland–Altman 圖', ['Bland–Altman'], '以兩方法的平均為 x、差值為 y 的圖，標出偏差與一致性界限。', 'bland-altman'],
   ['迴歸係數', ['係數', 'β'], '其他變數固定時，某變數增加 1 單位，結果平均改變多少。', 'c4-1'],
   ['虛擬變數', [], '把類別變數轉成 0／1 的欄位，才能放進迴歸。', 'c4-1'],
   ['參考組', [], '類別變數中被拿來當比較基準的那一組。', 'c4-1'],
@@ -1297,7 +1322,7 @@ const ORDER = [
   ['c2-2', 'c2-3', 'tdist', 'prop-ci', 'c2-4', 'one-t', 'binom-test', 'gof', 'boot', 'c4-5', 'c5-1'],
   ['c3-1', 'two-assume', 'nonpar', 'c3-3', 'two-prop', 'mcnemar', 'kappa', 'c3-5'],
   ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff', 'ancova'],
-  ['c3-4', 'simple-reg', 'c4-1', 'reg-diag', 'c4-2', 'poisson-reg'],
+  ['c3-4', 'simple-reg', 'c4-1', 'reg-diag', 'c4-2', 'poisson-reg', 'bland-altman'],
   ['c4-3'],
   ['c4-4', 'c4-6'],
   ['c5-2', 'c5-3', 'c5-4', 'c5-5'],
@@ -1309,7 +1334,7 @@ const REFS = {
   'prob-rules': 'Whitlock 第 5 章；Rosner 3.2–3.6', 'roc': 'Rosner 3.9；UTHealth GSBS 課綱第 10 週', 'rv': 'Rosner 4.2–4.6', 'binom': 'Whitlock 7.1；Rosner 4.7–4.9、5.7；Kirkwood 第 15 章', 'poisson': 'Whitlock 8.4；Rosner 4.10–4.13；Kirkwood 第 22 章', 'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'tdist': 'Whitlock 11.1；Rosner 6.5', 'prop-ci': 'Whitlock 7.3；Rosner 6.8；Kirkwood 第 15 章', 'binom-test': 'Whitlock 7.2；Rosner 7.9', 'gof': 'Whitlock 8.1–8.3；Rosner 10.7', 'boot': 'Whitlock 13.8、第 19 章；Rosner 6.11、9.6', 'one-t': 'Whitlock 11.2；Rosner 7.3–7.5；UTHealth GSBS 課綱第 2 週', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
   'c2-4': 'Whitlock 第 6 章；Rosner 7.1–7.5；Kirkwood 第 8 章', 'c4-5': 'Whitlock 14.6；Rosner 7.6–7.7、8.9；Kirkwood 第 35 章', 'c5-1': 'Rosner 13.2；Kirkwood 第 34 章',
   'nonpar': 'Whitlock 13.4–13.7；Rosner 9.2–9.4', 'two-prop': 'Rosner 10.2、10.5；Kirkwood 第 16 章', 'kappa': 'Rosner 10.8；Landis & Koch (1977) Biometrics 33:159', 'mcnemar': 'Rosner 10.4；Kirkwood 第 21 章；Agresti, Categorical Data Analysis', 'two-assume': 'Whitlock 13.1–13.3；Rosner 8.6、8.10；Kirkwood 第 13 章', 'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
-  'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'poisson-reg': 'Kirkwood 第 22–24 章；Rosner 14.1–14.3', 'reg-diag': 'Kirkwood 第 12–13 章；Rosner 11.6；Whitlock 17.5–17.6', 'simple-reg': 'Whitlock 第 17 章；Rosner 11.2–11.6；Kirkwood 第 10 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
+  'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'bland-altman': 'Kirkwood 第 36 章；Bland & Altman (1986) Lancet 327:307', 'poisson-reg': 'Kirkwood 第 22–24 章；Rosner 14.1–14.3', 'reg-diag': 'Kirkwood 第 12–13 章；Rosner 11.6；Whitlock 17.5–17.6', 'simple-reg': 'Whitlock 第 17 章；Rosner 11.2–11.6；Kirkwood 第 10 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
   'c4-2': 'Rosner 13.7–13.8；Kirkwood 第 19–20 章', 'c4-3': 'Whitlock 第 21 章；Rosner 14.8–14.11；Kirkwood 第 26–27 章', 'c4-4': 'Benjamini & Hochberg (1995), J R Stat Soc B 57:289–300',
   'c4-6': 'Rosner 12.10、13.13–13.14；Kirkwood 第 31 章', 'c5-2': 'Kirkwood 第 38 章；EQUATOR Network', 'c5-3': 'Kirkwood 第 38 章', 'c5-4': 'Kirkwood 第 34、38 章',
 };

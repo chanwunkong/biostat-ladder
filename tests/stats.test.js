@@ -180,6 +180,7 @@ const runs = [
   ['wound', 'rm', { vars: ['day0', 'day3', 'day7', 'day14'] }],
   ['bp_trial', 'ancova', { y: 'sbp_wk12', g: 'group', x: 'sbp_base' }],
   ['ward_inf', 'poisreg', { y: 'infections', xs: ['period', 'icu'], pt: 'patient_days' }],
+  ['bp_trial', 'bland', { a: 'sbp_base', b: 'sbp_wk12' }],
   ['diet_geno', 'anova2', { y: 'weight_gain_g', a: 'diet', b: 'genotype' }],
 ];
 for (const [id, an, sel] of runs) {

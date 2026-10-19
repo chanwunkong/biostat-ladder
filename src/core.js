@@ -557,6 +557,7 @@ const DEF = {
   kapDef: 'Cohen κ：(觀察一致率 − 機遇一致率) ÷ (1 − 機遇一致率)。機遇一致率 = Σ(兩者各類比例的乘積)。信賴區間使用近似標準誤 √(po(1 − po) ÷ (n(1 − pe)²))。',
   cookDef: 'Cook 距離：刪除某個觀察值後，所有預測值會改變多少的綜合指標；結合殘差大小與槓桿值（x 離平均多遠）。',
   rateRatio: '率比：e 的 β 次方，兩組發生率的比值（其他變數固定時）。', dispDef: '離散度：Pearson χ² 除以自由度；Poisson 模型假設約為 1，明顯大於 1 代表過度離散，標準誤會被低估。',
+  baDef: 'Bland–Altman：每個樣本兩方法的差值對兩方法的平均作圖。平均差是系統性偏差；一致性界限 = 平均差 ± 1.96 × 差值的標準差，約 95% 的差值落在其中。差值隨平均變大而變大，代表比例偏差。',
   n: '分析使用的觀察數。', ev: '結果為事件（編碼 1）的人數。',
 };
 const cd = (k, l, v, d) => ({ k, l, v, d });
@@ -1092,6 +1093,25 @@ const AN = {
         tables: [{ head: ['變數', '率比', '95% CI', 'p 值'], rows: rows.map(r => [`<b>${esc(r.label)}</b>`, F.n(r.est, 2), F.ci(r.lo, r.hi, 2), F.p(r.p)]), foot: `殘差離差 = ${F.n(m.dev, 1)}；離散度 = ${F.n(m.disp, 2)}` }],
         write: W2(`以 Poisson 迴歸分析 ${s.y}${s.pt ? `，以 log(${s.pt}) 為位移項` : ''}，模型納入 ${joinZh(xs)}；結果以率比及 95% 信賴區間表示。`, `${rows.map(r => `${r.label}：率比 = ${F.n(r.est, 2)}（95% CI ${F.ci(r.lo, r.hi, 2)}，${F.peq(r.p)}）`).join('；')}；離散度 ${F.n(m.disp, 2)}。`,
           `${s.y} was analysed by Poisson regression${s.pt ? ` with log(${s.pt}) as an offset` : ''}, including ${joinEn(xs)}; results are reported as rate ratios with 95% confidence intervals.`, `${rows.map(r => `${r.label}: rate ratio ${F.n(r.est, 2)} (95% CI ${F.cien(r.lo, r.hi, 2)}, ${F.peq(r.p)})`).join('; ')}; dispersion ${F.n(m.disp, 2)}.`),
+      };
+    },
+  },
+  bland: {
+    name: 'Bland–Altman 一致性', when: '兩種方法測量同一批樣本，數值是否可以互換',
+    fields: [{ k: 'a', label: '方法 A（數值）', t: 'num' }, { k: 'b', label: '方法 B（數值）', t: 'num' }],
+    run(ds, s) {
+      if (s.a === s.b) throw new Error('請選擇兩個不同的欄位。');
+      const ac = colOf(ds, s.a), bc = colOf(ds, s.b), { idx, dropped } = complete(ds, [s.a, s.b]); if (idx.length < 3) throw new Error('至少需要 3 筆完整資料。');
+      const A = idx.map(i => ac.values[i]), B = idx.map(i => bc.values[i]), d = B.map((v, i) => v - A[i]), mm = B.map((v, i) => (v + A[i]) / 2), bias = S.mean(d), sdd = S.sd(d), loa = [bias - 1.96 * sdd, bias + 1.96 * sdd], P = S.pearson(A, B), ci = S.oneT(d, 0).ci, prop = S.pearson(mm, d);
+      const [m0, m1] = S.minmax(mm), [d0, d1] = S.minmax([...d, ...loa, 0]);
+      const ch = chart({ x: [m0, m1], y: [d0, d1], h: 300, xlab: `兩方法的平均`, ylab: `差值（${s.b} − ${s.a}）`, xgrid: true }, (X, Y, { M, iw }) => mm.map((v, i) => `<circle cx="${X(v).toFixed(1)}" cy="${Y(d[i]).toFixed(1)}" r="3.5" style="fill:var(--c1);fill-opacity:.6"/>`).join('') + `<line class="keep" x1="${M.l}" x2="${M.l + iw}" y1="${Y(0)}" y2="${Y(0)}" style="stroke:var(--muted)"/><line data-k="bias" x1="${M.l}" x2="${M.l + iw}" y1="${Y(bias)}" y2="${Y(bias)}" style="stroke:var(--c2);stroke-width:2.5"/>` + loa.map(v => `<line data-k="loa" x1="${M.l}" x2="${M.l + iw}" y1="${Y(v)}" y2="${Y(v)}" style="stroke:var(--c2);stroke-width:1.8;stroke-dasharray:6 4"/>`).join('') + `<line class="hlx" data-k="prop" x1="${X(m0)}" x2="${X(m1)}" y1="${Y(prop.intercept + prop.slope * m0)}" y2="${Y(prop.intercept + prop.slope * m1)}" style="stroke:var(--c4);stroke-width:2.5"/>`);
+      return {
+        title: `${esc(s.a)} 與 ${esc(s.b)} 的一致性`, meta: meta(idx.length, dropped), facts: [],
+        charts: [{ svg: ch, cap: 'Bland–Altman 圖：紅色實線＝平均差（偏差），紅色虛線＝95% 一致性界限，灰線＝0。' }],
+        cards: [cd('bias', '平均差（偏差）', `${F.n(bias)}（95% CI ${F.ci(...ci)}）`, 'baDef'), cd('loa', '95% 一致性界限', F.ci(...loa), 'baDef'), cd('prop', '差值與平均的相關（比例偏差）', `r = ${F.n(prop.r, 3)}（p ${F.p(prop.p)}）`, 'baDef'), cd('bias', 'Pearson r（兩方法之間，僅供對照）', F.n(P.r, 3), 'r')],
+        tables: [{ head: ['n', '平均差', '差值 SD', '一致性界限下限', '一致性界限上限'], rows: [[idx.length, F.n(bias), F.n(sdd), F.n(loa[0]), F.n(loa[1])]] }],
+        write: W2(`${s.a} 與 ${s.b} 的一致性以 Bland–Altman 法評估，計算平均差（偏差）與 95% 一致性界限（平均差 ± 1.96 SD）。`, `平均差 ${F.n(bias)}（95% CI ${F.ci(...ci)}）；95% 一致性界限 ${F.ci(...loa)}；n = ${idx.length}。`,
+          `Agreement between ${s.a} and ${s.b} was assessed with the Bland–Altman method (mean difference and 95% limits of agreement, mean difference ± 1.96 SD).`, `Mean difference ${F.n(bias)} (95% CI ${F.cien(...ci)}); 95% limits of agreement ${F.cien(...loa)}; n = ${idx.length}.`),
       };
     },
   },
