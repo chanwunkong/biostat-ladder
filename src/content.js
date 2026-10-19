@@ -1258,6 +1258,30 @@ const CH = [
       { q: '10 隻中 1 隻，比較概似信賴區間與 Wald 信賴區間，哪一個說法正確？', o: ['概似區間不對稱、下限不會低於 0；Wald 區間對稱，下限跑到 0 以下', '兩者完全一樣', 'Wald 區間比較可靠', '概似區間一定比較寬'], demo: { set: { 'wlk-n': 10, 'wlk-x': 1 }, look: '對數概似曲線在 0 附近很陡、右側較平，所以概似信賴區間不對稱；Wald 用對稱的拋物線近似，下限變成負的。' }, why: 'Wald 法假設曲線是對稱的拋物線，比例接近 0 或 1 時不成立。' },
     ],
   },
+  {
+    id: 'bayes', title: '貝氏統計入門',
+    body: `<p>到目前為止的方法（p 值、信賴區間）稱為<b>頻率學派</b>：參數是固定但未知的數，機率描述的是「重複做很多次研究」時資料的變化。<b>貝氏統計</b>則直接用機率描述「對參數的相信程度」。</p>
+<h3>和診斷檢查是同一件事</h3>
+<p>{{c2-1}} 章用貝氏定理把「盛行率」（檢查前的機率）和檢查結果結合，得到陽性預測值（檢查後的機率）。貝氏統計把同樣的邏輯用在參數上：</p>
+<div class="formula">後驗分佈 ∝ 事前分佈 × 概似</div>
+<ul><li><b>事前分佈</b>（prior）：看資料之前，對參數可能值的看法，可以來自過去研究或專家意見。</li>
+<li>概似：資料在每個參數值下出現的可能性（{{likelihood}} 章）。</li>
+<li><b>後驗分佈</b>（posterior）：結合兩者之後，對參數的新看法。</li></ul>
+<h3>例子：新藥的反應率</h3>
+<p>標準療法的反應率是 30%。新藥試驗中 n 人有 x 人有反應。若事前分佈用 Beta(a, b)，後驗分佈剛好是 Beta(a + x, b + n − x)：事前分佈就像「先前看過 a 個有反應、b 個沒反應」。Beta(1, 1) 是完全平坦的事前分佈，代表每個反應率一樣可能。</p>
+<h3>貝氏的結果怎麼讀</h3>
+<ul><li><b>後驗平均</b>：後驗分佈的平均，作為參數的估計值。</li>
+<li><b>可信區間</b>（credible interval）：後驗分佈中間 95% 的範圍，可以直接說「反應率有 95% 的機率落在這個區間」。頻率學派的信賴區間不能這樣說（{{c2-3}} 章：95% 指的是方法重複使用時的涵蓋率）。</li>
+<li><b>後驗機率</b>：例如 P(反應率 &gt; 30% | 資料)，直接回答「新藥比標準療法好的機率多大」。</li></ul>
+<h3>事前分佈的影響</h3>
+<p>資料少時，事前分佈影響很大；資料越多，後驗分佈越由概似決定，不同的事前分佈得到的結論會越來越接近。所以貝氏分析要事先說明事前分佈的選擇與依據，並做敏感度分析：換成懷疑的或樂觀的事前分佈，看結論是否改變。</p>
+<p class="note">平坦事前分佈、樣本又大時，可信區間和信賴區間的數字幾乎一樣，但解釋不同。複雜的模型沒有像 Beta 這樣的公式，要用電腦模擬（MCMC）從後驗分佈抽樣，常用工具有 R 的 brms、Stan、JASP。</p>`,
+    quiz: [
+      { q: '平坦的事前分佈 Beta(1, 1)，10 人中 6 人有反應。後驗分佈是？', o: ['Beta(7, 5)', 'Beta(6, 4)', 'Beta(1, 1)', 'Beta(10, 6)'], demo: { click: ['#wby-p [data-p="flat"]'], set: { 'wby-n': 10, 'wby-x': 6 }, look: 'Beta(1 + 6, 1 + 4) = Beta(7, 5)；紅色的後驗曲線和灰色的概似形狀相同，因為事前分佈是平的。' }, why: 'Beta(a + x, b + n − x) = Beta(1 + 6, 1 + 10 − 6)。' },
+      { q: '同樣是 10 人中 6 人有反應，換成懷疑的事前分佈（認為反應率約 30%），後驗會？', o: ['被拉向 30%，後驗平均比 0.6 小', '完全不變', '變成 0.3', '一定比平坦事前分佈的結果寬'], demo: { click: ['#wby-p [data-p="skep"]'], set: { 'wby-n': 10, 'wby-x': 6 }, look: '藍色虛線是懷疑的事前分佈，紅色後驗落在事前分佈和概似之間。資料只有 10 人時，事前分佈的影響很明顯。' }, why: '後驗結合事前分佈與資料；資料少時事前分佈的權重較大。' },
+      { q: '懷疑的事前分佈下，把試驗人數從 10 人增加到 200 人（反應率同樣 60%）。後驗會？', o: ['主要由資料決定，接近 60%，和平坦事前分佈的結果相近', '仍停在 30%', '變得更寬', '和事前分佈完全一樣'], demo: { click: ['#wby-p [data-p="skep"]'], set: { 'wby-n': 200, 'wby-x': 120 }, look: '資料多時概似變得很尖，後驗幾乎和概似重疊；事前分佈的影響被資料蓋過。' }, why: '資料越多，概似越集中，不同的事前分佈得到的後驗越接近。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -1527,6 +1551,13 @@ const GLOSS = [
   ['REML', [], '限制最大概似：混合模型估計變異數成分的常用方法，比一般最大概似估計少低估。', 'c4-6'],
   ['群集', [], '彼此相關的一群觀察，例如同一隻小鼠的細胞、同一間醫院的病人。', 'c4-6'],
   ['偽重複', [], '把同一個實驗單位內的重複測量，誤當成獨立樣本。', 'c4-6'],
+  ['頻率學派', [], '把參數視為固定未知的數，以重複抽樣的機率描述資料變化的統計觀點。', 'bayes'],
+  ['貝氏統計', [], '以機率描述對參數的相信程度，結合事前分佈與資料得到後驗分佈。', 'bayes'],
+  ['事前分佈', ['prior'], '看資料之前，對參數可能值的機率分佈。', 'bayes'],
+  ['後驗分佈', ['posterior'], '結合事前分佈與資料後，對參數的機率分佈；∝ 事前分佈 × 概似。', 'bayes'],
+  ['後驗平均', [], '後驗分佈的平均，作為參數估計值。', 'bayes'],
+  ['可信區間', ['credible interval'], '後驗分佈中間 95% 的範圍；參數有 95% 機率落在其中。', 'bayes'],
+  ['後驗機率', [], '依後驗分佈算出的機率，例如 P(反應率 > 30% | 資料)。', 'bayes'],
   ['概似函數', ['概似'], '把資料固定、讓參數變動時，觀察到這份資料的機率，是參數的函數。', 'likelihood'],
   ['最大概似估計', ['MLE'], '讓概似（或對數概似）最大的參數值。', 'likelihood'],
   ['概似比統計量', [], 'G = 2 × [ℓ(MLE) − ℓ(H₀ 下的參數)]，H₀ 為真時近似卡方分佈。', 'likelihood'],
@@ -1593,7 +1624,7 @@ const ORDER = [
   ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff', 'ancova'],
   ['c3-4', 'simple-reg', 'c4-1', 'reg-diag', 'c4-2', 'poisson-reg', 'bland-altman'],
   ['mh', 'standardize', 'c4-3', 'ph-check'],
-  ['likelihood', 'c4-4', 'c4-6', 'missing', 'meta', 'equiv', 'pca'],
+  ['likelihood', 'bayes', 'c4-4', 'c4-6', 'missing', 'meta', 'equiv', 'pca'],
   ['c5-2', 'c5-3', 'c5-4', 'c5-5'],
 ];
 // 對照教科書：W = Whitlock & Schluter 3e、R = Rosner 8e、K = Kirkwood & Sterne 2e（見 CURRICULUM.md）
@@ -1605,7 +1636,7 @@ const REFS = {
   'nonpar': 'Whitlock 13.4–13.7；Rosner 9.2–9.4', 'two-prop': 'Rosner 10.2、10.5；Kirkwood 第 16 章', 'kappa': 'Rosner 10.8；Landis & Koch (1977) Biometrics 33:159', 'mcnemar': 'Rosner 10.4；Kirkwood 第 21 章；Agresti, Categorical Data Analysis', 'two-assume': 'Whitlock 13.1–13.3；Rosner 8.6、8.10；Kirkwood 第 13 章', 'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
   'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'bland-altman': 'Kirkwood 第 36 章；Bland & Altman (1986) Lancet 327:307', 'poisson-reg': 'Kirkwood 第 22–24 章；Rosner 14.1–14.3', 'reg-diag': 'Kirkwood 第 12–13 章；Rosner 11.6；Whitlock 17.5–17.6', 'simple-reg': 'Whitlock 第 17 章；Rosner 11.2–11.6；Kirkwood 第 10 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
   'c4-2': 'Rosner 13.7–13.8；Kirkwood 第 19–20 章', 'ph-check': 'Rosner 14.11；Kirkwood 第 27 章', 'standardize': 'Rosner 13.4–13.5；Kirkwood 第 25、37 章', 'mh': 'Rosner 13.5–13.6；Kirkwood 第 18 章；Bickel 等 (1975) Science 187:398', 'c4-3': 'Whitlock 第 21 章；Rosner 14.8–14.11；Kirkwood 第 26–27 章', 'c4-4': 'Benjamini & Hochberg (1995), J R Stat Soc B 57:289–300',
-  'likelihood': 'Whitlock & Schluter 第 20 章；Kirkwood & Sterne 第 28 章', 'pca': 'UTHealth GSBS 課綱第 13–14 週；James 等，An Introduction to Statistical Learning 第 12 章', 'equiv': 'Rosner 13.11–13.12；CONSORT 不劣性與等效性試驗延伸版（Piaggio 等，2012）', 'meta': 'Rosner 13.10；Kirkwood & Sterne 第 32 章', 'missing': 'Rosner 13.16；Little & Rubin, Statistical Analysis with Missing Data', 'c4-6': 'Rosner 12.10、13.13–13.14；Kirkwood 第 31 章', 'c5-2': 'Kirkwood 第 38 章；EQUATOR Network', 'c5-3': 'Kirkwood 第 38 章', 'c5-4': 'Kirkwood 第 34、38 章',
+  'bayes': 'Rosner 3.8；Kirkwood & Sterne 第 33 章', 'likelihood': 'Whitlock & Schluter 第 20 章；Kirkwood & Sterne 第 28 章', 'pca': 'UTHealth GSBS 課綱第 13–14 週；James 等，An Introduction to Statistical Learning 第 12 章', 'equiv': 'Rosner 13.11–13.12；CONSORT 不劣性與等效性試驗延伸版（Piaggio 等，2012）', 'meta': 'Rosner 13.10；Kirkwood & Sterne 第 32 章', 'missing': 'Rosner 13.16；Little & Rubin, Statistical Analysis with Missing Data', 'c4-6': 'Rosner 12.10、13.13–13.14；Kirkwood 第 31 章', 'c5-2': 'Kirkwood 第 38 章；EQUATOR Network', 'c5-3': 'Kirkwood 第 38 章', 'c5-4': 'Kirkwood 第 34、38 章',
 };
 (() => {
   const by = Object.fromEntries(CH.map(c => [c.id, c])), out = [];
