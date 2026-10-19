@@ -639,7 +639,7 @@ const DATASETS = [
     uses: ['幾乎每一章', 'Table 1', 't 檢定', 'ANOVA（醫院）', '重複測量', '卡方', 'ROC', 'Kappa', 'Bland–Altman', '迴歸', '邏輯斯迴歸', 'Poisson 迴歸', '存活分析', '缺失值', 'PCA'],
     truth: { '新藥第 12 週的收縮壓比安慰劑多降': '10 mmHg', '新藥對心血管事件的危險比': 0.7, '醫院之間收縮壓的標準差 τ': '5 mmHg', '退出機制': '隨機缺失（和年齡有關）' },
     gen() {
-      const r = rngOf(3), N = normOf(r), sizes = [30, 38, 44, 50, 52, 56, 60, 70], hu = sizes.map(() => N(0, 5)), rows = [], cl = (v, a, b) => Math.min(b, Math.max(a, v)), lg = x => 1 / (1 + Math.exp(-x));
+      const r = rngOf(3), N = normOf(r), sizes = [30, 38, 44, 50, 52, 56, 60, 70], hu = sizes.map(() => N(0, 5)), rows = [], full12 = [], cl = (v, a, b) => Math.min(b, Math.max(a, v)), lg = x => 1 / (1 + Math.exp(-x));
       const pois = lam => { const L = Math.exp(-lam); let k = 0, p = 1; do { k++; p *= r(); } while (p > L); return k - 1; };
       let id = 0;
       sizes.forEach((sz, h) => { for (let i = 0; i < sz; i++) {
@@ -652,9 +652,10 @@ const DATASETS = [
         const lvh = r() < lg(-1.6 + 0.05 * (age - 60) + 0.04 * (sb[0] - 150)) ? 1 : 0, ecg = +(2 + 1.6 * lvh + 0.02 * (sb[0] - 150) + N(0, 1.25)).toFixed(2), rA = ecg + N(0, 0.45) > 3 ? 1 : 0, rB = ecg + N(0, 0.55) > 3.2 ? 1 : 0;
         const days = quit === 2 ? 42 + Math.round(r() * 14) : quit === 3 ? 63 + Math.round(r() * 14) : 84, ae = pois(days / 100 * (drug ? 0.55 : 0.3) * (age > 70 ? 1.4 : 1));
         const haz = 0.0075 * Math.exp(0.05 * (age - 60) + 0.5 * smoker + 0.6 * dm + 0.015 * (sb[0] - 150) + (drug ? Math.log(0.7) : 0)), tE = -Math.log(1 - r()) / haz, tC = 24 + 12 * r(), ev = tE <= tC ? 1 : 0;
+        full12.push(sb[3]);
         rows.push(['S' + pad(id, 3), 'H' + (h + 1), drug ? 'drug' : 'placebo', age, male ? 'M' : 'F', bmi, smoker, dm, ...s, devB, s[3] == null ? null : (s[0] - s[3] >= 10 ? 1 : 0), crp, chol, ldl, hdl, tg, glu, a1c, ecg, lvh, rA, rB, ae, days, +Math.min(tE, tC).toFixed(1), ev]);
       } });
-      return { head: ['id', 'hospital', 'group', 'age', 'sex', 'bmi', 'smoker', 'diabetes', 'sbp_0', 'sbp_4', 'sbp_8', 'sbp_12', 'sbp_devB', 'responder', 'crp', 'chol', 'ldl', 'hdl', 'tg', 'glucose', 'hba1c', 'ecg_score', 'lvh_echo', 'ecg_readA', 'ecg_readB', 'ae_count', 'fu_days', 'time_months', 'cvd_event'], rows };
+      return { head: ['id', 'hospital', 'group', 'age', 'sex', 'bmi', 'smoker', 'diabetes', 'sbp_0', 'sbp_4', 'sbp_8', 'sbp_12', 'sbp_devB', 'responder', 'crp', 'chol', 'ldl', 'hdl', 'tg', 'glucose', 'hba1c', 'ecg_score', 'lvh_echo', 'ecg_readA', 'ecg_readB', 'ae_count', 'fu_days', 'time_months', 'cvd_event'], rows, hidden: { sbp_12_full: full12 } };
     },
   },
   {
@@ -778,7 +779,7 @@ const DATASETS = [
 const MISSING = new Set(['', 'na', 'n/a', 'nan', 'null', '.', '-', '#n/a', 'missing', '缺', '無']);
 const NUMRE = /^[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/;
 // 共用資料集的欄位：STUDY().sbp_0 等（陣列，缺失為 null）
-const STUDY = (() => { let c = null; return () => { if (!c) { const g = DATASETS[0].gen(); c = { n: g.rows.length }; g.head.forEach((h, j) => { c[h] = g.rows.map(r => r[j]); }); } return c; }; })();
+const STUDY = (() => { let c = null; return () => { if (!c) { const g = DATASETS[0].gen(); c = { n: g.rows.length }; g.head.forEach((h, j) => { c[h] = g.rows.map(r => r[j]); }); Object.assign(c, g.hidden || {}); } return c; }; })();
 function makeDS({ id, name, head, rows, order = {}, codebook = {}, truth = null, desc = '' }) {
   const n = rows.length;
   const cols = head.map((h, j) => {
