@@ -51,6 +51,14 @@ near('Welch ANOVA p', S.welchAnova(pg).p, 0.01739);
 near('Levene F (car, median)', S.levene(pg).F, 1.1192);
 near('Levene p', S.levene(pg).p, 0.3412);
 
+near('qtukey(0.95, 3, 27)', S.qtukey(0.95, 3, 27), 3.506426);
+near('qtukey(0.95, 4, 60)', S.qtukey(0.95, 4, 60), 3.737416);
+const tk = S.tukey(pg).pairs;
+near('TukeyHSD p trt1-ctrl', tk[0].p, 0.3908711);
+near('TukeyHSD p trt2-ctrl', tk[1].p, 0.1979960);
+near('TukeyHSD p trt2-trt1', tk[2].p, 0.0120064);
+near('TukeyHSD 下限 trt2-trt1', tk[2].ci[0], 0.1737839);
+
 const DS = {};
 for (const m of DATASETS) { const d = m.gen(); DS[m.id] = makeDS({ ...m, head: d.head, rows: d.rows }); }
 const runs = [

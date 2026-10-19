@@ -92,6 +92,30 @@ const S = (() => {
     const df1 = k - 1, df2 = N - k, msb = ssb / df1, msw = ssw / df2, F = msb / msw;
     return { F, df1, df2, p: pf(F, df1, df2), ssb, ssw, msb, msw, eta2: ssb / (ssb + ssw) };
   }
+  // 學生化全距分佈（Tukey 事後比較用）：P(Q ≤ q) = ∫ g(s) · W(q·s) ds
+  // g 為 √(χ²_ν / ν) 的密度，W(w) = k ∫ φ(z) [Φ(z) − Φ(z − w)]^(k−1) dz；以分段 Gauss–Legendre 數值積分
+  const GL = (() => { const x = [-0.9894009349916499, -0.9445750230732326, -0.8656312023878318, -0.7554044083550030, -0.6178762444026438, -0.4580167776572274, -0.2816035507792589, -0.0950125098376374], w = [0.0271524594117541, 0.0622535239386479, 0.0951585116824928, 0.1246289712555339, 0.1495959888165767, 0.1691565193950025, 0.1826034150449236, 0.1894506104550685]; return { x: [...x, ...x.map(v => -v).reverse()], w: [...w, ...[...w].reverse()] }; })();
+  const integ = (f, a, b, segs) => { let s = 0; const h = (b - a) / segs; for (let i = 0; i < segs; i++) { const c0 = a + (i + 0.5) * h; for (let j = 0; j < 16; j++) s += GL.w[j] * f(c0 + GL.x[j] * h / 2); } return s * h / 2; };
+  const erfcFast = x => { const z = Math.abs(x), t = 1 / (1 + 0.5 * z), r = t * Math.exp(-z * z - 1.26551223 + t * (1.00002368 + t * (0.37409196 + t * (0.09678418 + t * (-0.18628806 + t * (0.27886807 + t * (-1.13520398 + t * (1.48851587 + t * (-0.82215223 + t * 0.17087277))))))))); return x >= 0 ? r : 2 - r; };
+  const PhiF = z => 0.5 * erfcFast(-z / Math.SQRT2), phi = z => Math.exp(-z * z / 2) / Math.sqrt(2 * Math.PI);
+  const rangeCdf = (w, k) => (w <= 0 ? 0 : Math.min(1, k * integ(z => phi(z) * Math.pow(Math.max(0, PhiF(z) - PhiF(z - w)), k - 1), -8, 8 + w, 12)));
+  function ptukey(q, k, df) {
+    if (q <= 0) return 0;
+    if (df > 5000) return rangeCdf(q, k);
+    const lg = Math.log(df) * df / 2 - lgamma(df / 2) - (df / 2 - 1) * Math.LN2, sd = 1 / Math.sqrt(2 * df), lo = Math.max(0, 1 - 9 * sd), hi = 1 + 12 * sd;
+    return Math.min(1, integ(s => (s <= 0 ? 0 : Math.exp(lg + (df - 1) * Math.log(s) - df * s * s / 2) * rangeCdf(q * s, k)), lo, hi, 10));
+  }
+  const qtCache = {};
+  function qtukey(p, k, df) { const key = `${p}|${k}|${df}`; if (qtCache[key]) return qtCache[key]; let lo = 0, hi = 50; for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (ptukey(m, k, df) < p) lo = m; else hi = m; } return (qtCache[key] = (lo + hi) / 2); }
+  // Tukey–Kramer 兩兩比較（各組人數可不同）
+  function tukey(groups) {
+    const A = anova(groups), k = groups.length, qc = qtukey(0.95, k, A.df2), out = [];
+    for (let i = 0; i < k; i++) for (let j = i + 1; j < k; j++) {
+      const diff = mean(groups[j]) - mean(groups[i]), se = Math.sqrt(A.msw / 2 * (1 / groups[i].length + 1 / groups[j].length)), q = Math.abs(diff) / se;
+      out.push({ i, j, diff, q, p: 1 - ptukey(q, k, A.df2), ci: [diff - qc * se, diff + qc * se] });
+    }
+    return { pairs: out, qcrit: qc, df: A.df2, msw: A.msw };
+  }
   // Welch ANOVA（不假設各組變異數相等；R 的 oneway.test(var.equal = FALSE)）
   function welchAnova(groups) {
     const k = groups.length, n = groups.map(g => g.length), m = groups.map(mean), w = groups.map((g, i) => n[i] / variance(g)), W = sum(w);
@@ -250,7 +274,7 @@ const S = (() => {
   const nProps = (p1, p2, alpha, power) => { const za = qnorm(1 - alpha / 2), zb = qnorm(power), pb = (p1 + p2) / 2; return Math.ceil((za * Math.sqrt(2 * pb * (1 - pb)) + zb * Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))) ** 2 / ((p1 - p2) ** 2)); };
   const powerProps = (p1, p2, n, alpha) => { const za = qnorm(1 - alpha / 2), pb = (p1 + p2) / 2; return pnorm((Math.abs(p1 - p2) * Math.sqrt(n) - za * Math.sqrt(2 * pb * (1 - pb))) / Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))); };
 
-  return { lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, mannWhitney, pairedT, wilcoxonSR, anova, welchAnova, levene, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
+  return { lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, mannWhitney, pairedT, wilcoxonSR, anova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
 })();
 
 /* ---------- 格式 ---------- */
@@ -369,6 +393,13 @@ function stackChart(R, C, tab, ylab, tag = () => '', extra) {
   });
 }
 
+// 字母標記（compact letter display）：平均由大到小排列，找出所有「彼此都沒有顯著差異」的最長連續組合，各給一個字母
+function cld(means, sig) {
+  const k = means.length, ord = means.map((_, i) => i).sort((a, b) => means[b] - means[a]), runs = [];
+  for (let s = 0; s < k; s++) { let e = s; while (e + 1 < k && ord.slice(s, e + 2).every(x => ord.slice(s, e + 2).every(y => x === y || !sig[x][y]))) e++; runs.push([s, e]); }
+  const max = runs.filter((r, i) => !runs.some((o, j) => j !== i && o[0] <= r[0] && o[1] >= r[1] && (o[0] < r[0] || o[1] > r[1]))).filter((r, i, arr) => arr.findIndex(o => o[0] === r[0] && o[1] === r[1]) === i);
+  const L = new Array(k).fill(''); max.forEach((r, li) => { for (let t = r[0]; t <= r[1]; t++) L[ord[t]] += String.fromCharCode(97 + li); }); return L;
+}
 // 常態 Q-Q 圖；data-k="qq" 為各點
 function qqChart(vals) {
   const sr = Float64Array.from(vals).sort(), n = sr.length, sd = S.sd(vals), m = S.mean(vals), th = Array.from(sr, (_, i) => m + S.qnorm((i + 0.5) / n) * sd), [lo, hi] = S.minmax([...sr, ...th]);
@@ -398,6 +429,7 @@ const DEF = {
   hr: '危險比：e 的 β 次方，β 為 Cox 模型係數。', medsurv: '中位存活時間：Kaplan–Meier 曲線第一次降到 0.5 以下的時間。', surv: '存活率：每個事件時間點乘上（1 − 事件數 ÷ 風險人數）的累積結果；括號為 95% CI。', logrank: 'Log-rank χ²：比較各組在每個事件時間點的觀察事件數與期望事件數。',
   sig: '未校正 p < 0.05 的變數數。', q: 'Benjamini–Hochberg：p 值由小到大排序，第 i 個乘上 m ÷ i，再由後往前取最小值，得到 q 值；這裡數 q < 0.05 的個數。', bonf: 'Bonferroni：p 值 × 檢定總數 m；這裡數校正後 < 0.05 的個數，等同 p < 0.05 ÷ m。',
   welchF: 'Welch ANOVA：各組變異數分別估計、以各組人數 ÷ 變異數為權重的 F 檢定，不要求變異數相等。', levene: 'Levene 檢定：算出每個值與自己那組中位數的距離，再用 ANOVA 比較這些距離；p 值小代表各組變異數不同。Q-Q 圖則用來看殘差是否接近常態。',
+  cldDef: 'Tukey–Kramer 事後比較後，平均由大到小排列；彼此沒有顯著差異的組別共用同一個字母。兩組沒有共同字母，代表 Tukey 校正 p < 0.05。',
   n: '分析使用的觀察數。', ev: '結果為事件（編碼 1）的人數。',
 };
 const cd = (k, l, v, d) => ({ k, l, v, d });
@@ -672,18 +704,20 @@ const AN = {
       if (G.length < 2) throw new Error('分組變數至少需要兩組。'); if (G.length > 12) throw new Error('組數超過 12 組，請選擇類別較少的變數。');
       const gv = G.map(l => idx.filter(i => lab(gc.values[i]) === l).map(i => yc.values[i])); if (gv.some(a => a.length < 2)) throw new Error('每組至少需要 2 筆資料。');
       const A = S.anova(gv), K = S.kruskal(gv), Wl = S.welchAnova(gv), Lv = S.levene(gv), gm = S.mean(gv.flat()), tables = [];
-      const box = boxStrip(G.map((l, j) => ({ label: l, v: gv[j] })), s.y, (X, Y, { M, iw, bw }) => gv.map((g, j) => `<line class="hlx" data-k="welch" x1="${X(j) - bw / 2}" x2="${X(j) + bw / 2}" y1="${Y(S.mean(g))}" y2="${Y(S.mean(g))}" style="stroke:var(--c4);stroke-width:3"/>`).join('') + `<g class="hlx" data-k="gm eta F"><line x1="${M.l}" x2="${M.l + iw}" y1="${Y(gm)}" y2="${Y(gm)}" style="stroke:var(--muted);stroke-width:1.5;stroke-dasharray:6 4"/></g>` + gv.map((g, j) => `<line class="hlx" data-k="eta F" x1="${X(j) - bw / 2 - 8}" x2="${X(j) - bw / 2 - 8}" y1="${Y(gm)}" y2="${Y(S.mean(g))}" style="stroke:var(--c2);stroke-width:3"/>`).join(''));
+      let letters = null, tukeyTable = null;
+      if (G.length > 2) {
+        const T = S.tukey(gv), pr = T.pairs.map(x => ({ ...x, w: S.welch(gv[x.i], gv[x.j]) })), adj = S.holm(pr.map(x => x.w.p)), sig = G.map(() => G.map(() => false));
+        T.pairs.forEach(x => { sig[x.i][x.j] = sig[x.j][x.i] = x.p < 0.05; }); letters = cld(gv.map(S.mean), sig);
+        tukeyTable = ({ head: ['比較', '平均差', 'Tukey 95% CI', 'Tukey 校正 p', 'Welch t + Holm 校正 p'], rows: pr.map((x, k) => [`${esc(G[x.j])} − ${esc(G[x.i])}`, F.n(x.diff), F.ci(...x.ci), F.p(x.p), F.p(adj[k])]), foot: `Tukey–Kramer 事後比較（臨界值 q = ${F.n(T.qcrit, 3)}，自由度 ${T.df}）；另列兩兩 Welch t 檢定以 Holm 法校正的結果。` });
+      }
+      const box = boxStrip(G.map((l, j) => ({ label: l, v: gv[j] })), s.y, (X, Y, { M, iw, bw }) => (letters ? letters.map((L, j) => `<text data-k="tukey" x="${X(j)}" y="${M.t + 12}" text-anchor="middle" style="fill:var(--ink);font-size:14px;font-weight:600">${L}</text>`).join('') : '') + gv.map((g, j) => `<line class="hlx" data-k="welch" x1="${X(j) - bw / 2}" x2="${X(j) + bw / 2}" y1="${Y(S.mean(g))}" y2="${Y(S.mean(g))}" style="stroke:var(--c4);stroke-width:3"/>`).join('') + `<g class="hlx" data-k="gm eta F"><line x1="${M.l}" x2="${M.l + iw}" y1="${Y(gm)}" y2="${Y(gm)}" style="stroke:var(--muted);stroke-width:1.5;stroke-dasharray:6 4"/></g>` + gv.map((g, j) => `<line class="hlx" data-k="eta F" x1="${X(j) - bw / 2 - 8}" x2="${X(j) - bw / 2 - 8}" y1="${Y(gm)}" y2="${Y(S.mean(g))}" style="stroke:var(--c2);stroke-width:3"/>`).join(''));
       tables.push({ head: ['組別', ...G.map(esc)], rows: descRows(G, gv) });
       tables.push({ head: ['變異來源', 'SS', 'df', 'MS', '統計量', 'p 值'], rows: [['組間', F.n(A.ssb), A.df1, F.n(A.msb), `F = ${F.n(A.F, 2)}`, F.p(A.p)], ['組內', F.n(A.ssw), A.df2, F.n(A.msw), '', ''], ['Kruskal–Wallis', '', K.df, '', `H = ${F.n(K.H, 2)}`, F.p(K.p)], ['Welch ANOVA', '', `${Wl.df1}, ${F.n(Wl.df2, 1)}`, '', `F = ${F.n(Wl.F, 2)}`, F.p(Wl.p)], ['Levene 檢定（變異數同質性）', '', `${Lv.df1}, ${Lv.df2}`, '', `F = ${F.n(Lv.F, 2)}`, F.p(Lv.p)]] });
-      if (G.length > 2) {
-        const pr = []; for (let i = 0; i < G.length; i++) for (let j = i + 1; j < G.length; j++) pr.push({ i, j, w: S.welch(gv[i], gv[j]) });
-        const adj = S.holm(pr.map(x => x.w.p));
-        tables.push({ head: ['比較', '平均差', '95% CI（未校正）', 'p 值', 'Holm 校正 p'], rows: pr.map((x, k) => [`${esc(G[x.j])} − ${esc(G[x.i])}`, F.n(x.w.diff), F.ci(...x.w.ci), F.p(x.w.p), F.p(adj[k])]), foot: '兩兩 Welch t 檢定，以 Holm 法校正多重比較。' });
-      }
+      if (tukeyTable) tables.push(tukeyTable);
       return {
         title: `${esc(s.y)}：依「${esc(s.g)}」${G.length} 組`, meta: meta(idx.length, dropped), facts: [],
         charts: [{ svg: box, cap: boxCap + '亮起時：灰色虛線＝全體平均，紅線＝各組平均與全體平均的距離。' }, { svg: distChart('F', A.F, [A.df1, A.df2], `F（自由度 ${A.df1}, ${A.df2}）`), cap: distCap.F }, { svg: qqChart(gv.flatMap(g => { const m = S.mean(g); return g.map(v => v - m); })), cap: '殘差（每個值 − 自己那組的平均）的 Q-Q 圖；虛線為常態分佈的參考線。' }],
-        cards: [...G.map((l, j) => cd('mean' + j, `${esc(l)} 平均`, F.n(S.mean(gv[j])), 'mean')), cd('gm', '全體平均', F.n(gm), 'mean'), cd('F', 'F', `${F.n(A.F, 2)}（df ${A.df1}, ${A.df2}）`, 'F'), cd('p', 'p 值（ANOVA）', F.p(A.p), 'p'), cd('eta', 'η²', F.n(A.eta2, 3), 'eta2'), cd('rank', 'p 值（Kruskal–Wallis）', F.p(K.p), 'H'), cd('welch', 'p 值（Welch ANOVA）', F.p(Wl.p), 'welchF'), cd('qq', 'p 值（Levene）', F.p(Lv.p), 'levene')],
+        cards: [...G.map((l, j) => cd('mean' + j, `${esc(l)} 平均`, F.n(S.mean(gv[j])), 'mean')), cd('gm', '全體平均', F.n(gm), 'mean'), cd('F', 'F', `${F.n(A.F, 2)}（df ${A.df1}, ${A.df2}）`, 'F'), cd('p', 'p 值（ANOVA）', F.p(A.p), 'p'), cd('eta', 'η²', F.n(A.eta2, 3), 'eta2'), cd('rank', 'p 值（Kruskal–Wallis）', F.p(K.p), 'H'), cd('welch', 'p 值（Welch ANOVA）', F.p(Wl.p), 'welchF'), cd('qq', 'p 值（Levene）', F.p(Lv.p), 'levene'), ...(letters ? [cd('tukey', 'Tukey 字母標記', letters.join(' / '), 'cldDef')] : [])],
         tables,
         write: W2(`${G.length} 組間 ${s.y} 的比較使用單因子變異數分析${G.length > 2 ? '，兩兩比較使用 Welch t 檢定並以 Holm 法校正' : ''}，另以 Welch ANOVA（不假設變異數相等）與 Kruskal–Wallis 檢定計算，並以 Levene 檢定比較各組變異數。`,
           `F(${A.df1}, ${A.df2}) = ${F.n(A.F, 2)}，${F.peq(A.p)}，η² = ${F.n(A.eta2, 3)}；Welch F(${Wl.df1}, ${F.n(Wl.df2, 1)}) = ${F.n(Wl.F, 2)}，${F.peq(Wl.p)}；Kruskal–Wallis H = ${F.n(K.H, 2)}，${F.peq(K.p)}；Levene F(${Lv.df1}, ${Lv.df2}) = ${F.n(Lv.F, 2)}，${F.peq(Lv.p)}。各組：${G.map((l, j) => `${l} ${F.n(S.mean(gv[j]))} ± ${F.n(S.sd(gv[j]))}`).join('；')}。`,

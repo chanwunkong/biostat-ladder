@@ -2,6 +2,11 @@
    每題的 demo：set = 設定輸入元件（id → 值）；click = 依序點擊的按鈕；custom = 交給互動圖自己的 _demo()；look = 示範時的觀察提示。
    有 q 的項目會整題替換（原題無法在圖上示範時）。 */
 const QD = {
+  'posthoc': [
+    { demo: { click: ['#wh2-m [data-m="none"]'], set: { 'wh2-a': 0, 'wh2-b': 0, 'wh2-c': 0, 'wh2-s': 2.5, 'wh2-n': 8 }, then: ['#wh2-go'], look: '四組真實完全相同。看模擬結果中「未校正」的比例，約為 1 − 0.95⁶。' } },
+    { demo: { click: ['#wh2-m [data-m="tukey"]'], set: { 'wh2-a': 0, 'wh2-b': 2, 'wh2-c': 4, 'wh2-s': 2.5, 'wh2-n': 10 }, look: '看箱型圖上方的字母：共用字母的組別之間沒有顯著差異。點「字母標記」數字卡對照。' } },
+    { demo: { click: ['#wh2-m [data-m="bonf"]'], set: { 'wh2-a': 1, 'wh2-b': 2, 'wh2-c': 3, 'wh2-s': 2.5, 'wh2-n': 10 }, look: '目前是 6 對全部比較並以 Bonferroni 校正。如果只比較「A、B、C 各自 vs 對照」這 3 對，校正會輕得多，區間也會變窄。' } },
+  ],
   'anova-assume': [
     { demo: { click: ['#wq-s [data-s="norm"]'], set: { 'wq-r': 1, 'wq-n': 30, 'wq-u': false }, look: '常態資料、每組 30 人：右邊 Q-Q 圖的點大致沿著虛線。再切到「右偏」比較兩端的彎曲。' } },
     { demo: { click: ['#wq-s [data-s="norm"]'], set: { 'wq-r': 4, 'wq-n': 20, 'wq-u': true }, then: ['#wq-go'], look: '模擬結果：一般 ANOVA 的偽陽性率超過 5% 的虛線，Welch ANOVA 接近 5%。' } },

@@ -509,6 +509,29 @@ const CH = [
       { q: '細胞濃度資料明顯右偏、各組標準差和平均一起變大。常見的處理方式是？', o: ['取對數後再做 ANOVA，或改用 Kruskal–Wallis', '刪除最大的幾個值', '不用處理，直接做 ANOVA', '改用卡方檢定'], why: '右偏資料取對數後常變得對稱、變異數相近；刪除資料不是正當的處理方式。' },
     ],
   },
+  {
+    id: 'posthoc', title: '計畫比較與事後比較',
+    body: `<p>ANOVA 只回答「各組平均是否全部相同」。p 值小時，下一個問題是：<b>哪幾組不一樣？</b>這時要做兩兩比較，但比較的次數一多，偽陽性就會累積。</p>
+<div class="formula">m 個比較都用 α = 0.05，至少出現一個偽陽性的機率 = 1 − 0.95<sup>m</sup><br>4 組 → 6 對比較 → 1 − 0.95⁶ ≈ 26%</div>
+<p>這個「一整組比較中至少出現一個偽陽性」的機率，叫做<b>家族錯誤率</b>（familywise error rate, FWER）。處理方式取決於比較是不是事先計畫好的。</p>
+<h3>計畫比較（事前比較）</h3>
+<p>在看到資料<b>之前</b>，就根據研究問題決定只比較少數幾對，例如「每種肥料都和對照組比較」。這種<b>計畫比較</b>數量少、有明確的理由，可以直接用 t 檢定（使用 ANOVA 的組內均方與自由度），比較的數量很少時只需要輕度校正。只和對照組比較的標準方法是 <b>Dunnett 檢定</b>。</p>
+<h3>事後比較（未計畫的比較）</h3>
+<p>看了資料才決定、或把所有組兩兩都比較一遍，就是<b>事後比較</b>，必須控制家族錯誤率：</p>
+<div class="tbl-wrap"><table class="st"><thead><tr><th>方法</th><th>適用</th><th>特性</th></tr></thead><tbody>
+<tr><td><b>Tukey HSD</b></td><td>所有兩兩比較</td><td>專為「全部配對」設計，檢定力比 Bonferroni 高，生物醫學論文最常用</td></tr>
+<tr><td>Bonferroni／Holm</td><td>任何一組比較</td><td>通用但較保守；Holm 一定不比 Bonferroni 差</td></tr>
+<tr><td>Dunnett</td><td>每組只和對照組比較</td><td>比較數少，檢定力比 Tukey 高</td></tr></tbody></table></div>
+<p><b>Tukey HSD</b> 的計算：每一對的差除以它的標準誤，得到 q = |平均差| ÷ √(組內均方 ÷ 2 × (1/n₁ + 1/n₂))，再和<b>學生化全距分佈</b>比較。這個分佈描述的是「k 組中最大平均和最小平均的差距」，所以已經考慮了一次比較所有配對。</p>
+<h3>讀懂字母標記</h3>
+<p>生物學論文常在長條圖或箱型圖上方標 a、b、ab 這類<b>字母標記</b>：<b>共用同一個字母的組別之間沒有顯著差異</b>；沒有共同字母的兩組才有顯著差異。例如標 a 和標 b 的兩組不同；標 ab 的組和這兩組都沒有顯著差異。</p>
+<p class="warn">不要先看哪兩組差最多，再只檢定那一對。你其實已經在腦中比較了所有配對，只是沒有校正。</p>`,
+    quiz: [
+      { q: '4 組資料把所有配對都比較一遍（未校正），即使真實沒有差異，至少出現一個 p < 0.05 的機率約是？', o: ['約 26%', '5%', '約 20%', '約 50%'], why: '4 組有 6 對比較，1 − 0.95⁶ ≈ 0.26。' },
+      { q: '圖上三組分別標示 a、ab、b。哪兩組之間有顯著差異？', o: ['標 a 的組和標 b 的組', '三組彼此都有差異', '標 ab 的組和其他兩組', '三組都沒有差異'], why: '共用字母代表沒有顯著差異。ab 和 a 共用 a、和 b 共用 b；只有 a 和 b 沒有共同字母。' },
+      { q: '實驗前就計畫好，只想知道三種處理各自和對照組有沒有差異。較適合的做法是？', o: ['計畫比較：只做三個「處理 vs 對照」的比較（例如 Dunnett）', '一定要做全部 6 對的 Tukey', '不需要任何比較', '只檢定差最大的一對'], why: '比較數少、事先計畫好，不需要為用不到的配對付出檢定力的代價。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -556,6 +579,12 @@ const GLOSS = [
   ['百分位', [], '第 p 百分位：有 p% 的值小於或等於它。', 'c1-4'],
   ['P(X ≤ x)', ['P(X > x)', 'P(X >'], '機率的寫法：P(X ≤ x) 是「X 小於或等於 x 的機率」。', 'c1-4'],
   ['Table 1', [], '論文的第一個表格，列出研究對象的基本特徵。', 'c1-5'],
+  ['家族錯誤率', ['FWER'], '一整組比較中，至少出現一個偽陽性的機率。', 'posthoc'],
+  ['計畫比較', ['事前比較'], '看到資料前就根據研究問題決定的少數比較。', 'posthoc'],
+  ['Tukey HSD', ['Tukey'], '專為所有兩兩比較設計的事後比較方法，控制家族錯誤率。', 'posthoc'],
+  ['Dunnett 檢定', ['Dunnett'], '每組只和對照組比較時使用的事後比較方法。', 'posthoc'],
+  ['學生化全距分佈', [], '描述 k 組中最大與最小平均差距的分佈，Tukey HSD 用它計算 p 值。', 'posthoc'],
+  ['字母標記', [], '圖上的 a、b、ab：共用同一個字母的組別之間沒有顯著差異。', 'posthoc'],
   ['獨立性', [], '每個觀察值來自不同的實驗單位，彼此不互相影響。', 'anova-assume'],
   ['常態性', [], '資料（或殘差）近似常態分佈。', 'anova-assume'],
   ['變異數同質性', [], '各組的變異數大致相同。', 'anova-assume'],
@@ -661,7 +690,7 @@ const ORDER = [
   ['c2-1'],
   ['c2-2', 'c2-3', 'c2-4', 'c4-5', 'c5-1'],
   ['c3-1', 'c3-3', 'c3-5'],
-  ['exp-design', 'c3-2', 'anova-assume'],
+  ['exp-design', 'c3-2', 'anova-assume', 'posthoc'],
   ['c3-4', 'c4-1', 'c4-2'],
   ['c4-3'],
   ['c4-4', 'c4-6'],
@@ -674,7 +703,7 @@ const REFS = {
   'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
   'c2-4': 'Whitlock 第 6 章；Rosner 7.1–7.5；Kirkwood 第 8 章', 'c4-5': 'Whitlock 14.6；Rosner 7.6–7.7、8.9；Kirkwood 第 35 章', 'c5-1': 'Rosner 13.2；Kirkwood 第 34 章',
   'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
-  'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
+  'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
   'c4-2': 'Rosner 13.7–13.8；Kirkwood 第 19–20 章', 'c4-3': 'Whitlock 第 21 章；Rosner 14.8–14.11；Kirkwood 第 26–27 章', 'c4-4': 'Benjamini & Hochberg (1995), J R Stat Soc B 57:289–300',
   'c4-6': 'Rosner 12.10、13.13–13.14；Kirkwood 第 31 章', 'c5-2': 'Kirkwood 第 38 章；EQUATOR Network', 'c5-3': 'Kirkwood 第 38 章', 'c5-4': 'Kirkwood 第 34、38 章',
 };
