@@ -666,6 +666,28 @@ Object.assign(W, {
     };
     el.addEventListener('input', up); up();
   },
+  rvw(el) {
+    const init = [1, 3, 4, 2, 0, 0];
+    el.innerHTML = `<p class="w-cap">調整每個值的相對比重（會自動換算成機率，總和為 1），例如每窩存活的幼鼠數。</p>
+<div class="w-grid5">${init.map((v, i) => slider('wv2-' + i, `X = ${i}`, 0, 10, 1, v)).join('')}</div>
+<div class="w-row">${slider('wv2-k', '累積機率：P(X ≤ k) 的 k', 0, 5, 1, 1)}<button class="btn" type="button" id="wv2-go">重新模擬 1000 次</button></div>
+<div class="w-cols"><figure class="fig"><figcaption>機率分佈</figcaption><div class="chart-wrap" id="wv2-a"></div></figure><figure class="fig"><figcaption>模擬：前 n 次結果的平均</figcaption><div class="chart-wrap" id="wv2-b"></div></figure></div><div class="kv" id="wv2-o"></div>`;
+    let draws = [];
+    const up = (resim) => {
+      const wts = init.map((_, i) => sv('wv2-' + i)), tot = S.sum(wts) || 1, p = wts.map(v => v / tot), k = sv('wv2-k'), mu = S.sum(p.map((v, i) => v * i)), sd = Math.sqrt(S.sum(p.map((v, i) => v * (i - mu) ** 2))), cdf = S.sum(p.slice(0, k + 1));
+      if (resim || !draws.length) { draws = Array.from({ length: 1000 }, () => { let u = Math.random(), i = 0; while (i < 5 && u > p[i]) { u -= p[i]; i++; } return i; }); }
+      $('#wv2-a').innerHTML = chart({ xcats: ['0', '1', '2', '3', '4', '5'], y: [0, Math.max(0.1, ...p)], h: 240, ylab: 'P(X = x)' }, (X, Y, { iw }) => {
+        const bw = iw / 6 * 0.6, xc = v => X(0) + v * (X(1) - X(0));
+        return p.map((v, i) => `<rect data-k="${i <= k ? 'cdf' : ''}" x="${X(i) - bw / 2}" y="${Y(v)}" width="${bw}" height="${Y(0) - Y(v)}" style="fill:var(--c1);fill-opacity:.8"/>`).join('')
+          + `<line data-k="ex sd" x1="${xc(mu)}" x2="${xc(mu)}" y1="${Y(0)}" y2="${Y(Math.max(0.1, ...p))}" style="stroke:var(--c2);stroke-width:2.5"/><g class="hlx" data-k="sd"><line x1="${xc(mu - sd)}" x2="${xc(mu + sd)}" y1="${Y(Math.max(0.1, ...p) * 0.95)}" y2="${Y(Math.max(0.1, ...p) * 0.95)}" style="stroke:var(--c4);stroke-width:4"/></g>`;
+      });
+      const run = []; let acc = 0; draws.forEach((v, i) => { acc += v; if ((i + 1) % 5 === 0 || i < 30) run.push([i + 1, acc / (i + 1)]); });
+      $('#wv2-b').innerHTML = chart({ x: [0, 1000], y: [0, 5], h: 240, xlab: '模擬次數 n', ylab: '平均' }, (X, Y, { M, iw }) => `<line data-k="ex" x1="${M.l}" x2="${M.l + iw}" y1="${Y(mu)}" y2="${Y(mu)}" style="stroke:var(--c2);stroke-width:2;stroke-dasharray:6 4"/><path data-k="sim" d="${run.map(([n, m], i) => `${i ? 'L' : 'M'}${X(n).toFixed(1)} ${Y(m).toFixed(1)}`).join('')}" style="fill:none;stroke:var(--c1);stroke-width:2"/>`);
+      $('#wv2-o').innerHTML = kvs([['期望值 E(X)', F.n(mu, 2), 'ex'], ['標準差 σ', F.n(sd, 2), 'sd'], [`P(X ≤ ${k})`, F.n(cdf, 2), 'cdf'], ['1000 次的平均（大數法則）', F.n(S.mean(draws), 3), 'sim']]);
+    };
+    el.addEventListener('input', e => { if (e.target.type === 'range') up(e.target.id !== 'wv2-k'); });
+    $('#wv2-go', el).onclick = () => up(true); up(true);
+  },
   mosaic(el) {
     el.innerHTML = `<p class="w-cap">正方形代表全部的人（面積 = 1）。左右寬度是吸菸與不吸菸的比例；每一欄內，紅色的高度是該群中有高血壓的比例。</p>
 <div class="w-row">${slider('wm2-a', 'P(吸菸)', 5, 95, 5, 30, '%')}${slider('wm2-ba', 'P(高血壓 | 吸菸)', 0, 100, 5, 30, '%')}${slider('wm2-bn', 'P(高血壓 | 不吸菸)', 0, 100, 5, 15, '%')}</div>
@@ -683,5 +705,5 @@ Object.assign(W, {
   },
 });
 
-const WMAP = { 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
+const WMAP = { 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
 for (const [id, [w, t]] of Object.entries(WMAP)) { const c = CH.find(x => x.id === id); c.widget = w; c.wtitle = t; }
