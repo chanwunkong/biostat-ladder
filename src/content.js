@@ -1221,6 +1221,30 @@ const CH = [
       { q: '對一份沒有任何群結構的資料做 k-means，指定 k = 3。結果會？', o: ['仍然分出 3 群：演算法一定會分群，需要用其他方式驗證', '回報資料沒有群', '程式會出錯', '只分出 1 群'], demo: { click: ['#wpc-d [data-d="none"]'], set: { 'wpc-k': 3 }, look: '切到「沒有群結構」：點雲是一整團，k-means 還是硬切成 3 塊；手肘圖也看不到明顯的轉折。' }, why: '分群演算法只最小化群內平方和，不會判斷群是否真實存在。' },
     ],
   },
+  {
+    id: 'likelihood', title: '概似：最大概似估計與概似比檢定',
+    body: `<p>邏輯斯迴歸、Poisson 迴歸、Cox 模型、混合模型的係數，都不是用最小平方法算的，而是用<b>概似</b>（likelihood）。這一章用最簡單的例子說明它。</p>
+<h3>概似函數</h3>
+<p>10 隻小鼠中有 3 隻出現腫瘤。若真正的機率是 p，觀察到「10 隻中 3 隻」的機率是二項機率（{{binom}} 章）P(X = 3 | p)。把資料固定、讓 p 變動，這個機率就成了 p 的函數，稱為<b>概似函數</b> L(p)。實務上用它的對數，也就是<b>對數概似</b> ℓ(p)，因為乘積變成加總，數字也比較好處理。</p>
+<p>概似不是「p 的機率」：它回答的是「如果 p 是這個值，看到手上這份資料的可能性有多大」。</p>
+<h3>最大概似估計</h3>
+<p>讓概似最大的參數值，稱為<b>最大概似估計</b>（MLE）。二項的情況下 MLE 就是 x ÷ n；複雜的模型沒有公式，電腦一步一步調整參數，直到找到曲線的頂點。</p>
+<h3>曲線的形狀代表資訊量</h3>
+<p>資料越多，對數概似曲線在頂點附近越尖：離 MLE 稍遠的值就變得很不可能。曲線越尖，標準誤越小。</p>
+<h3>概似比檢定</h3>
+<p>要檢定 H₀：p = p₀，比較頂點的高度和 p₀ 處的高度：</p>
+<p><b>概似比統計量</b> G = 2 × [ℓ(MLE) − ℓ(p₀)]</p>
+<p>H₀ 為真時，G 近似自由度 1 的卡方分佈（自由度＝H₀ 限制住的參數個數）。這就是<b>概似比檢定</b>；迴歸報表中比較「有這個變數」與「沒有這個變數」兩個模型，用的也是它。</p>
+<h3>以概似為基礎的信賴區間</h3>
+<p>所有「G 不超過 3.84」（χ²₁ 的 95% 臨界值）的 p₀ 構成 95% <b>概似信賴區間</b>；也就是對數概似比頂點低不到 1.92 的範圍。它不一定對稱，在比例接近 0 或 1、樣本小的時候比 Wald 信賴區間（{{prop-ci}} 章）可靠。Wald 法等於用一條拋物線近似對數概似曲線；樣本大時兩者幾乎一樣。</p>
+<h3>用概似比較模型</h3>
+<p>加入更多參數，最大對數概似一定不會變小。<b>AIC</b> = −2ℓ + 2 × 參數個數，替每個參數加上「懲罰」；比較同一份資料的不同模型時，AIC 越小代表在貼合與簡單之間取得較好的平衡。</p>`,
+    quiz: [
+      { q: '10 隻小鼠中 3 隻出現腫瘤。p 的最大概似估計是？', o: ['0.3：讓對數概似曲線最高的 p', '0.5', '對數概似的最大值', '概似比統計量'], demo: { set: { 'wlk-n': 10, 'wlk-x': 3 }, look: '對數概似曲線的頂點在 p = 0.3。點「最大概似估計」的數字卡。' }, why: '二項分佈的 MLE 就是 x ÷ n。' },
+      { q: '同樣 30% 的比例，從 10 隻中 3 隻變成 100 隻中 30 隻。對數概似曲線會？', o: ['頂點附近變得更尖，信賴區間變窄', '頂點移到 0.5', '變得更平', '不變'], demo: { set: { 'wlk-n': 100, 'wlk-x': 30 }, look: '曲線在 0.3 附近變得很尖；低於頂點 1.92 的範圍（概似信賴區間）變窄很多。' }, why: '資料越多，偏離 MLE 的值越不可能，曲線越尖。' },
+      { q: '10 隻中 1 隻，比較概似信賴區間與 Wald 信賴區間，哪一個說法正確？', o: ['概似區間不對稱、下限不會低於 0；Wald 區間對稱，下限跑到 0 以下', '兩者完全一樣', 'Wald 區間比較可靠', '概似區間一定比較寬'], demo: { set: { 'wlk-n': 10, 'wlk-x': 1 }, look: '對數概似曲線在 0 附近很陡、右側較平，所以概似信賴區間不對稱；Wald 用對稱的拋物線近似，下限變成負的。' }, why: 'Wald 法假設曲線是對稱的拋物線，比例接近 0 或 1 時不成立。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -1482,6 +1506,12 @@ const GLOSS = [
   ['單尾檢定', [], '只檢定一個方向（例如只看「變大」）的檢定。', 'c4-5'],
   ['群集', [], '彼此相關的一群觀察，例如同一隻小鼠的細胞、同一間醫院的病人。', 'c4-6'],
   ['偽重複', [], '把同一個實驗單位內的重複測量，誤當成獨立樣本。', 'c4-6'],
+  ['概似函數', ['概似'], '把資料固定、讓參數變動時，觀察到這份資料的機率，是參數的函數。', 'likelihood'],
+  ['最大概似估計', ['MLE'], '讓概似（或對數概似）最大的參數值。', 'likelihood'],
+  ['概似比統計量', [], 'G = 2 × [ℓ(MLE) − ℓ(H₀ 下的參數)]，H₀ 為真時近似卡方分佈。', 'likelihood'],
+  ['概似比檢定', [], '以概似比統計量比較兩個巢狀模型（或 MLE 與 H₀ 值）的檢定。', 'likelihood'],
+  ['概似信賴區間', [], '對數概似比頂點低不到 1.92 的參數範圍（95%）。', 'likelihood'],
+  ['AIC', [], '−2 × 對數概似 + 2 × 參數個數；比較模型時越小越好。', 'likelihood'],
   ['非監督式學習', [], '不使用結果變數、只找資料本身結構的方法，例如 PCA 與分群。', 'pca'],
   ['主成分分析', ['PCA'], '找出資料變化最大的幾個互相垂直的方向，用少數主成分代表許多變數。', 'pca'],
   ['第一主成分', ['PC1'], '讓資料投影後變異數最大的方向。', 'pca'],
@@ -1542,7 +1572,7 @@ const ORDER = [
   ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff', 'ancova'],
   ['c3-4', 'simple-reg', 'c4-1', 'reg-diag', 'c4-2', 'poisson-reg', 'bland-altman'],
   ['mh', 'standardize', 'c4-3', 'ph-check'],
-  ['c4-4', 'c4-6', 'missing', 'meta', 'equiv', 'pca'],
+  ['likelihood', 'c4-4', 'c4-6', 'missing', 'meta', 'equiv', 'pca'],
   ['c5-2', 'c5-3', 'c5-4', 'c5-5'],
 ];
 // 對照教科書：W = Whitlock & Schluter 3e、R = Rosner 8e、K = Kirkwood & Sterne 2e（見 CURRICULUM.md）
@@ -1554,7 +1584,7 @@ const REFS = {
   'nonpar': 'Whitlock 13.4–13.7；Rosner 9.2–9.4', 'two-prop': 'Rosner 10.2、10.5；Kirkwood 第 16 章', 'kappa': 'Rosner 10.8；Landis & Koch (1977) Biometrics 33:159', 'mcnemar': 'Rosner 10.4；Kirkwood 第 21 章；Agresti, Categorical Data Analysis', 'two-assume': 'Whitlock 13.1–13.3；Rosner 8.6、8.10；Kirkwood 第 13 章', 'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
   'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'bland-altman': 'Kirkwood 第 36 章；Bland & Altman (1986) Lancet 327:307', 'poisson-reg': 'Kirkwood 第 22–24 章；Rosner 14.1–14.3', 'reg-diag': 'Kirkwood 第 12–13 章；Rosner 11.6；Whitlock 17.5–17.6', 'simple-reg': 'Whitlock 第 17 章；Rosner 11.2–11.6；Kirkwood 第 10 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
   'c4-2': 'Rosner 13.7–13.8；Kirkwood 第 19–20 章', 'ph-check': 'Rosner 14.11；Kirkwood 第 27 章', 'standardize': 'Rosner 13.4–13.5；Kirkwood 第 25、37 章', 'mh': 'Rosner 13.5–13.6；Kirkwood 第 18 章；Bickel 等 (1975) Science 187:398', 'c4-3': 'Whitlock 第 21 章；Rosner 14.8–14.11；Kirkwood 第 26–27 章', 'c4-4': 'Benjamini & Hochberg (1995), J R Stat Soc B 57:289–300',
-  'pca': 'UTHealth GSBS 課綱第 13–14 週；James 等，An Introduction to Statistical Learning 第 12 章', 'equiv': 'Rosner 13.11–13.12；CONSORT 不劣性與等效性試驗延伸版（Piaggio 等，2012）', 'meta': 'Rosner 13.10；Kirkwood & Sterne 第 32 章', 'missing': 'Rosner 13.16；Little & Rubin, Statistical Analysis with Missing Data', 'c4-6': 'Rosner 12.10、13.13–13.14；Kirkwood 第 31 章', 'c5-2': 'Kirkwood 第 38 章；EQUATOR Network', 'c5-3': 'Kirkwood 第 38 章', 'c5-4': 'Kirkwood 第 34、38 章',
+  'likelihood': 'Whitlock & Schluter 第 20 章；Kirkwood & Sterne 第 28 章', 'pca': 'UTHealth GSBS 課綱第 13–14 週；James 等，An Introduction to Statistical Learning 第 12 章', 'equiv': 'Rosner 13.11–13.12；CONSORT 不劣性與等效性試驗延伸版（Piaggio 等，2012）', 'meta': 'Rosner 13.10；Kirkwood & Sterne 第 32 章', 'missing': 'Rosner 13.16；Little & Rubin, Statistical Analysis with Missing Data', 'c4-6': 'Rosner 12.10、13.13–13.14；Kirkwood 第 31 章', 'c5-2': 'Kirkwood 第 38 章；EQUATOR Network', 'c5-3': 'Kirkwood 第 38 章', 'c5-4': 'Kirkwood 第 34、38 章',
 };
 (() => {
   const by = Object.fromEntries(CH.map(c => [c.id, c])), out = [];
