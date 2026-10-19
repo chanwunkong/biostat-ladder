@@ -4,6 +4,8 @@ const kvs = items => items.map(([l, v, k]) => (k ? cardHTML({ k, l, v }) : `<div
 const std = a => { const m = S.mean(a), s = S.sd(a); return a.map(v => (v - m) / s); };
 const tpdf = (x, df) => Math.exp(S.lgamma((df + 1) / 2) - S.lgamma(df / 2)) / Math.sqrt(df * Math.PI) * Math.pow(1 + x * x / df, -(df + 1) / 2);
 const segBind = (el, sel, fn) => $$(sel + ' button', el).forEach(b => { b.onclick = () => { $$(sel + ' button', el).forEach(x => x.setAttribute('aria-selected', x === b)); fn(b); }; });
+const SRC_NOTE = '<p class="w-src">資料：<a href="#data">貫穿課程的多中心降血壓試驗</a>（模擬，8 間醫院 400 人）</p>';
+const HOSP_OPTS = sel => ['全部', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'H7', 'H8'].map(h => `<option value="${h === '全部' ? '' : h}"${h === sel ? ' selected' : ''}>${h === '全部' ? '全部醫院' : h}</option>`).join('');
 function people(total, hit, c, tag = () => '') {
   const cols = 10, s = 22; let g = '';
   for (let i = 0; i < total; i++) { const x = (i % cols) * s + s / 2, y = Math.floor(i / cols) * s * 1.15 + 3, f = i < hit ? c : 'var(--line)'; g += `<g data-k="${tag(i)}"><circle cx="${x}" cy="${y + 4}" r="3.8" style="fill:${f}"/><path d="M${x - 6} ${y + 18}q0-9 6-9t6 9z" style="fill:${f}"/></g>`; }
@@ -20,33 +22,49 @@ const LABP = {
 
 Object.assign(W, {
   rate(el) {
-    el.innerHTML = `<div class="w-row">${slider('wr-a', '對照組事件率', 1, 40, 1, 20, '%')}${slider('wr-b', '治療組事件率', 1, 40, 1, 10, '%')}</div><div class="pp2"><figure><figcaption>對照組 100 人</figcaption><div id="wr-ga"></div></figure><figure><figcaption>治療組 100 人</figcaption><div id="wr-gb"></div></figure></div><div class="kv" id="wr-o"></div>`;
+    const d = STUDY(), I = [...Array(d.n).keys()], OUT = { cvd: ['36 個月內發生心血管事件', i => d.cvd_event[i]], ae: ['12 週內至少一次不良事件', i => (d.ae_count[i] > 0 ? 1 : 0)], resp: ['第 12 週收縮壓降 10 mmHg 以上', i => d.responder[i]] };
+    el.innerHTML = SRC_NOTE + `<div class="w-row"><label class="fld"><span>事件</span><select id="wr-y">${Object.entries(OUT).map(([k, v]) => `<option value="${k}">${v[0]}</option>`).join('')}</select></label><label class="fld"><span>醫院</span><select id="wr-h">${HOSP_OPTS('全部')}</select></label></div><div class="pp2"><figure><figcaption id="wr-ca"></figcaption><div id="wr-ga"></div></figure><figure><figcaption id="wr-cb"></figcaption><div id="wr-gb"></div></figure></div><p class="w-cap">每張小人圖都換算成 100 人；有顏色的是發生事件的人。</p><div class="kv" id="wr-o"></div>`;
     const up = () => {
-      const a = sv('wr-a', v => v + '%'), b = sv('wr-b', v => v + '%'), ard = a - b;
-      $('#wr-ga').innerHTML = people(100, a, 'var(--c2)', i => (i < Math.min(a, b) ? 'rr rrr' : i < a ? 'ard nnt rr rrr' : '')); $('#wr-gb').innerHTML = people(100, b, 'var(--c1)', i => (i < b ? 'rr rrr' : ''));
-      $('#wr-o').innerHTML = kvs([['絕對差', `${ard === 0 ? '' : ard > 0 ? '減少 ' : '增加 '}${Math.abs(ard)} 個百分點`, 'ard'], ['相對變化', `${ard > 0 ? '減少' : ard < 0 ? '增加' : ''} ${F.n(Math.abs(100 * ard / a), 0)}%`, 'rrr'], ['風險比 RR', F.n(b / a, 2), 'rr'], ['需治療人數 NNT', ard > 0 ? Math.ceil(100 / ard) + ' 人' : '—', 'nnt']]);
+      const [lab, f] = OUT[$('#wr-y').value], h = $('#wr-h').value, ix = g => I.filter(i => d.group[i] === g && (!h || d.hospital[i] === h) && f(i) != null), P = ix('placebo'), D = ix('drug'), ea = S.sum(P.map(f)), eb = S.sum(D.map(f));
+      const a = 100 * ea / P.length, b = 100 * eb / D.length, ra = Math.round(a), rb = Math.round(b), ard = a - b, py = ix2 => S.sum(ix2.map(i => d.time_months[i])) / 12;
+      $('#wr-ca').textContent = `安慰劑組（對照組）${ea}/${P.length} 人`; $('#wr-cb').textContent = `新藥組 ${eb}/${D.length} 人`;
+      $('#wr-ga').innerHTML = people(100, ra, 'var(--c1)', i => (i < Math.min(ra, rb) ? 'pa rr rrr' : i < ra ? 'pa ard nnt rr rrr' : '')); $('#wr-gb').innerHTML = people(100, rb, 'var(--c2)', i => (i < Math.min(ra, rb) ? 'pb rr rrr' : i < rb ? 'pb ard nnt rr rrr' : ''));
+      const cards = [['安慰劑組事件率', `${F.n(a, 1)}%`, 'pa'], ['新藥組事件率', `${F.n(b, 1)}%`, 'pb'], ['絕對差', `${ard === 0 ? '' : ard > 0 ? '新藥組少 ' : '新藥組多 '}${F.n(Math.abs(ard), 1)} 個百分點`, 'ard'], ['相對變化', a ? `${b < a ? '減少' : '增加'} ${F.n(Math.abs(100 * ard / a), 1)}%` : '—', 'rrr'], ['風險比 RR（新藥 ÷ 安慰劑）', a ? F.n(b / a, 3) : '—', 'rr'], ['需治療人數 NNT', ard ? `${F.n(100 / Math.abs(ard), 1)} 人` : '—', 'nnt']];
+      if ($('#wr-y').value === 'cvd') cards.push(['發生率（每 100 人年）', `安慰劑 ${F.n(100 * ea / py(P), 1)}、新藥 ${F.n(100 * eb / py(D), 1)}（${F.n(py(P), 1)} 與 ${F.n(py(D), 1)} 人年）`, 'pa']);
+      $('#wr-o').innerHTML = kvs(cards);
     };
-    el.addEventListener('input', up); up();
+    el.addEventListener('change', up); up();
   },
   sigma(el) {
-    const init = [3, 5, 10, 6, 8];
-    el.innerHTML = `<p class="w-cap">拖動五個數值。長條是 x<sub>i</sub>，紅色虛線是平均 x̄，旁邊的短線是離均差 x<sub>i</sub> − x̄。</p><div class="w-grid5">${init.map((v, i) => slider('ws-' + i, `x${i + 1}`, 0, 20, 1, v)).join('')}</div><div class="chart-wrap" id="ws-c"></div><p class="formula" id="ws-f"></p><div class="kv" id="ws-o"></div>`;
+    const d = STUDY(), I = [...Array(d.n).keys()];
+    el.innerHTML = SRC_NOTE + `<p class="w-cap">從一間醫院挑出 5 位病人的基線收縮壓 x<sub>1</sub>…x<sub>5</sub>。點是每個 x<sub>i</sub>，紅色虛線是平均 x̄，直線段是離均差 x<sub>i</sub> − x̄。</p><div class="w-row"><label class="fld"><span>醫院</span><select id="ws-h">${HOSP_OPTS('H1').replace('<option value="">全部醫院</option>', '')}</select></label>${slider('ws-k', '第幾組 5 人', 1, 6, 1, 1)}</div><div class="chart-wrap" id="ws-c"></div><p class="formula" id="ws-f"></p><div class="kv" id="ws-o"></div>`;
     const up = () => {
-      const x = init.map((_, i) => sv('ws-' + i)), sum = S.sum(x), m = sum / 5, dev = x.map(v => v - m), ss = S.sum(dev.map(d => d * d));
-      $('#ws-c').innerHTML = chart({ xcats: x.map((_, i) => `x${i + 1}`), y: [0, 20], h: 240, ylab: '數值' }, (X, Y, { M, iw }) => {
-        const bw = iw / 5 * 0.38; let g = '';
-        x.forEach((v, i) => { const cc = v >= m ? 'var(--c3)' : 'var(--c2)', xx = X(i) + bw / 2 + 6; g += `<rect data-k="sum" x="${X(i) - bw / 2}" y="${Y(v)}" width="${bw}" height="${Y(0) - Y(v)}" style="fill:var(--c1);fill-opacity:.8"/><line data-k="ss sd" x1="${xx}" x2="${xx}" y1="${Y(m)}" y2="${Y(v)}" style="stroke:${cc};stroke-width:3"/><text x="${xx + 4}" y="${(Y(m) + Y(v)) / 2}" dy=".32em" style="fill:${cc}">${dev[i] >= 0 ? '+' : ''}${F.n(dev[i], 1)}</text>`; });
+      const h = $('#ws-h').value, k = sv('ws-k'), ix = I.filter(i => d.hospital[i] === h).slice((k - 1) * 5, k * 5), x = ix.map(i => d.sbp_0[i]), sum = S.sum(x), m = sum / 5, dev = x.map(v => v - m), ss = S.sum(dev.map(e => e * e)), [lo, hi] = S.minmax(x);
+      $('#ws-c').innerHTML = chart({ xcats: ix.map(i => d.id[i]), y: [lo - 12, hi + 12], h: 250, ylab: '收縮壓（mmHg）' }, (X, Y, { M, iw }) => {
+        let g = '';
+        x.forEach((v, i) => { const cc = v >= m ? 'var(--c3)' : 'var(--c2)'; g += `<line data-k="ss sd" x1="${X(i)}" x2="${X(i)}" y1="${Y(m)}" y2="${Y(v)}" style="stroke:${cc};stroke-width:4"/><circle data-k="sum" cx="${X(i)}" cy="${Y(v)}" r="7" style="fill:var(--c1)"/><text x="${X(i) + 10}" y="${Y(v)}" dy=".32em" style="fill:var(--ink)">${v}</text><text x="${X(i) + 8}" y="${(Y(m) + Y(v)) / 2}" dy=".32em" style="fill:${cc};font-size:12px">${dev[i] >= 0 ? '+' : ''}${F.n(dev[i], 1)}</text>`; });
         return g + `<line data-k="mean ss sd" x1="${M.l}" x2="${M.l + iw}" y1="${Y(m)}" y2="${Y(m)}" style="stroke:var(--c2);stroke-width:2;stroke-dasharray:6 4"/><text x="${M.l + iw}" y="${Y(m) - 6}" text-anchor="end" style="fill:var(--c2)">x̄ = ${F.n(m, 1)}</text>`;
       });
-      $('#ws-f').innerHTML = `Σx<sub>i</sub> = ${x.join(' + ')} = <b>${sum}</b><br>x̄ = ${sum} ÷ 5 = <b>${F.n(m, 1)}</b><br>Σ(x<sub>i</sub> − x̄) = ${dev.map(d => F.n(d, 1)).join(' + ').replace(/\+ -/g, '− ')} = <b>0</b>`;
-      $('#ws-o').innerHTML = kvs([['Σx', sum, 'sum'], ['x̄', F.n(m, 2), 'mean'], ['Σ(x − x̄)²', F.n(ss, 1), 'ss'], ['標準差 s', F.n(Math.sqrt(ss / 4), 2), 'sd']]);
+      $('#ws-f').innerHTML = `Σx<sub>i</sub> = ${x.join(' + ')} = <b>${sum}</b><br>x̄ = ${sum} ÷ 5 = <b>${F.n(m, 1)}</b><br>Σ(x<sub>i</sub> − x̄) = ${dev.map(e => F.n(e, 1)).join(' + ').replace(/\+ -/g, '− ')} = <b>0</b>`;
+      $('#ws-o').innerHTML = kvs([['Σx', sum, 'sum'], ['x̄', F.n(m, 1), 'mean'], ['Σ(x − x̄)²', F.n(ss, 1), 'ss'], ['標準差 s', F.n(Math.sqrt(ss / 4), 2), 'sd']]);
     };
-    el.addEventListener('input', up); up();
+    el.addEventListener('input', up); el.addEventListener('change', up); up();
   },
   log(el) {
-    el.innerHTML = `<div class="w-row"><label class="fld"><span>處理組表現量</span><input id="wl-a" type="number" inputmode="decimal" value="50" step="any"></label><label class="fld"><span>對照組表現量</span><input id="wl-b" type="number" inputmode="decimal" value="200" step="any"></label></div><p class="w-out" id="wl-f"></p>
-<figure class="fig"><figcaption>同一組倍數變化放在一般尺度：下降的點全擠在 0 和 1 之間</figcaption><div class="chart-wrap" id="wl-lin"></div></figure><figure class="fig"><figcaption>放在 log₂ 尺度：上升與下降對稱。橘色是你輸入的倍數</figcaption><div class="chart-wrap" id="wl-lg"></div></figure>`;
+    const d = STUDY(), I = [...Array(d.n).keys()], GR = { smoker: ['吸菸者', '不吸菸者', i => d.smoker[i] === 1], diabetes: ['糖尿病', '沒有糖尿病', i => d.diabetes[i] === 1], sex: ['男性', '女性', i => d.sex[i] === 'M'] };
+    el.innerHTML = SRC_NOTE + `<h4>資料中的倍數：CRP（發炎指標）</h4><div class="w-row"><label class="fld"><span>比較</span><select id="wl-g">${Object.entries(GR).map(([k, v]) => `<option value="${k}">${v[0]} vs ${v[1]}</option>`).join('')}</select></label></div>
+<div class="w-cols"><figure class="fig"><figcaption>一般尺度：CRP 擠在左邊，右邊拖著長尾巴</figcaption><div class="chart-wrap" id="wl-h1"></div></figure><figure class="fig"><figcaption>log₂ 尺度：分佈變得接近對稱</figcaption><div class="chart-wrap" id="wl-h2"></div></figure></div><div class="kv" id="wl-k"></div>
+<h4>自己算：倍數與 log₂</h4><div class="w-row"><label class="fld"><span>處理組表現量</span><input id="wl-a" type="number" inputmode="decimal" value="50" step="any"></label><label class="fld"><span>對照組表現量</span><input id="wl-b" type="number" inputmode="decimal" value="200" step="any"></label></div><p class="w-out" id="wl-f"></p>
+<figure class="fig"><figcaption>同一組倍數放在一般尺度：下降的點全擠在 0 和 1 之間</figcaption><div class="chart-wrap" id="wl-lin"></div></figure><figure class="fig"><figcaption>放在 log₂ 尺度：上升與下降對稱。橘色是你輸入的倍數</figcaption><div class="chart-wrap" id="wl-lg"></div></figure>`;
     const fc = [1 / 8, 1 / 4, 1 / 2, 1, 2, 4, 8], lb = ['1/8', '1/4', '1/2', '1', '2', '4', '8'], cc = v => (v < 1 ? 'var(--c1)' : v > 1 ? 'var(--c2)' : 'var(--ink)');
+    const hist = (vals, grp, lo, hi, bins, xlab, gmk) => { const bw = (hi - lo) / bins, cnt = g => { const c = new Array(bins).fill(0); vals.forEach((v, i) => { if (grp[i] !== g) return; const k = Math.min(bins - 1, Math.floor((v - lo) / bw)); if (k >= 0) c[k]++; }); return c; }, c1 = cnt(true), c0 = cnt(false), top = Math.max(...c1, ...c0) * 1.1;
+      return chart({ x: [lo, hi], y: [0, top], h: 200, xlab, ylab: '人數' }, (X, Y) => [[c0, 'var(--c1)', 'g0'], [c1, 'var(--c2)', 'g1']].map(([c, col, k]) => c.map((n, i) => `<rect data-k="${k}" x="${X(lo + i * bw)}" y="${Y(n)}" width="${Math.max(0, X(bw) - X(0) - 1)}" height="${Y(0) - Y(n)}" style="fill:${col};fill-opacity:.55"/>`).join('')).join('') + gmk(X, Y, top)); };
+    const upData = () => {
+      const [l1, l0, f] = GR[$('#wl-g').value], g = I.map(f), gm = v => Math.exp(S.mean(I.filter(i => g[i] === v).map(i => Math.log(d.crp[i])))), a = gm(true), b = gm(false), u = a / b;
+      $('#wl-h1').innerHTML = hist(d.crp, g, 0, 16, 32, 'CRP（mg/L）', (X, Y, top) => `<line data-k="gm1 fc" x1="${X(a)}" x2="${X(a)}" y1="${Y(0)}" y2="${Y(top)}" style="stroke:var(--c2);stroke-width:2.5"/><line data-k="gm0 fc" x1="${X(b)}" x2="${X(b)}" y1="${Y(0)}" y2="${Y(top)}" style="stroke:var(--c1);stroke-width:2.5"/>`);
+      $('#wl-h2').innerHTML = hist(d.crp.map(Math.log2), g, -3, 5, 32, 'log₂(CRP)', (X, Y, top) => `<line data-k="gm1 lfc" x1="${X(Math.log2(a))}" x2="${X(Math.log2(a))}" y1="${Y(0)}" y2="${Y(top)}" style="stroke:var(--c2);stroke-width:2.5"/><line data-k="gm0 lfc" x1="${X(Math.log2(b))}" x2="${X(Math.log2(b))}" y1="${Y(0)}" y2="${Y(top)}" style="stroke:var(--c1);stroke-width:2.5"/><line class="hlx" data-k="lfc" x1="${X(Math.log2(b))}" x2="${X(Math.log2(a))}" y1="${Y(top * 0.92)}" y2="${Y(top * 0.92)}" style="stroke:var(--ink);stroke-width:3"/>`);
+      $('#wl-k').innerHTML = kvs([[`${l1}的 CRP（取對數平均再轉回）`, F.n(a, 2), 'gm1'], [`${l0}的 CRP（取對數平均再轉回）`, F.n(b, 2), 'gm0'], ['倍數變化 FC', F.n(u, 3), 'fc'], ['log₂FC', F.n(Math.log2(u), 3), 'lfc']]);
+    };
     const up = () => {
       const a = +$('#wl-a').value, b = +$('#wl-b').value, ok = a > 0 && b > 0, u = ok ? a / b : NaN;
       $('#wl-f').innerHTML = ok ? `倍數變化 FC = ${F.n(u, 3)}　　log<sub>2</sub>FC = <b>${F.n(Math.log2(u), 2)}</b>　（${a === b ? '沒有變化' : `${a > b ? '上升' : '下降'}了 ${F.n(Math.abs(Math.log2(u)), 2)} 次「倍增」`}）` : '請輸入兩個正數。';
@@ -54,7 +72,7 @@ Object.assign(W, {
       $('#wl-lin').innerHTML = chart({ x: [0, 8], y: [0, 1], noY: true, h: 110, xlab: '倍數（一般尺度）' }, (X, Y) => mk(X, Y, v => v, [0, 8]));
       $('#wl-lg').innerHTML = chart({ x: [-3, 3], y: [0, 1], noY: true, h: 110, xlab: 'log₂ 倍數' }, (X, Y) => mk(X, Y, Math.log2, [-3, 3]));
     };
-    el.addEventListener('input', up); up();
+    $('#wl-g', el).addEventListener('change', upData); el.addEventListener('input', e => { if (e.target.id === 'wl-a' || e.target.id === 'wl-b') up(); }); upData(); up();
   },
   types(el) {
     const items = [['血型', 'A、B、O、AB', '名目'], ['收縮壓', '128、141、117 mmHg', '連續'], ['癌症分期', 'I、II、III、IV', '順序'], ['一年內住院次數', '0、1、3、0', '計數'], ['處理組別', '藥物、安慰劑', '名目'], ['疼痛程度', '無、輕、中、重', '順序'], ['基因表現量', '5.21、7.84（log2）', '連續'], ['診斷到死亡的月數', '14、32+、8、60+', '時間至事件'], ['菌落數', '23、118、0', '計數'], ['體重', '62.5、80.1 kg', '連續']];
@@ -312,21 +330,21 @@ Object.assign(W, {
 /* ---------- 基本互動圖（每個數字卡都對應到圖上元素） ---------- */
 Object.assign(W, {
   line(el) {
-    const r = rngOf(8), N = normOf(r), xs = Array.from({ length: 12 }, (_, i) => i + 1), ys = xs.map(x => +(1.8 + 0.85 * x + N(0, 1.1)).toFixed(2)), fit = S.pearson(xs, ys);
+    const d = STUDY(), ix = [...Array(d.n).keys()].filter(i => d.hospital[i] === 'H1'), xs = ix.map(i => d.age[i]), ys = ix.map(i => d.sbp_0[i]), fit = S.pearson(xs, ys);
     const best = S.sum(xs.map((x, i) => (ys[i] - fit.intercept - fit.slope * x) ** 2));
-    el.innerHTML = `<p class="w-cap">情境：藥物劑量 x（mg）與血中濃度 y（μg/mL），12 位受試者。紅色線段是每個點的殘差。</p><div class="w-row">${slider('wn-a', '截距 a', -4, 8, 0.1, 0)}${slider('wn-b', '斜率 b', -0.5, 2, 0.05, 0.3)}</div><div class="chart-wrap" id="wn-c"></div><div class="kv" id="wn-k"></div><div class="w-row"><button class="btn" id="wn-best" type="button">換成最小平方直線</button></div>`;
+    el.innerHTML = SRC_NOTE + `<p class="w-cap">H1 醫院 ${ix.length} 位病人：橫軸年齡、縱軸基線收縮壓。紅色線段是每個點的殘差。拖動滑桿找一條最貼近的直線。</p><div class="w-row">${slider('wn-a', '截距 a', 60, 200, 1, 150)}${slider('wn-b', '斜率 b', -1, 2, 0.05, 0)}</div><div class="chart-wrap" id="wn-c"></div><div class="kv" id="wn-k"></div><div class="w-row"><button class="btn" id="wn-best" type="button">換成最小平方直線</button></div>`;
     const up = () => {
-      const a = sv('wn-a', v => v.toFixed(1)), b = sv('wn-b', v => v.toFixed(2)), ssr = S.sum(xs.map((x, i) => (ys[i] - a - b * x) ** 2)), cl = v => Math.max(-1, Math.min(15, v));
-      $('#wn-c').innerHTML = chart({ x: [0, 13], y: [0, 14], xlab: '劑量 x', ylab: '濃度 y', h: 300 }, (X, Y) => xs.map((x, i) => `<line data-k="ssr" x1="${X(x)}" x2="${X(x)}" y1="${Y(ys[i])}" y2="${Y(cl(a + b * x))}" style="stroke:var(--c2);stroke-width:1.5;stroke-opacity:.8"/>`).join('')
-        + `<line class="keep" data-k="a b" x1="${X(0)}" x2="${X(13)}" y1="${Y(cl(a))}" y2="${Y(cl(a + 13 * b))}" style="stroke:var(--c1);stroke-width:2.5"/>`
-        + `<g class="hlx" data-k="a"><circle cx="${X(0)}" cy="${Y(cl(a))}" r="6" style="fill:var(--c1)"/><text x="${X(0) + 10}" y="${Y(cl(a)) - 8}" style="fill:var(--c1)">x = 0 時 y = ${a.toFixed(1)}</text></g>`
-        + `<g class="hlx" data-k="b"><line x1="${X(6)}" x2="${X(7)}" y1="${Y(cl(a + 6 * b))}" y2="${Y(cl(a + 6 * b))}" style="stroke:var(--c4);stroke-width:3"/><line x1="${X(7)}" x2="${X(7)}" y1="${Y(cl(a + 6 * b))}" y2="${Y(cl(a + 7 * b))}" style="stroke:var(--c4);stroke-width:3"/><text x="${X(7) + 6}" y="${(Y(cl(a + 6 * b)) + Y(cl(a + 7 * b))) / 2}" dy=".32em" style="fill:var(--c4)">+${b.toFixed(2)}</text></g>`
-        + `<line class="hlx" data-k="best" x1="${X(0)}" x2="${X(13)}" y1="${Y(fit.intercept)}" y2="${Y(fit.intercept + 13 * fit.slope)}" style="stroke:var(--c3);stroke-width:2.5;stroke-dasharray:6 4"/>`
+      const a = sv('wn-a'), b = sv('wn-b', v => v.toFixed(2)), ssr = S.sum(xs.map((x, i) => (ys[i] - a - b * x) ** 2)), cl = v => Math.max(60, Math.min(220, v));
+      $('#wn-c').innerHTML = chart({ x: [0, 85], y: [60, 220], xlab: '年齡 x', ylab: '收縮壓 y', h: 300 }, (X, Y) => xs.map((x, i) => `<line data-k="ssr" x1="${X(x)}" x2="${X(x)}" y1="${Y(ys[i])}" y2="${Y(cl(a + b * x))}" style="stroke:var(--c2);stroke-width:1.5;stroke-opacity:.8"/>`).join('')
+        + `<line class="keep" data-k="a b" x1="${X(0)}" x2="${X(85)}" y1="${Y(cl(a))}" y2="${Y(cl(a + 85 * b))}" style="stroke:var(--c1);stroke-width:2.5"/>`
+        + `<g class="hlx" data-k="a"><circle cx="${X(0)}" cy="${Y(cl(a))}" r="6" style="fill:var(--c1)"/><text x="${X(0) + 10}" y="${Y(cl(a)) - 8}" style="fill:var(--c1)">x = 0 歲時 y = ${a}</text></g>`
+        + `<g class="hlx" data-k="b"><line x1="${X(40)}" x2="${X(50)}" y1="${Y(cl(a + 40 * b))}" y2="${Y(cl(a + 40 * b))}" style="stroke:var(--c4);stroke-width:3"/><line x1="${X(50)}" x2="${X(50)}" y1="${Y(cl(a + 40 * b))}" y2="${Y(cl(a + 50 * b))}" style="stroke:var(--c4);stroke-width:3"/><text x="${X(50) + 6}" y="${(Y(cl(a + 40 * b)) + Y(cl(a + 50 * b))) / 2}" dy=".32em" style="fill:var(--c4)">+10 歲 → ${b >= 0 ? '+' : ''}${F.n(10 * b, 1)}</text></g>`
+        + `<line class="hlx" data-k="best" x1="${X(0)}" x2="${X(85)}" y1="${Y(fit.intercept)}" y2="${Y(fit.intercept + 85 * fit.slope)}" style="stroke:var(--c3);stroke-width:2.5;stroke-dasharray:6 4"/>`
         + xs.map((x, i) => `<circle cx="${X(x)}" cy="${Y(ys[i])}" r="4.5" style="fill:var(--ink)"/>`).join(''));
-      $('#wn-k').innerHTML = kvs([['截距 a', a.toFixed(1), 'a'], ['斜率 b', b.toFixed(2), 'b'], ['殘差平方和', ssr.toFixed(1), 'ssr'], ['最小可能的殘差平方和', best.toFixed(1), 'best']]);
+      $('#wn-k').innerHTML = kvs([['截距 a', String(a), 'a'], ['斜率 b', b.toFixed(2), 'b'], ['殘差平方和', F.n(ssr, 0), 'ssr'], ['最小可能的殘差平方和', F.n(best, 0), 'best']]);
     };
     el.addEventListener('input', up);
-    $('#wn-best', el).onclick = () => { $('#wn-a').value = fit.intercept.toFixed(1); $('#wn-b').value = (Math.round(fit.slope / 0.05) * 0.05).toFixed(2); up(); };
+    $('#wn-best', el).onclick = () => { $('#wn-a').value = Math.round(fit.intercept); $('#wn-b').value = (Math.round(fit.slope / 0.05) * 0.05).toFixed(2); up(); };
     up();
   },
   mm(el) {
