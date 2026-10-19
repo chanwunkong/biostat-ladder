@@ -60,6 +60,12 @@ run_page() {
 export -f run_page 2>/dev/null
 CHAPTERS=$(node -e "const fs=require('fs');const r=f=>fs.readFileSync('src/'+f,'utf8');console.log(new Function(r('core.js')+r('content.js')+';return CH;')().map(c=>c.id).join(' '))")
 OUT=$(printf '%s\n' home $CHAPTERS lab data | xargs -P ${SMOKE_JOBS:-4} -I{} bash -c 'run_page {}')
+# 逾時的頁面（通常是電腦忙碌）單獨再跑一次
+for h in $(echo "$OUT" | grep "逾時" | awk '{print $2}'); do
+  OUT=$(echo "$OUT" | grep -v "^FAIL $h ")
+  OUT="$OUT
+$(run_page "$h")"
+done
 echo "$OUT" | sort -k2
 case "$OUT" in *FAIL*) fail=1 ;; *) fail=0 ;; esac
 rm -rf "$TMP"

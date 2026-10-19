@@ -1882,6 +1882,9 @@ const CH = [
 <p><b>為什麼除以 n − 1？</b>x̄ 是用同一批資料算出來的，它天生離這批資料比較近，用 n 會低估母體的變異。除以 n − 1（稱為<b>自由度</b>）可以修正這個偏差。</p>
 <p>把資料由小到大排好、切成四等份，切點就是<b>四分位數</b>：Q1（第 25 百分位）、中位數（第 50 百分位）、Q3（第 75 百分位）。</p>
 <p><b>四分位距 IQR</b> = Q3 − Q1，即中間 50% 資料的範圍，通常和中位數搭配，寫成「中位數 [Q1, Q3]」。</p>
+<h3>變異係數</h3>
+<div class="formula">變異係數 CV = 標準差 ÷ 平均 × 100%</div>
+<p>單位或大小不同的測量，標準差不能直接比較。例如體重（平均 70 kg、SD 7）和小鼠體重（平均 25 g、SD 2.5），CV 都是 10%，相對變異一樣。實驗室常用 CV 描述檢驗的精確度（同一樣本重複測量的變異）。CV 只適用於數值都大於 0、有真正零點的資料（例如重量、濃度），不適用於溫度（°C）這類資料。</p>
 <div class="ex"><b>寫法範例</b>　「年齡為 58.2 ± 9.1 歲」（平均 ± SD）；「住院天數中位數 4 天（IQR 3–6）」。</div>
 <p>論文的第一個表格（稱為 <b>Table 1</b>，{{c1-5}} 章介紹）會用平均 ± SD 描述研究對象。</p>
 <p class="warn">不要混淆 <b>SD</b> 與 <b>SE</b>。SD 描述個體之間的差異；SE 描述「平均數這個估計值」的不確定性（{{c2-2}} 章會學）。描述研究對象特徵時用 SD。</p>`,
@@ -1889,6 +1892,7 @@ const CH = [
     quiz: [
       { q: '資料 2、4、6 的樣本標準差是？', o: ['2', '4', '√(8/3)', '8'], why: '平均 4，離均差平方和 = 4 + 0 + 4 = 8，除以 n − 1 = 2 得 4，開根號得 2。' },
       { q: '描述研究對象的基本特徵（Table 1）時，連續變數應搭配？', o: ['SD', 'SE', 'p 值', '樣本數'], why: 'Table 1 在描述個體間的差異，所以用 SD。' },
+      { q: '血糖儀重複測同一份樣本：平均 100 mg/dL、SD 4；另一台平均 200 mg/dL、SD 6。哪一台的相對變異比較小？', o: ['第二台：CV 3%，第一台 4%', '第一台：SD 比較小', '一樣', '無法比較'], why: 'CV = SD ÷ 平均：4/100 = 4%、6/200 = 3%。單位相同但量級不同時，用 CV 比較相對變異。' },
     ],
   },
   {
@@ -2706,6 +2710,30 @@ const CH = [
       { q: '95% 的樣本都是陰性，兩人觀察一致率 92%，κ 卻只有 0.3。最可能的原因是？', o: ['陰性太常見，機遇一致率本身就很高', '計算錯誤', '樣本數太大', '兩人完全沒有一致'], why: '這就是 Kappa 悖論；報告時要同時列出一致率與交叉表。' },
     ],
   },
+  {
+    id: 'graphs', title: '圖示資料',
+    body: `<p>分析資料的第一步永遠是<b>畫圖</b>。圖能讓你看到平均數和 p 值看不到的東西：偏態、極端值、分群、輸入錯誤。選哪一種圖，取決於變數的類型（{{c1-1}} 章）。</p>
+<div class="tbl-wrap"><table class="st"><thead><tr><th>想呈現</th><th>適合的圖</th></tr></thead><tbody>
+<tr><td>一個類別變數各類的人數</td><td><b>長條圖</b>（長條從 0 開始）</td></tr>
+<tr><td>一個數值變數的分佈</td><td><b>直方圖</b>、箱型圖、點圖</td></tr>
+<tr><td>數值變數在幾組之間的比較</td><td>箱型圖或點圖（樣本小時畫出每個點）</td></tr>
+<tr><td>兩個數值變數的關係</td><td><b>散佈圖</b></td></tr>
+<tr><td>隨時間的變化</td><td>折線圖（同一個體的點連成線）</td></tr></tbody></table></div>
+<h3>直方圖</h3>
+<p>把數值範圍切成等寬的區間（組），長條高度是落在該組的個數。<b>組數</b>會改變看到的形狀：組太少，細節全被抹平；組太多，每組只有零星幾個值，看起來雜亂。可以試幾種組數再決定。</p>
+<h3>箱型圖</h3>
+<p>箱子是第 25 到第 75 百分位（四分位距），中間的線是中位數，鬚線延伸到 1.5 倍四分位距內最遠的值，超出的點個別畫出。它用很小的空間呈現中心、分散、偏態和極端值，適合並排比較多組。</p>
+<h3>好圖的原則</h3>
+<ul><li><b>呈現資料本身</b>：樣本小時畫出每個點，不要只畫平均值長條圖（{{c5-3}} 章）。</li>
+<li>長條圖的 y 軸要從 0 開始，否則差異會被誇大。</li>
+<li>避免 3D 圖和圓餅圖：人眼比較長度比比較角度或面積準確得多。</li>
+<li>軸標籤寫清楚變數和單位；誤差線要註明是 SD、SE 還是信賴區間。</li></ul>`,
+    quiz: [
+      { q: '想看「住院天數」這個連續變數的分佈形狀，最適合哪一種圖？', o: ['直方圖', '圓餅圖', '長條圖（各類人數）', '散佈圖'], why: '直方圖把數值切成區間、呈現分佈形狀；散佈圖用於兩個數值變數。' },
+      { q: '直方圖的組數設得太少，會發生什麼事？', o: ['分佈的細節（例如偏態、雙峰）被抹平', '偽陽性增加', '平均數改變', '樣本數變少'], why: '組數只影響呈現方式，不改變資料；太少會藏起形狀，太多會雜亂。' },
+      { q: '兩組各只有 6 隻小鼠，要比較測量值。最好的呈現方式是？', o: ['點圖或箱型圖，並畫出每一個資料點', '只畫兩根平均值長條加 SE', '圓餅圖', '只報告 p 值'], why: '樣本小時，平均值長條圖會藏住資料的分佈與極端值。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -2747,7 +2775,13 @@ const GLOSS = [
   ['變異數', [], '標準差的平方。', 'c1-3'],
   ['四分位距', ['IQR'], '第 75 百分位減第 25 百分位，即中間 50% 資料的範圍。', 'c1-3'],
   ['四分位數', ['Q1', 'Q3'], '資料排序後切成四等份的切點：Q1 是第 25 百分位，Q3 是第 75 百分位。', 'c1-3'],
+  ['變異係數', ['CV'], '標準差 ÷ 平均 × 100%：相對變異，可比較不同單位或量級的資料。', 'c1-3'],
   ['自由度', [], '計算時能自由變動的資料個數，例如樣本標準差用 n − 1。', 'c1-3'],
+  ['長條圖', [], '以長條高度呈現各類別人數（或數值）的圖；y 軸應從 0 開始。', 'graphs'],
+  ['直方圖', [], '把數值範圍切成等寬區間、以長條高度呈現各區間個數的圖。', 'graphs'],
+  ['組數', ['組距'], '直方圖切成幾個區間（組距是每個區間的寬度）。', 'graphs'],
+  ['箱型圖', [], '以箱子（四分位距）、中線（中位數）、鬚線與個別點呈現分佈的圖。', 'graphs'],
+  ['散佈圖', [], '以點呈現兩個數值變數關係的圖。', 'graphs'],
   ['常態分佈', ['常態'], '左右對稱的鐘形分佈，由平均與標準差決定。', 'c1-4'],
   ['z 分數', [], '(x − μ) ÷ σ：一個值距離平均幾個標準差。', 'c1-4'],
   ['百分位', [], '第 p 百分位：有 p% 的值小於或等於它。', 'c1-4'],
@@ -2941,7 +2975,7 @@ const GLOSS = [
 /* ---------- 課程順序：章節 ID 不變（保留學習進度與網址），位置與章號由這裡決定 ---------- */
 const ORDER = [
   ['c0-1', 'c0-2', 'c0-3', 'c0-4'],
-  ['c1-1', 'c1-2', 'c1-3', 'c1-4', 'c1-5'],
+  ['c1-1', 'c1-2', 'c1-3', 'graphs', 'c1-4', 'c1-5'],
   ['prob-rules', 'c2-1', 'roc', 'rv', 'binom', 'poisson'],
   ['c2-2', 'c2-3', 'tdist', 'prop-ci', 'c2-4', 'one-t', 'binom-test', 'gof', 'boot', 'c4-5', 'c5-1'],
   ['c3-1', 'two-assume', 'nonpar', 'c3-3', 'two-prop', 'mcnemar', 'kappa', 'c3-5'],
@@ -2954,7 +2988,7 @@ const ORDER = [
 // 對照教科書：W = Whitlock & Schluter 3e、R = Rosner 8e、K = Kirkwood & Sterne 2e（見 CURRICULUM.md）
 const REFS = {
   'c0-1': 'Rosner 3.10', 'c1-1': 'Whitlock 第 1 章；Kirkwood 第 2 章', 'c1-2': 'Whitlock 第 3 章；Rosner 2.2–2.3；Kirkwood 第 4 章',
-  'c1-3': 'Whitlock 第 3 章；Rosner 2.4–2.5；Kirkwood 第 4 章', 'c1-4': 'Whitlock 第 10 章；Rosner 第 5 章；Kirkwood 第 5 章', 'c1-5': 'Kirkwood 第 34 章',
+  'c1-3': 'Whitlock 第 3 章；Rosner 2.4–2.6；Kirkwood 第 4 章', 'graphs': 'Whitlock 第 2 章；Rosner 2.8；Kirkwood 第 3 章', 'c1-4': 'Whitlock 第 10 章；Rosner 第 5 章；Kirkwood 第 5 章', 'c1-5': 'Kirkwood 第 34 章',
   'prob-rules': 'Whitlock 第 5 章；Rosner 3.2–3.6', 'roc': 'Rosner 3.9；UTHealth GSBS 課綱第 10 週', 'rv': 'Rosner 4.2–4.6', 'binom': 'Whitlock 7.1；Rosner 4.7–4.9、5.7；Kirkwood 第 15 章', 'poisson': 'Whitlock 8.4；Rosner 4.10–4.13；Kirkwood 第 22 章', 'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'tdist': 'Whitlock 11.1；Rosner 6.5', 'prop-ci': 'Whitlock 7.3；Rosner 6.8；Kirkwood 第 15 章', 'binom-test': 'Whitlock 7.2；Rosner 7.9', 'gof': 'Whitlock 8.1–8.3；Rosner 10.7', 'boot': 'Whitlock 13.8、第 19 章；Rosner 6.11、9.6', 'one-t': 'Whitlock 11.2；Rosner 7.3–7.5；UTHealth GSBS 課綱第 2 週', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
   'c2-4': 'Whitlock 第 6 章；Rosner 7.1–7.5；Kirkwood 第 8 章', 'c4-5': 'Whitlock 14.6；Rosner 7.6–7.7、8.9；Kirkwood 第 35 章', 'c5-1': 'Rosner 13.2；Kirkwood 第 34 章',
   'nonpar': 'Whitlock 13.4–13.7；Rosner 9.2–9.4', 'two-prop': 'Rosner 10.2、10.5；Kirkwood 第 16 章', 'kappa': 'Rosner 10.8；Landis & Koch (1977) Biometrics 33:159', 'mcnemar': 'Rosner 10.4；Kirkwood 第 21 章；Agresti, Categorical Data Analysis', 'two-assume': 'Whitlock 13.1–13.3；Rosner 8.6、8.10；Kirkwood 第 13 章', 'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
@@ -3309,7 +3343,7 @@ Object.assign(W, {
         const y = Y(i), hh = ih / 2 * 0.72, m = S.mean(v), sd = S.sd(v), q1 = S.quantile(v, 0.25), q3 = S.quantile(v, 0.75);
         const t = i ? 'B' : 'A'; return `<rect data-k="sd${t}" x="${X(cl(m - 2 * sd))}" y="${y - hh / 2}" width="${X(cl(m + 2 * sd)) - X(cl(m - 2 * sd))}" height="${hh}" style="fill:var(--c1);fill-opacity:.08"/><rect data-k="sd${t}" x="${X(cl(m - sd))}" y="${y - hh / 2}" width="${X(cl(m + sd)) - X(cl(m - sd))}" height="${hh}" style="fill:var(--c1);fill-opacity:.17"/><rect data-k="iqr${t}" x="${X(q1)}" y="${y - hh / 4}" width="${X(q3) - X(q1)}" height="${hh / 2}" style="fill:none;stroke:var(--ink);stroke-width:1.3"/>` + v.map((x, k) => `<circle cx="${X(cl(x))}" cy="${y + (((k * 0.618) % 1) - 0.5) * hh * 0.8}" r="3.2" style="fill:${x === 200 ? 'var(--c2)' : 'var(--c1)'}"/>`).join('') + `<line x1="${X(m)}" x2="${X(m)}" y1="${y - hh / 2}" y2="${y + hh / 2}" style="stroke:var(--c2);stroke-width:2.5"/>`;
       }).join(''));
-      $('#wv-k').innerHTML = kvs([['甲組 SD', F.n(S.sd(A), 1), 'sdA'], ['乙組 SD', F.n(S.sd(B), 1), 'sdB'], ['甲組 IQR', F.n(S.quantile(A, 0.75) - S.quantile(A, 0.25), 1), 'iqrA'], ['乙組 IQR', F.n(S.quantile(B, 0.75) - S.quantile(B, 0.25), 1), 'iqrB']]);
+      $('#wv-k').innerHTML = kvs([['甲組 SD', F.n(S.sd(A), 1), 'sdA'], ['乙組 SD', F.n(S.sd(B), 1), 'sdB'], ['甲組 IQR', F.n(S.quantile(A, 0.75) - S.quantile(A, 0.25), 1), 'iqrA'], ['乙組 IQR', F.n(S.quantile(B, 0.75) - S.quantile(B, 0.25), 1), 'iqrB'], ['甲組變異係數 CV', F.n(100 * S.sd(A) / S.mean(A), 1) + '%', 'sdA'], ['乙組變異係數 CV', F.n(100 * S.sd(B) / S.mean(B), 1) + '%', 'sdB']]);
     };
     el.addEventListener('input', up); el.addEventListener('change', up); up();
   },
@@ -4139,6 +4173,26 @@ Object.assign(W, {
     };
     el.addEventListener('input', up); up();
   },
+  graphsw(el) {
+    const r = rngOf(401), N = normOf(r), stay = Array.from({ length: 80 }, (_, i) => Math.max(1, Math.round(Math.exp(1.3 + 0.55 * N()) + (i % 9 === 0 ? 8 : 0))));
+    el.innerHTML = `<p class="w-cap">同一份資料：80 位病人的住院天數。切換圖的種類。</p>
+<div class="seg wrap" id="wgr-m"><button type="button" data-m="hist" aria-selected="true">直方圖</button><button type="button" data-m="box" aria-selected="false">箱型圖</button><button type="button" data-m="dot" aria-selected="false">點圖</button><button type="button" data-m="bar" aria-selected="false">平均值長條圖</button></div>
+<div class="w-row">${slider('wgr-b', '直方圖的組數', 2, 40, 1, 12)}</div><div class="chart-wrap" id="wgr-c"></div><div class="kv" id="wgr-k"></div>`;
+    let mode = 'hist';
+    const up = () => {
+      const bins = sv('wgr-b'), m = S.mean(stay), md = S.median(stay), [lo, hi] = S.minmax(stay), sd = S.sd(stay);
+      let svg = '';
+      if (mode === 'hist') svg = histChart(stay, { lo: 0, hi: hi + 1, bins, h: 260, xlab: '住院天數', ylab: '人數', tag: () => 'bins', extra: (X, Y) => `<line data-k="mean" x1="${X(m)}" x2="${X(m)}" y1="${Y(0)}" y2="${Y(0) - 190}" style="stroke:var(--c2);stroke-width:2.5"/><line data-k="med" x1="${X(md)}" x2="${X(md)}" y1="${Y(0)}" y2="${Y(0) - 190}" style="stroke:var(--c3);stroke-width:2.5;stroke-dasharray:5 4"/>` });
+      else if (mode === 'box') svg = boxStrip([{ label: '全部病人', v: stay }], '住院天數');
+      else if (mode === 'dot') { const cnt = {}; svg = chart({ x: [0, hi + 1], y: [0, 1], noY: true, h: 260, xlab: '住院天數' }, (X, Y) => stay.map(v => { const k = (cnt[v] = (cnt[v] || 0) + 1); return `<circle data-k="bins" cx="${X(v)}" cy="${Y(0) - 6 - (k - 1) * 9}" r="4" style="fill:var(--c1);fill-opacity:.75"/>`; }).join('') + `<line data-k="mean" x1="${X(m)}" x2="${X(m)}" y1="${Y(0)}" y2="${Y(1)}" style="stroke:var(--c2);stroke-width:2"/><line data-k="med" x1="${X(md)}" x2="${X(md)}" y1="${Y(0)}" y2="${Y(1)}" style="stroke:var(--c3);stroke-width:2;stroke-dasharray:5 4"/>`); }
+      else svg = chart({ xcats: ['全部病人'], y: [0, m + sd], h: 260, ylab: '住院天數' }, (X, Y) => `<rect data-k="mean" x="${X(0) - 40}" y="${Y(m)}" width="80" height="${Y(0) - Y(m)}" style="fill:var(--c1);fill-opacity:.8"/><line x1="${X(0)}" x2="${X(0)}" y1="${Y(m - sd / Math.sqrt(80))}" y2="${Y(m + sd / Math.sqrt(80))}" class="ink" style="stroke-width:2"/>`);
+      $('#wgr-c').innerHTML = svg;
+      const items = { hist: [['平均數', F.n(m, 1), 'mean'], ['中位數', F.n(md, 1), 'med'], ['組距（每組寬度）', F.n((hi + 1) / bins, 1) + ' 天', 'bins']], box: [['中位數', F.n(md, 1), 'med0'], ['四分位距 IQR', F.n(S.quantile(stay, 0.75) - S.quantile(stay, 0.25), 1), 'iqr0'], ['平均數（◇）', F.n(m, 1), 'mean0']], dot: [['平均數', F.n(m, 1), 'mean'], ['中位數', F.n(md, 1), 'med'], ['人數', stay.length, 'bins']], bar: [['平均數（長條高度）', F.n(m, 1), 'mean']] }[mode];
+      $('#wgr-k').innerHTML = kvs([...items, ['最小值 – 最大值', `${lo} – ${hi}`]]);
+      $('#wgr-b').disabled = mode !== 'hist';
+    };
+    segBind(el, '#wgr-m', b => { mode = b.dataset.m; up(); }); el.addEventListener('input', up); up();
+  },
   mosaic(el) {
     el.innerHTML = `<p class="w-cap">正方形代表全部的人（面積 = 1）。左右寬度是吸菸與不吸菸的比例；每一欄內，紅色的高度是該群中有高血壓的比例。</p>
 <div class="w-row">${slider('wm2-a', 'P(吸菸)', 5, 95, 5, 30, '%')}${slider('wm2-ba', 'P(高血壓 | 吸菸)', 0, 100, 5, 30, '%')}${slider('wm2-bn', 'P(高血壓 | 不吸菸)', 0, 100, 5, 15, '%')}</div>
@@ -4156,13 +4210,18 @@ Object.assign(W, {
   },
 });
 
-const WMAP = { 'kappa': ['kappaw', '兩位病理師的一致性'], 'mcnemar': ['mcnemarw', '只看不一致的人'], 'two-prop': ['twopropw', '兩組反應率'], 'nonpar': ['nonparw', '用名次比較'], 'two-assume': ['twoassume', '轉換與極端值'], 'boot': ['bootw', '重抽 2000 次'], 'gof': ['gofw', '孟德爾的豌豆'], 'binom-test': ['binomtestw', '二項檢定'], 'one-t': ['onetw', '單一樣本 t 檢定'], 'prop-ci': ['propciw', '三種比例信賴區間'], 'tdist': ['tdistw', 't 分佈與常態分佈'], 'poisson': ['poissonw', 'Poisson 分佈與培養皿'], 'binom': ['binomw', '二項分佈'], 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
+const WMAP = { 'graphs': ['graphsw', '同一份資料，四種圖'], 'kappa': ['kappaw', '兩位病理師的一致性'], 'mcnemar': ['mcnemarw', '只看不一致的人'], 'two-prop': ['twopropw', '兩組反應率'], 'nonpar': ['nonparw', '用名次比較'], 'two-assume': ['twoassume', '轉換與極端值'], 'boot': ['bootw', '重抽 2000 次'], 'gof': ['gofw', '孟德爾的豌豆'], 'binom-test': ['binomtestw', '二項檢定'], 'one-t': ['onetw', '單一樣本 t 檢定'], 'prop-ci': ['propciw', '三種比例信賴區間'], 'tdist': ['tdistw', 't 分佈與常態分佈'], 'poisson': ['poissonw', 'Poisson 分佈與培養皿'], 'binom': ['binomw', '二項分佈'], 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
 for (const [id, [w, t]] of Object.entries(WMAP)) { const c = CH.find(x => x.id === id); c.widget = w; c.wtitle = t; }
 
 /* ---------- 練習題示範：把題目情境帶入同一章的互動圖 ----------
    每題的 demo：set = 設定輸入元件（id → 值）；click = 依序點擊的按鈕；custom = 交給互動圖自己的 _demo()；look = 示範時的觀察提示。
    有 q 的項目會整題替換（原題無法在圖上示範時）。 */
 const QD = {
+  'graphs': [
+    { demo: { click: ['#wgr-m [data-m="hist"]'], set: { 'wgr-b': 12 }, look: '直方圖：大多數人住幾天、少數人住很久，右邊拖著長尾巴。' } },
+    { demo: { click: ['#wgr-m [data-m="hist"]'], set: { 'wgr-b': 3 }, look: '只有 3 組：右偏的長尾巴幾乎看不出來。把組數拉回 12 或 40 比較。' } },
+    { demo: { click: ['#wgr-m [data-m="bar"]'], look: '平均值長條圖只剩一個數字和很短的誤差線，看不到偏態與極端值。再切到「點圖」比較。' } },
+  ],
   'kappa': [
     { demo: { set: { 'wka-a': 20, 'wka-b': 5, 'wka-c': 10, 'wka-d': 15 }, look: '點「Kappa κ」：紅色實線是「觀察 − 機遇」，紅色虛線是「1 − 機遇」，兩者相除就是 κ = 0.4。' } },
     { demo: { set: { 'wka-a': 20, 'wka-b': 5, 'wka-c': 10, 'wka-d': 15 }, look: '灰色的機遇一致率 50%：就算兩人亂猜，也有一半會碰巧一致。' } },
@@ -4310,6 +4369,7 @@ const QD = {
   'c1-3': [
     { q: '乙組加入一個 200 mmHg 的極端值後，哪個數字變化比較大？', o: ['SD 明顯增加，IQR 幾乎不變', 'IQR 明顯增加，SD 不變', '兩者都不變', '兩者增加一樣多'], why: 'SD 用到每個值與平均的距離平方，一個極端值影響很大；IQR 只看中間 50% 的資料。', demo: { set: { 'wv-s': 12, 'wv-o': true }, look: '比較下方乙組 SD 與 IQR 兩格，以及紅點的位置。' } },
     { demo: { set: { 'wv-s': 4, 'wv-o': false }, look: '深色帶就是平均 ± 1 SD：它描述的是「個體之間」的分散程度。' } },
+    { demo: { set: { 'wv-s': 6, 'wv-o': false }, look: '看最後兩張數字卡：CV = SD ÷ 平均。題目中兩台血糖儀：4 ÷ 100 = 4%、6 ÷ 200 = 3%。' } },
   ],
   'c1-4': [
     { demo: { set: { 'wz-m': 120, 'wz-s': 15, 'wz-x': 150 }, look: '紅線落在平均右邊第幾條虛線（每條是 1 個 SD）？' } },

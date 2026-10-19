@@ -79,7 +79,7 @@ Object.assign(W, {
         const y = Y(i), hh = ih / 2 * 0.72, m = S.mean(v), sd = S.sd(v), q1 = S.quantile(v, 0.25), q3 = S.quantile(v, 0.75);
         const t = i ? 'B' : 'A'; return `<rect data-k="sd${t}" x="${X(cl(m - 2 * sd))}" y="${y - hh / 2}" width="${X(cl(m + 2 * sd)) - X(cl(m - 2 * sd))}" height="${hh}" style="fill:var(--c1);fill-opacity:.08"/><rect data-k="sd${t}" x="${X(cl(m - sd))}" y="${y - hh / 2}" width="${X(cl(m + sd)) - X(cl(m - sd))}" height="${hh}" style="fill:var(--c1);fill-opacity:.17"/><rect data-k="iqr${t}" x="${X(q1)}" y="${y - hh / 4}" width="${X(q3) - X(q1)}" height="${hh / 2}" style="fill:none;stroke:var(--ink);stroke-width:1.3"/>` + v.map((x, k) => `<circle cx="${X(cl(x))}" cy="${y + (((k * 0.618) % 1) - 0.5) * hh * 0.8}" r="3.2" style="fill:${x === 200 ? 'var(--c2)' : 'var(--c1)'}"/>`).join('') + `<line x1="${X(m)}" x2="${X(m)}" y1="${y - hh / 2}" y2="${y + hh / 2}" style="stroke:var(--c2);stroke-width:2.5"/>`;
       }).join(''));
-      $('#wv-k').innerHTML = kvs([['甲組 SD', F.n(S.sd(A), 1), 'sdA'], ['乙組 SD', F.n(S.sd(B), 1), 'sdB'], ['甲組 IQR', F.n(S.quantile(A, 0.75) - S.quantile(A, 0.25), 1), 'iqrA'], ['乙組 IQR', F.n(S.quantile(B, 0.75) - S.quantile(B, 0.25), 1), 'iqrB']]);
+      $('#wv-k').innerHTML = kvs([['甲組 SD', F.n(S.sd(A), 1), 'sdA'], ['乙組 SD', F.n(S.sd(B), 1), 'sdB'], ['甲組 IQR', F.n(S.quantile(A, 0.75) - S.quantile(A, 0.25), 1), 'iqrA'], ['乙組 IQR', F.n(S.quantile(B, 0.75) - S.quantile(B, 0.25), 1), 'iqrB'], ['甲組變異係數 CV', F.n(100 * S.sd(A) / S.mean(A), 1) + '%', 'sdA'], ['乙組變異係數 CV', F.n(100 * S.sd(B) / S.mean(B), 1) + '%', 'sdB']]);
     };
     el.addEventListener('input', up); el.addEventListener('change', up); up();
   },
@@ -909,6 +909,26 @@ Object.assign(W, {
     };
     el.addEventListener('input', up); up();
   },
+  graphsw(el) {
+    const r = rngOf(401), N = normOf(r), stay = Array.from({ length: 80 }, (_, i) => Math.max(1, Math.round(Math.exp(1.3 + 0.55 * N()) + (i % 9 === 0 ? 8 : 0))));
+    el.innerHTML = `<p class="w-cap">同一份資料：80 位病人的住院天數。切換圖的種類。</p>
+<div class="seg wrap" id="wgr-m"><button type="button" data-m="hist" aria-selected="true">直方圖</button><button type="button" data-m="box" aria-selected="false">箱型圖</button><button type="button" data-m="dot" aria-selected="false">點圖</button><button type="button" data-m="bar" aria-selected="false">平均值長條圖</button></div>
+<div class="w-row">${slider('wgr-b', '直方圖的組數', 2, 40, 1, 12)}</div><div class="chart-wrap" id="wgr-c"></div><div class="kv" id="wgr-k"></div>`;
+    let mode = 'hist';
+    const up = () => {
+      const bins = sv('wgr-b'), m = S.mean(stay), md = S.median(stay), [lo, hi] = S.minmax(stay), sd = S.sd(stay);
+      let svg = '';
+      if (mode === 'hist') svg = histChart(stay, { lo: 0, hi: hi + 1, bins, h: 260, xlab: '住院天數', ylab: '人數', tag: () => 'bins', extra: (X, Y) => `<line data-k="mean" x1="${X(m)}" x2="${X(m)}" y1="${Y(0)}" y2="${Y(0) - 190}" style="stroke:var(--c2);stroke-width:2.5"/><line data-k="med" x1="${X(md)}" x2="${X(md)}" y1="${Y(0)}" y2="${Y(0) - 190}" style="stroke:var(--c3);stroke-width:2.5;stroke-dasharray:5 4"/>` });
+      else if (mode === 'box') svg = boxStrip([{ label: '全部病人', v: stay }], '住院天數');
+      else if (mode === 'dot') { const cnt = {}; svg = chart({ x: [0, hi + 1], y: [0, 1], noY: true, h: 260, xlab: '住院天數' }, (X, Y) => stay.map(v => { const k = (cnt[v] = (cnt[v] || 0) + 1); return `<circle data-k="bins" cx="${X(v)}" cy="${Y(0) - 6 - (k - 1) * 9}" r="4" style="fill:var(--c1);fill-opacity:.75"/>`; }).join('') + `<line data-k="mean" x1="${X(m)}" x2="${X(m)}" y1="${Y(0)}" y2="${Y(1)}" style="stroke:var(--c2);stroke-width:2"/><line data-k="med" x1="${X(md)}" x2="${X(md)}" y1="${Y(0)}" y2="${Y(1)}" style="stroke:var(--c3);stroke-width:2;stroke-dasharray:5 4"/>`); }
+      else svg = chart({ xcats: ['全部病人'], y: [0, m + sd], h: 260, ylab: '住院天數' }, (X, Y) => `<rect data-k="mean" x="${X(0) - 40}" y="${Y(m)}" width="80" height="${Y(0) - Y(m)}" style="fill:var(--c1);fill-opacity:.8"/><line x1="${X(0)}" x2="${X(0)}" y1="${Y(m - sd / Math.sqrt(80))}" y2="${Y(m + sd / Math.sqrt(80))}" class="ink" style="stroke-width:2"/>`);
+      $('#wgr-c').innerHTML = svg;
+      const items = { hist: [['平均數', F.n(m, 1), 'mean'], ['中位數', F.n(md, 1), 'med'], ['組距（每組寬度）', F.n((hi + 1) / bins, 1) + ' 天', 'bins']], box: [['中位數', F.n(md, 1), 'med0'], ['四分位距 IQR', F.n(S.quantile(stay, 0.75) - S.quantile(stay, 0.25), 1), 'iqr0'], ['平均數（◇）', F.n(m, 1), 'mean0']], dot: [['平均數', F.n(m, 1), 'mean'], ['中位數', F.n(md, 1), 'med'], ['人數', stay.length, 'bins']], bar: [['平均數（長條高度）', F.n(m, 1), 'mean']] }[mode];
+      $('#wgr-k').innerHTML = kvs([...items, ['最小值 – 最大值', `${lo} – ${hi}`]]);
+      $('#wgr-b').disabled = mode !== 'hist';
+    };
+    segBind(el, '#wgr-m', b => { mode = b.dataset.m; up(); }); el.addEventListener('input', up); up();
+  },
   mosaic(el) {
     el.innerHTML = `<p class="w-cap">正方形代表全部的人（面積 = 1）。左右寬度是吸菸與不吸菸的比例；每一欄內，紅色的高度是該群中有高血壓的比例。</p>
 <div class="w-row">${slider('wm2-a', 'P(吸菸)', 5, 95, 5, 30, '%')}${slider('wm2-ba', 'P(高血壓 | 吸菸)', 0, 100, 5, 30, '%')}${slider('wm2-bn', 'P(高血壓 | 不吸菸)', 0, 100, 5, 15, '%')}</div>
@@ -926,5 +946,5 @@ Object.assign(W, {
   },
 });
 
-const WMAP = { 'kappa': ['kappaw', '兩位病理師的一致性'], 'mcnemar': ['mcnemarw', '只看不一致的人'], 'two-prop': ['twopropw', '兩組反應率'], 'nonpar': ['nonparw', '用名次比較'], 'two-assume': ['twoassume', '轉換與極端值'], 'boot': ['bootw', '重抽 2000 次'], 'gof': ['gofw', '孟德爾的豌豆'], 'binom-test': ['binomtestw', '二項檢定'], 'one-t': ['onetw', '單一樣本 t 檢定'], 'prop-ci': ['propciw', '三種比例信賴區間'], 'tdist': ['tdistw', 't 分佈與常態分佈'], 'poisson': ['poissonw', 'Poisson 分佈與培養皿'], 'binom': ['binomw', '二項分佈'], 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
+const WMAP = { 'graphs': ['graphsw', '同一份資料，四種圖'], 'kappa': ['kappaw', '兩位病理師的一致性'], 'mcnemar': ['mcnemarw', '只看不一致的人'], 'two-prop': ['twopropw', '兩組反應率'], 'nonpar': ['nonparw', '用名次比較'], 'two-assume': ['twoassume', '轉換與極端值'], 'boot': ['bootw', '重抽 2000 次'], 'gof': ['gofw', '孟德爾的豌豆'], 'binom-test': ['binomtestw', '二項檢定'], 'one-t': ['onetw', '單一樣本 t 檢定'], 'prop-ci': ['propciw', '三種比例信賴區間'], 'tdist': ['tdistw', 't 分佈與常態分佈'], 'poisson': ['poissonw', 'Poisson 分佈與培養皿'], 'binom': ['binomw', '二項分佈'], 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
 for (const [id, [w, t]] of Object.entries(WMAP)) { const c = CH.find(x => x.id === id); c.widget = w; c.wtitle = t; }
