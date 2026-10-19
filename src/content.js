@@ -600,6 +600,31 @@ const CH = [
       { q: '重複測量的資料嚴重偏態、樣本又小，常用的無母數方法是？', o: ['Friedman 檢定', 'Mann–Whitney', '卡方檢定', 'Kruskal–Wallis'], why: 'Kruskal–Wallis 用於獨立的組別；同一個體重複測量要用 Friedman，在個體內排名。' },
     ],
   },
+  {
+    id: 'random-eff', title: '固定效果、隨機效果與 ICC',
+    body: `<p>ANOVA 的因子可以分成兩種，差別在於「這些水準是怎麼來的」和「你想推論到哪裡」。</p>
+<div class="tbl-wrap"><table class="st"><thead><tr><th></th><th><b>固定效果</b></th><th><b>隨機效果</b></th></tr></thead><tbody>
+<tr><td>水準怎麼來</td><td>研究者特別挑選、本身就是研究對象</td><td>從更大的群體中隨機抽出的樣本</td></tr>
+<tr><td>例子</td><td>三種肥料、藥物劑量、基因型</td><td>個體、窩、溫室、醫院、實驗室、批次</td></tr>
+<tr><td>想問的問題</td><td>這幾個水準的平均是否不同</td><td>這類單位之間的差異有多大</td></tr></tbody></table></div>
+<p>把「窩」當作隨機效果，是因為我們不關心第 3 窩和第 7 窩誰比較重，而是想知道「窩與窩之間的變異」占了總變異的多少。</p>
+<h3>變異成分</h3>
+<p>隨機效果的單因子 ANOVA，把總變異拆成兩個<b>變異成分</b>：群與群之間的變異（σ²<sub>群間</sub>）與群內個體之間的變異（σ²<sub>群內</sub>）。每群有 n 個觀察值時：</p>
+<div class="formula">σ²<sub>群內</sub> = 組內均方<br>σ²<sub>群間</sub> = (組間均方 − 組內均方) ÷ n</div>
+<h3>組內相關係數 ICC</h3>
+<div class="formula">ICC = σ²<sub>群間</sub> ÷ (σ²<sub>群間</sub> + σ²<sub>群內</sub>)</div>
+<p><b>組內相關係數</b>（intraclass correlation coefficient, ICC）是「總變異中，有多少比例來自群與群之間」。它有兩個常見用途：</p>
+<ul><li><b>測量的一致性</b>：同一個個體量好幾次，ICC 高代表重複測量很一致（生態學稱為重複性 repeatability）；也用來評估不同評分者是否一致。</li>
+<li><b>群集資料的影響</b>：同一群內的觀察值彼此相似，提供的獨立資訊比表面上少。</li></ul>
+<h3>設計效應：ICC 讓樣本「縮水」多少</h3>
+<div class="formula">設計效應 = 1 + (每群人數 − 1) × ICC<br>有效樣本數 = 總觀察數 ÷ 設計效應</div>
+<p>例：20 窩、每窩 10 隻（共 200 隻），ICC = 0.3，設計效應 = 1 + 9 × 0.3 = 3.7，有效樣本數只有約 54。這就是偽重複（{{c4-6}} 章）會讓 p 值過小的原因；混合模型同時估計固定效果和隨機效果，是分析群集資料的標準方法。</p>`,
+    quiz: [
+      { q: '從一個繁殖群中隨機挑 10 窩小鼠，每窩量 5 隻的體重。「窩」在分析中應視為？', o: ['隨機效果：窩是從更大群體抽出的樣本', '固定效果：每一窩都是研究者想比較的對象', '結果變數', '不需要放進分析'], why: '我們想推論的是窩與窩之間的變異，而不是這 10 窩彼此誰比較重。' },
+      { q: '同一位研究人員把每隻小鼠的腫瘤量了 3 次，ICC = 0.8。這代表？', o: ['總變異中 80% 來自小鼠之間，重複測量相當一致', '80% 的測量是錯的', '測量誤差占 80%', '腫瘤有 80% 的機率長大'], why: 'ICC 高代表同一隻小鼠的幾次測量彼此接近，差異主要來自不同小鼠。' },
+      { q: '每群 10 個觀察值、ICC = 0.1。設計效應是多少？', o: ['1.9', '1.1', '10', '0.1'], why: '1 + (10 − 1) × 0.1 = 1.9：有效樣本數約為總數的一半。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -647,6 +672,12 @@ const GLOSS = [
   ['百分位', [], '第 p 百分位：有 p% 的值小於或等於它。', 'c1-4'],
   ['P(X ≤ x)', ['P(X > x)', 'P(X >'], '機率的寫法：P(X ≤ x) 是「X 小於或等於 x 的機率」。', 'c1-4'],
   ['Table 1', [], '論文的第一個表格，列出研究對象的基本特徵。', 'c1-5'],
+  ['固定效果', [], '水準由研究者特別挑選、本身就是研究對象的因子，例如三種肥料。', 'random-eff'],
+  ['隨機效果', [], '水準是從更大群體隨機抽出的樣本的因子，例如個體、窩、醫院。', 'random-eff'],
+  ['變異成分', [], '把總變異拆成群間變異與群內變異等來源。', 'random-eff'],
+  ['組內相關係數', ['ICC'], '總變異中來自群與群之間的比例。', 'random-eff'],
+  ['設計效應', [], '1 + (每群人數 − 1) × ICC：群集資料讓有效樣本數縮小的倍數。', 'random-eff'],
+  ['有效樣本數', [], '總觀察數 ÷ 設計效應：群集資料實際相當於多少個獨立觀察值。', 'random-eff'],
   ['重複測量', [], '同一個個體在不同時間點或條件下被測量好幾次。', 'repeated'],
   ['球形假設', [], '重複測量 ANOVA 的前提：任兩個時間點之間差值的變異數都差不多。', 'repeated'],
   ['Greenhouse–Geisser 校正', ['Greenhouse–Geisser', 'ε'], '從資料估計 ε，把自由度乘上 ε 以校正違反球形假設的影響。', 'repeated'],
@@ -769,7 +800,7 @@ const ORDER = [
   ['c2-1'],
   ['c2-2', 'c2-3', 'c2-4', 'c4-5', 'c5-1'],
   ['c3-1', 'c3-3', 'c3-5'],
-  ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated'],
+  ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff'],
   ['c3-4', 'c4-1', 'c4-2'],
   ['c4-3'],
   ['c4-4', 'c4-6'],
@@ -782,7 +813,7 @@ const REFS = {
   'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
   'c2-4': 'Whitlock 第 6 章；Rosner 7.1–7.5；Kirkwood 第 8 章', 'c4-5': 'Whitlock 14.6；Rosner 7.6–7.7、8.9；Kirkwood 第 35 章', 'c5-1': 'Rosner 13.2；Kirkwood 第 34 章',
   'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
-  'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
+  'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
   'c4-2': 'Rosner 13.7–13.8；Kirkwood 第 19–20 章', 'c4-3': 'Whitlock 第 21 章；Rosner 14.8–14.11；Kirkwood 第 26–27 章', 'c4-4': 'Benjamini & Hochberg (1995), J R Stat Soc B 57:289–300',
   'c4-6': 'Rosner 12.10、13.13–13.14；Kirkwood 第 31 章', 'c5-2': 'Kirkwood 第 38 章；EQUATOR Network', 'c5-3': 'Kirkwood 第 38 章', 'c5-4': 'Kirkwood 第 34、38 章',
 };

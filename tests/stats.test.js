@@ -83,6 +83,10 @@ const rmA = S.rmAnova(RT), rmB = S.blockAnova(RT.flat(), RT.flatMap(r => r.map((
 near('重複測量 F = 區集 ANOVA F', rmA.F, rmB.T.F);
 if (!(rmA.eps >= 0.5 && rmA.eps <= 1)) { fail++; console.log('FAIL Greenhouse–Geisser ε 超出範圍', rmA.eps); } else console.log('ok   Greenhouse–Geisser ε 在 [1/(k−1), 1] 內：' + rmA.eps.toFixed(4));
 
+// Shrout & Fleiss (1979) Psychol Bull 86:420，表 4：6 個對象 × 4 位評分者，ICC(1,1) = .17
+const sf = [[9, 2, 5, 8], [6, 1, 3, 2], [8, 4, 6, 8], [7, 1, 2, 6], [10, 5, 6, 9], [6, 2, 4, 7]];
+near('ICC(1,1) Shrout & Fleiss', S.icc(sf).icc, 0.17, 0.05);
+
 const DS = {};
 for (const m of DATASETS) { const d = m.gen(); DS[m.id] = makeDS({ ...m, head: d.head, rows: d.rows }); }
 const runs = [

@@ -571,6 +571,22 @@ Object.assign(W, {
     };
     el.addEventListener('input', up); up();
   },
+  iccw(el) {
+    const zb = std(Array.from({ length: 8 }, normOf(rngOf(161)))), zw = Array.from({ length: 8 }, (_, i) => std(Array.from({ length: 6 }, normOf(rngOf(170 + i)))));
+    el.innerHTML = `<p class="w-cap">8 隻小鼠，每隻量好幾次。調整「小鼠之間」與「同一隻內」的差異，看 ICC 和有效樣本數。</p>
+<div class="w-row">${slider('wi2-b', '小鼠之間的標準差', 0, 5, 0.25, 3)}${slider('wi2-w', '同一隻小鼠內的標準差', 0.25, 5, 0.25, 1.5)}${slider('wi2-m', '每隻量幾次', 2, 6, 1, 4)}</div>
+<div class="chart-wrap" id="wi2-c"></div><div class="kv" id="wi2-k"></div>`;
+    const up = () => {
+      const sb = sv('wi2-b', v => v.toFixed(2)), sw = sv('wi2-w', v => v.toFixed(2)), m = sv('wi2-m'), gv = zb.map((u, i) => zw[i].slice(0, m).map(e => 20 + sb * u + sw * e)), R = S.icc(gv), gm = S.mean(gv.flat()), [mn, mx] = S.minmax(gv.flat()), de = 1 + (m - 1) * Math.max(0, R.icc);
+      $('#wi2-c').innerHTML = chart({ xcats: gv.map((_, i) => `#${i + 1}`), y: [mn, mx], h: 280, ylab: '腫瘤大小' }, (X, Y) => {
+        let g = `<line class="hlx" data-k="vb icc" x1="${X(0) - 20}" x2="${X(7) + 20}" y1="${Y(gm)}" y2="${Y(gm)}" style="stroke:var(--muted);stroke-dasharray:5 4"/>`;
+        gv.forEach((v, i) => { const mi = S.mean(v); g += v.map(x => `<line class="hlx" data-k="vw icc" x1="${X(i) + 6}" x2="${X(i) + 6}" y1="${Y(x)}" y2="${Y(mi)}" style="stroke:var(--c3);stroke-width:2"/>`).join('') + v.map(x => `<circle data-k="pts" cx="${X(i)}" cy="${Y(x)}" r="4" style="fill:var(--c1);fill-opacity:.7"/>`).join('') + `<line data-k="vb icc" x1="${X(i) - 12}" x2="${X(i) + 12}" y1="${Y(mi)}" y2="${Y(mi)}" style="stroke:var(--c2);stroke-width:3"/><line class="hlx" data-k="vb icc" x1="${X(i) - 8}" x2="${X(i) - 8}" y1="${Y(gm)}" y2="${Y(mi)}" style="stroke:var(--c2);stroke-width:2.5"/>`; });
+        return g;
+      });
+      $('#wi2-k').innerHTML = kvs([['小鼠之間的變異成分', F.n(R.vb, 2), 'vb'], ['同一隻內的變異成分', F.n(R.vw, 2), 'vw'], ['ICC', F.n(Math.max(0, R.icc), 3), 'icc'], ['設計效應', F.n(de, 2), 'pts'], ['有效樣本數', `${F.n(8 * m / de, 1)}（共 ${8 * m} 次測量）`, 'pts']]);
+    };
+    el.addEventListener('input', up); up();
+  },
   expdesign(el) {
     el.innerHTML = `<p class="w-cap">情境：測試新藥能不能讓小鼠體重增加。每隻小鼠本來的健康狀況不同，健康的小鼠本來就長得比較好。下圖是把同一個實驗重做 400 次，每次估計的藥效（給藥組平均 − 對照組平均）。</p>
 <div class="seg wrap" id="wx-a"><button type="button" data-a="rand" aria-selected="true">隨機分派</button><button type="button" data-a="pick" aria-selected="false">研究者挑選（健康的給藥）</button></div>
@@ -606,5 +622,5 @@ Object.assign(W, {
   },
 });
 
-const WMAP = { 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
+const WMAP = { 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
 for (const [id, [w, t]] of Object.entries(WMAP)) { const c = CH.find(x => x.id === id); c.widget = w; c.wtitle = t; }

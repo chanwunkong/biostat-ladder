@@ -151,6 +151,12 @@ const S = (() => {
     const Q = (12 / (n * k * (k + 1)) * sum(R.map(v => v * v)) - 3 * n * (k + 1)) / (1 - tie / (n * k * (k * k - 1)));
     return { Q, df: k - 1, p: pchisq(Q, k - 1), R };
   }
+  // 隨機效果單因子 ANOVA 的變異成分與 ICC(1,1)（Shrout & Fleiss 1979）。groups 為各群的測量值
+  function icc(groups) {
+    const A = anova(groups), k = groups.length, N = sum(groups.map(g => g.length)), n0 = (N - sum(groups.map(g => g.length ** 2)) / N) / (k - 1);
+    const vb = Math.max(0, (A.msb - A.msw) / n0), vw = A.msw;
+    return { vb, vw, icc: (A.msb - A.msw) / (A.msb + (n0 - 1) * A.msw), n0, F: A.F, df1: A.df1, df2: A.df2, p: A.p };
+  }
   // Welch ANOVA（不假設各組變異數相等；R 的 oneway.test(var.equal = FALSE)）
   function welchAnova(groups) {
     const k = groups.length, n = groups.map(g => g.length), m = groups.map(mean), w = groups.map((g, i) => n[i] / variance(g)), W = sum(w);
@@ -309,7 +315,7 @@ const S = (() => {
   const nProps = (p1, p2, alpha, power) => { const za = qnorm(1 - alpha / 2), zb = qnorm(power), pb = (p1 + p2) / 2; return Math.ceil((za * Math.sqrt(2 * pb * (1 - pb)) + zb * Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))) ** 2 / ((p1 - p2) ** 2)); };
   const powerProps = (p1, p2, n, alpha) => { const za = qnorm(1 - alpha / 2), pb = (p1 + p2) / 2; return pnorm((Math.abs(p1 - p2) * Math.sqrt(n) - za * Math.sqrt(2 * pb * (1 - pb))) / Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))); };
 
-  return { lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, mannWhitney, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
+  return { lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, mannWhitney, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
 })();
 
 /* ---------- 格式 ---------- */
