@@ -111,6 +111,8 @@ near('精確法上限', pci.exact[1], 0.5921885);
 near('單一樣本 t (sleep 第一組 vs 0)', S.oneT(g1, 0).t, 1.3257);
 near('單一樣本 t 的 p', S.oneT(g1, 0).p, 0.2176);
 
+near('binom.test(7, 20, 0.5) p', S.binomTest(7, 20, 0.5).p, 0.2632);
+
 const DS = {};
 for (const m of DATASETS) { const d = m.gen(); DS[m.id] = makeDS({ ...m, head: d.head, rows: d.rows }); }
 const runs = [
@@ -118,6 +120,7 @@ const runs = [
   ['bp_trial', 'ttest', { y: 'sbp_wk12', g: 'group' }],
   ['bp_trial', 'paired', { a: 'sbp_base', b: 'sbp_wk12' }],
   ['bp_trial', 'onet', { y: 'sbp_base', mu0: 150 }],
+  ['bp_trial', 'binomtest', { y: 'ae', p0: 0.1 }],
   ['bp_trial', 'linreg', { y: 'sbp_wk12', xs: ['group', 'sbp_base', 'age', 'bmi'] }],
   ['bp_trial', 'chisq', { r: 'group', c: 'ae' }],
   ['cvd_cohort', 'corr', { x: 'age', y: 'sbp' }],

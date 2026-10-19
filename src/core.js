@@ -196,6 +196,8 @@ const S = (() => {
   const pbinom = (k, n, p) => { let s = 0; for (let i = 0; i <= Math.min(k, n); i++) s += dbinom(i, n, p); return Math.min(1, s); };
   const dpois = (k, lam) => (k < 0 ? 0 : Math.exp(-lam + k * Math.log(lam) - lgamma(k + 1)));
   const ppois = (k, lam) => { let s = 0; for (let i = 0; i <= k; i++) s += dpois(i, lam); return Math.min(1, s); };
+  // 精確二項檢定（雙尾：加總機率不大於觀察結果的所有結果，與 R 的 binom.test 相同）
+  function binomTest(x, n, p0) { const d0 = dbinom(x, n, p0); let p = 0; for (let k = 0; k <= n; k++) { const d = dbinom(k, n, p0); if (d <= d0 * (1 + 1e-7)) p += d; } const z = (x - n * p0) / Math.sqrt(n * p0 * (1 - p0)); return { p: Math.min(1, p), z, pz: pz2(z) }; }
   // 比例的信賴區間：Wald、Wilson、精確法（Clopper–Pearson，以 Beta 分佈的分位數計算）
   const qbeta = (p, a, b) => { let lo = 0, hi = 1; for (let i = 0; i < 60; i++) { const m = (lo + hi) / 2; if (ibeta(m, a, b) < p) lo = m; else hi = m; } return (lo + hi) / 2; };
   function propCI(x, n, conf = 0.95) {
@@ -335,7 +337,7 @@ const S = (() => {
   const nProps = (p1, p2, alpha, power) => { const za = qnorm(1 - alpha / 2), zb = qnorm(power), pb = (p1 + p2) / 2; return Math.ceil((za * Math.sqrt(2 * pb * (1 - pb)) + zb * Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))) ** 2 / ((p1 - p2) ** 2)); };
   const powerProps = (p1, p2, n, alpha) => { const za = qnorm(1 - alpha / 2), pb = (p1 + p2) / 2; return pnorm((Math.abs(p1 - p2) * Math.sqrt(n) - za * Math.sqrt(2 * pb * (1 - pb))) / Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))); };
 
-  return { dbinom, pbinom, dpois, ppois, propCI, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, mannWhitney, oneT, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
+  return { dbinom, pbinom, dpois, ppois, propCI, binomTest, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, mannWhitney, oneT, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
 })();
 
 /* ---------- 格式 ---------- */
@@ -789,6 +791,23 @@ const AN = {
         tables: [{ head: ['n', '平均 ± SD', '平均 − μ₀', '95% CI', 't', 'p 值'], rows: [[R.n, `${F.n(R.m)} ± ${F.n(R.s)}`, F.n(R.m - mu0), F.ci(...R.ci), `t(${R.df}) = ${F.n(R.t, 2)}`, F.p(R.p)]] }],
         write: W2(`${s.y} 的平均與參考值 ${F.n(mu0)} 以單一樣本 t 檢定比較（雙尾）。`, `${s.y} 平均 ${F.n(R.m)} ± ${F.n(R.s)}（95% CI ${F.ci(...R.ci)}，n = ${R.n}）；與 ${F.n(mu0)} 比較：t(${R.df}) = ${F.n(R.t, 2)}，${F.peq(R.p)}。`,
           `The mean of ${s.y} was compared with the reference value ${F.n(mu0)} using a two-sided one-sample t test.`, `Mean ${s.y} ${F.n(R.m)} ± ${F.n(R.s)} (95% CI ${F.cien(...R.ci)}, n = ${R.n}); compared with ${F.n(mu0)}: t(${R.df}) = ${F.n(R.t, 2)}, ${F.peq(R.p)}.`),
+      };
+    },
+  },
+  binomtest: {
+    name: '單一比例檢定', when: '一個二元變數的比例和預期比例 p₀ 比較（二項檢定）',
+    fields: [{ k: 'y', label: '二元變數', t: 'bin' }, { k: 'p0', label: '預期比例 p₀（0 到 1）', t: 'value', def: 0.5 }],
+    run(ds, s) {
+      const p0 = Number(s.p0); if (!(p0 > 0 && p0 < 1)) throw new Error('預期比例 p₀ 要介於 0 和 1 之間。');
+      const yc = colOf(ds, s.y), { idx, dropped } = complete(ds, [s.y]), B = binCode(ds, yc, idx), n = idx.length, x = S.sum(B.y), T = S.binomTest(x, n, p0), CI = S.propCI(x, n), pm = Array.from({ length: n + 1 }, (_, k) => S.dbinom(k, n, p0)), d0 = pm[x], top = Math.max(...pm);
+      const ch = chart({ x: [-0.5, n + 0.5], y: [0, top * 1.15], h: 240, xlab: `「${B.ev}」的人數（若 p = p₀）`, ylab: '機率' }, (X, Y) => { const bw = Math.max(1, (X(1) - X(0)) * 0.7); return pm.map((v, k) => `<rect data-k="${v <= d0 * (1 + 1e-7) ? 'p' : ''}" x="${X(k) - bw / 2}" y="${Y(v)}" width="${bw}" height="${Y(0) - Y(v)}" style="fill:${v <= d0 * (1 + 1e-7) ? 'var(--c2)' : 'var(--c1)'};fill-opacity:.8"/>`).join('') + `<g data-k="obs"><line x1="${X(x)}" x2="${X(x)}" y1="${Y(0)}" y2="${Y(top * 1.1)}" style="stroke:var(--ink);stroke-width:2.5"/><text x="${X(x) + 4}" y="${Y(top * 1.1) + 10}" style="fill:var(--ink)">觀察到 ${x}</text></g>`; });
+      return {
+        title: `${esc(s.y)} = ${esc(B.ev)} 的比例 vs p₀ = ${F.n(p0)}`, meta: meta(n, dropped), facts: [`事件：${esc(s.y)} = ${esc(B.ev)}`],
+        charts: [{ svg: ch, cap: '虛無假設（p = p₀）下各種人數的二項機率；紅色長條是和觀察結果一樣或更不可能出現的結果，加總就是精確 p 值。' }],
+        cards: [cd('obs', '樣本比例', `${x}/${n}（${F.n(100 * x / n, 1)}%）`, 'prop'), cd('obs', '比例的 95% CI（Wilson）', F.ci(...CI.wilson, 3), 'ci'), cd('p', 'p 值（精確二項檢定）', F.p(T.p), 'p')],
+        tables: [{ head: ['n', '事件數', '比例', '95% CI（Wilson）', '95% CI（精確法）', '精確 p', 'z 近似 p'], rows: [[n, x, F.n(x / n, 3), F.ci(...CI.wilson, 3), F.ci(...CI.exact, 3), F.p(T.p), F.p(T.pz)]] }],
+        write: W2(`${s.y} 為「${B.ev}」的比例與預期比例 ${F.n(p0)} 以精確二項檢定比較（雙尾），信賴區間以 Wilson 法計算。`, `${x}/${n}（${F.n(100 * x / n, 1)}%，95% CI ${F.ci(100 * CI.wilson[0], 100 * CI.wilson[1], 1)}%）；與 ${F.n(p0)} 比較：精確二項檢定 ${F.peq(T.p)}。`,
+          `The proportion with ${s.y} = ${B.ev} was compared with the expected proportion ${F.n(p0)} using a two-sided exact binomial test; the confidence interval was calculated by the Wilson method.`, `${x}/${n} (${F.n(100 * x / n, 1)}%, 95% CI ${F.cien(100 * CI.wilson[0], 100 * CI.wilson[1], 1)}%); exact binomial test against ${F.n(p0)}: ${F.peq(T.p)}.`),
       };
     },
   },
