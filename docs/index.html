@@ -4243,24 +4243,27 @@ Object.assign(W, {
     segBind(el, '#wdg-mode', b => { mode = b.dataset.m; up(); }); segBind(el, '#wdg-m', b => { adj = +b.dataset.m; up(); }); el.addEventListener('input', up); up();
   },
   phack(el) {
-    const ways = ['換成次要結果變數', '刪除 3 個「極端值」', '只分析女性', '只分析 60 歲以上', '改用中位數比較', '多校正一個變數', '少校正一個變數', '改看 6 個月的資料', '排除沒按時服藥的人', '把年齡切成兩組', '換一種檢定方法', '只看第二家醫院'];
+    const D = STUDY(), I = [...Array(D.n).keys()], cmp = (f, v = i => D.crp[i], test = 'welch') => { const ix = I.filter(f), a = ix.filter(i => D.group[i] === 'placebo').map(v), b = ix.filter(i => D.group[i] === 'drug').map(v); return test === 'mw' ? S.mannWhitney(a, b).p : S.welch(a, b).p; };
+    const top3 = new Set([...I].sort((a, b) => D.crp[b] - D.crp[a]).slice(0, 3)), all = () => true;
+    const v = c => i => D[c][i], W8 = [['原本計畫的分析：全部病人，比較 CRP 平均', () => cmp(all)], ['刪除 3 個 CRP 最高的「極端值」', () => cmp(i => !top3.has(i))], ['只分析女性', () => cmp(i => D.sex[i] === 'F')], ['改比較 ln(CRP)', () => cmp(all, i => Math.log(D.crp[i]))], ['改用 Mann–Whitney', () => cmp(all, undefined, 'mw')], ['改看另一個發炎相關指標：HDL', () => cmp(all, v('hdl'))], ['改看三酸甘油脂', () => cmp(all, v('tg'))], ['改看總膽固醇', () => cmp(all, v('chol'))], ['總膽固醇，只看女性', () => cmp(i => D.sex[i] === 'F', v('chol'))], ['改看 LDL，只看吸菸者', () => cmp(i => D.smoker[i] === 1, v('ldl'))], ['改看空腹血糖', () => cmp(all, v('glucose'))], ['空腹血糖，只看男性', () => cmp(i => D.sex[i] === 'M', v('glucose'))], ['CRP，只看有糖尿病的人', () => cmp(i => D.diabetes[i] === 1)], ['CRP，只看 60 歲以上', () => cmp(i => D.age[i] >= 60)], ...HN.map(h => [`CRP，只看 ${h} 醫院`, () => cmp(i => D.hospital[i] === h)])];
+    const ways = W8.map(x => x[0]), pv = W8.map(x => x[1]());
     let tries = [];
-    el.innerHTML = `<p class="w-cap">情境：新藥<b>其實完全無效</b>。你有很多種看似合理的分析選擇，每試一種就得到一個新的 p 值。</p><div class="w-row"><button class="btn pri" type="button" id="wh-go">換一種分析試試</button><button class="btn ghost" type="button" id="wh-re">重來</button></div><div class="tries" id="wh-l"></div><p class="w-out" id="wh-o"></p><figure class="fig"><figcaption>試越多種分析，至少一次 p &lt; 0.05 的機率越高（假設各次獨立）</figcaption><div class="chart-wrap" id="wh-c"></div></figure>`;
+    el.innerHTML = SRC_NOTE + `<p class="w-cap">情境：資料產生時，新藥<b>完全不影響 CRP 和任何抽血值</b>。你有很多種看似合理的分析選擇（刪極端值、換結果變數、只看某一群人），每試一種就在研究資料上算出一個新的 p 值。</p><div class="w-row"><button class="btn pri" type="button" id="wh-go">換一種分析試試</button><button class="btn ghost" type="button" id="wh-re">重來</button></div><div class="tries" id="wh-l"></div><p class="w-out" id="wh-o"></p><figure class="fig"><figcaption>試越多種分析，至少一次 p &lt; 0.05 的機率越高（假設各次獨立）</figcaption><div class="chart-wrap" id="wh-c"></div></figure>`;
     const up = () => {
       const k = tries.length, hit = tries.findIndex(p => p < 0.05);
-      $('#wh-l').innerHTML = tries.map((p, i) => `<div class="try ${p < 0.05 ? 'sig' : ''}"><span>${i ? ways[(i - 1) % ways.length] : '原本計畫的分析'}</span><b>p = ${p.toFixed(3)}</b></div>`).join('') || '<p class="small mut">按上面的按鈕開始。</p>';
+      $('#wh-l').innerHTML = tries.map((p, i) => `<div class="try ${p < 0.05 ? 'sig' : ''}"><span>${ways[i % ways.length]}</span><b>p = ${p.toFixed(3)}</b></div>`).join('') || '<p class="small mut">按上面的按鈕開始。</p>';
       $('#wh-c').innerHTML = chart({ x: [0, 20], y: [0, 1], h: 220, xlab: '嘗試了幾種分析', ylab: '機率', xgrid: true }, (X, Y) => `<path d="${Array.from({ length: 21 }, (_, i) => `${i ? 'L' : 'M'}${X(i)} ${Y(1 - Math.pow(0.95, i))}`).join('')}" style="fill:none;stroke:var(--c2);stroke-width:2.5"/>` + (k ? `<circle cx="${X(Math.min(20, k))}" cy="${Y(1 - Math.pow(0.95, Math.min(20, k)))}" r="6.5" style="fill:var(--c2)"/>` : ''));
       $('#wh-o').innerHTML = hit >= 0 ? `第 ${hit + 1} 次嘗試得到 p &lt; 0.05。如果論文只報告這一次，讀者會以為無效的藥有效。這就是 p-hacking；事先寫好統計分析計畫可以避免。` : k ? `試了 ${k} 次都不顯著。繼續試試看。` : '';
     };
-    $('#wh-go', el).onclick = () => { tries.push(Math.random()); up(); }; $('#wh-re', el).onclick = () => { tries = []; up(); }; up();
+    $('#wh-go', el).onclick = () => { tries.push(pv[tries.length % pv.length]); up(); }; $('#wh-re', el).onclick = () => { tries = []; up(); }; up();
   },
   figgood(el) {
-    const G = [['對照組', [12, 13, 14, 13.5, 30, 31, 29, 32]], ['處理組', [20, 22, 19, 21, 23, 20, 22, 21.5]]];
+    const D = STUDY(), I = [...Array(D.n).keys()], pick = g => I.filter(i => D.hospital[i] === 'H3' && D.group[i] === g).slice(0, 8).map(i => D.crp[i]), G = [['安慰劑', pick('placebo')], ['新藥', pick('drug')]], ymax = Math.ceil(Math.max(...G.flatMap(g => g[1])) * 1.1);
     const TX = { se: '兩組看起來幾乎一樣，誤差線很短。SE = SD ÷ √n，所以永遠比 SD 短；圖說沒寫是 SE 時，讀者會以為資料很集中。', sd: '同一份資料換成 SD，誤差線長了很多，印象完全不同。長條圖仍然藏住了資料的形狀。', ci: '95% CI 呈現「平均數估得多準」，適合比較效果，但仍看不到個別資料。', box: '畫出每個點才發現：對照組其實分成兩群（可能是兩種反應型，或批次效應）。小樣本時，請畫出所有資料點。' };
-    el.innerHTML = `<div class="seg wrap" id="wfg-m"><button data-m="se" aria-selected="true" type="button">長條 ± SE</button><button data-m="sd" aria-selected="false" type="button">長條 ± SD</button><button data-m="ci" aria-selected="false" type="button">平均 ± 95% CI</button><button data-m="box" aria-selected="false" type="button">箱型 + 每個點</button></div><div class="chart-wrap" id="wfg-c"></div><p class="w-out" id="wfg-t"></p>`;
+    el.innerHTML = SRC_NOTE + `<p class="w-cap">H3 醫院兩組各 8 位病人的 CRP（右偏的資料）。同一份資料，四種畫法。</p><div class="seg wrap" id="wfg-m"><button data-m="se" aria-selected="true" type="button">長條 ± SE</button><button data-m="sd" aria-selected="false" type="button">長條 ± SD</button><button data-m="ci" aria-selected="false" type="button">平均 ± 95% CI</button><button data-m="box" aria-selected="false" type="button">箱型 + 每個點</button></div><div class="chart-wrap" id="wfg-c"></div><p class="w-out" id="wfg-t"></p>`;
     let mode = 'se';
     const up = () => {
-      $('#wfg-c').innerHTML = chart({ xcats: G.map(g => g[0] + '（n=8）'), y: [0, 36], h: 270, ylab: '測量值' }, (X, Y, { iw }) => G.map(([, v], k) => {
+      $('#wfg-c').innerHTML = chart({ xcats: G.map(g => g[0] + '（n=8）'), y: [0, ymax], h: 270, ylab: 'CRP（mg/L）' }, (X, Y, { iw }) => G.map(([, v], k) => {
         const x = X(k), m = S.mean(v), sd = S.sd(v), se = sd / Math.sqrt(v.length), h = S.qt(0.975, v.length - 1) * se, bw = iw / 2 * 0.45, c = col4(k);
         if (mode === 'se' || mode === 'sd') { const e = mode === 'se' ? se : sd; return `<rect x="${x - bw / 2}" y="${Y(m)}" width="${bw}" height="${Y(0) - Y(m)}" style="fill:${c};fill-opacity:.75"/><line x1="${x}" x2="${x}" y1="${Y(m - e)}" y2="${Y(m + e)}" class="ink" style="stroke-width:2"/><line x1="${x - 10}" x2="${x + 10}" y1="${Y(m + e)}" y2="${Y(m + e)}" class="ink" style="stroke-width:2"/>`; }
         if (mode === 'ci') return `<line x1="${x}" x2="${x}" y1="${Y(m - h)}" y2="${Y(m + h)}" style="stroke:${c};stroke-width:3"/><line x1="${x - 10}" x2="${x + 10}" y1="${Y(m - h)}" y2="${Y(m - h)}" style="stroke:${c};stroke-width:3"/><line x1="${x - 10}" x2="${x + 10}" y1="${Y(m + h)}" y2="${Y(m + h)}" style="stroke:${c};stroke-width:3"/><circle cx="${x}" cy="${Y(m)}" r="7" style="fill:${c}"/>`;
@@ -6468,7 +6471,7 @@ const QD = {
     { q: '研究資料中，有糖尿病的人發生心血管事件的粗勝算比是 2.81；依年齡分三層校正後變成 2.31。年齡在這裡扮演什麼角色？', o: ['干擾因子：年齡同時影響糖尿病與心血管事件', '中介變數', '結果變數', '和兩者都無關'], why: '年齡越大越容易有糖尿病、也越容易發生心血管事件，所以未校正的估計混入了年齡的影響。', demo: { click: ['#wdg-mode [data-m="data"]', '#wdg-m [data-m="1"]'], look: '研究資料：切換「不校正」與「校正干擾因子」，比較兩個 OR。紅色箭頭是經過年齡的後門路徑。' } },
   ],
   'c5-2': [
-    { demo: { click: ['#wh-re', '#wh-go', '#wh-go', '#wh-go', '#wh-go', '#wh-go', '#wh-go', '#wh-go', '#wh-go'], look: '一次試了 8 種分析，數數看有沒有碰巧顯著的。可以繼續按「換一種分析試試」。' } },
+    { demo: { click: ['#wh-re', '#wh-go', '#wh-go', '#wh-go', '#wh-go', '#wh-go', '#wh-go', '#wh-go', '#wh-go', '#wh-go', '#wh-go', '#wh-go', '#wh-go'], look: '研究資料：連續試了 12 種分析，前 11 種都不顯著，第 12 種「空腹血糖，只看男性」p = 0.020。新藥其實不影響血糖；如果論文只報告這一個結果，讀者就會被誤導。' } },
     { q: '虛無假設為真時，嘗試 10 種彼此獨立的分析，至少一次 p < 0.05 的機率約是？', o: ['40%', '5%', '10%', '95%'], why: '1 − 0.95¹⁰ ≈ 0.40。', demo: { click: ['#wh-re', '#wh-go', '#wh-go', '#wh-go', '#wh-go', '#wh-go', '#wh-go', '#wh-go', '#wh-go', '#wh-go', '#wh-go'], look: '看曲線上紅點對應的機率（第 10 次）。' } },
   ],
   'c5-3': [
