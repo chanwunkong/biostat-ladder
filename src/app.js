@@ -114,6 +114,7 @@ function eligible(ds, f) { return ds ? ds.cols.filter(elig[f.t]).map(c => c.name
 function ensureSel() {
   const ds = getDS(state.dsId), spec = AN[state.an], sel = state.sels[state.an] || (state.sels[state.an] = {}), used = new Set();
   spec.fields.forEach(f => {
+    if (f.t === 'value') { if (sel[f.k] === undefined || sel[f.k] === '') sel[f.k] = f.def; return; }
     const el = eligible(ds, f);
     if (f.multi) { if (!sel[f.k]) sel[f.k] = f.def === 'all' ? el.filter(n => !used.has(n)) : f.def === 'some' ? el.filter(n => !used.has(n)).slice(0, 8) : []; sel[f.k] = sel[f.k].filter(n => el.includes(n)); }
     else { if (!el.includes(sel[f.k])) sel[f.k] = f.opt ? '' : el.find(n => !used.has(n)) || ''; if (sel[f.k]) used.add(sel[f.k]); }
@@ -146,6 +147,7 @@ function renderForm() {
   if (spec.nodata) { $('#form').innerHTML = '<p class="small mut">這項工具不需要資料集，直接在右側輸入參數。</p>'; $('#runBtn').hidden = true; return; }
   $('#runBtn').hidden = false;
   $('#form').innerHTML = spec.fields.map(f => {
+    if (f.t === 'value') return `<label class="fld"><span>${f.label}</span><input id="f-${f.k}" data-k="${f.k}" type="number" inputmode="decimal" step="any" value="${esc(sel[f.k])}"></label>`;
     const el = eligible(ds, f);
     if (f.multi) {
       const cur = sel[f.k] || [];
@@ -154,6 +156,7 @@ function renderForm() {
     return `<label class="fld"><span>${f.label}</span><select id="f-${f.k}" data-k="${f.k}">${f.opt ? '<option value="">（不選）</option>' : ''}${el.map(n => `<option value="${esc(n)}" ${sel[f.k] === n ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></label>`;
   }).join('');
   $$('#form select').forEach(s => { s.onchange = () => { sel[s.dataset.k] = s.value; }; });
+  $$('#form input[type=number]').forEach(s => { s.onchange = () => { sel[s.dataset.k] = s.value; }; });
   $$('#form input[type=checkbox]').forEach(cb => { cb.onchange = () => { const a = sel[cb.dataset.k] || (sel[cb.dataset.k] = []); if (cb.checked) { if (!a.includes(cb.value)) a.push(cb.value); } else a.splice(a.indexOf(cb.value), 1); renderForm(); const n = $('#' + cb.id); if (n) n.focus(); }; });
   $$('[data-all]').forEach(b => { b.onclick = () => { const f = spec.fields.find(x => x.k === b.dataset.all); sel[f.k] = eligible(ds, f); renderForm(); }; });
   $$('[data-none]').forEach(b => { b.onclick = () => { sel[b.dataset.none] = []; renderForm(); }; });

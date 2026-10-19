@@ -75,6 +75,7 @@ const S = (() => {
     const cc = U > mu ? -0.5 : U < mu ? 0.5 : 0; const z = sig > 0 ? (U - mu + cc) / sig : 0;
     return { U, z, p: pz2(z) };
   }
+  function oneT(x, mu0) { const n = x.length, m = mean(x), s = sd(x), se = s / Math.sqrt(n), df = n - 1, t = (m - mu0) / se, tc = qt(0.975, df); return { n, m, s, se, df, t, p: pt2(t, df), ci: [m - tc * se, m + tc * se] }; }
   function pairedT(x, y) {
     const d = y.map((v, i) => v - x[i]), n = d.length, md = mean(d), sdd = sd(d), se = sdd / Math.sqrt(n), df = n - 1, t = md / se, tc = qt(0.975, df);
     return { n, md, sdd, se, t, df, p: se > 0 ? pt2(t, df) : NaN, ci: [md - tc * se, md + tc * se], dz: md / sdd, d };
@@ -334,7 +335,7 @@ const S = (() => {
   const nProps = (p1, p2, alpha, power) => { const za = qnorm(1 - alpha / 2), zb = qnorm(power), pb = (p1 + p2) / 2; return Math.ceil((za * Math.sqrt(2 * pb * (1 - pb)) + zb * Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))) ** 2 / ((p1 - p2) ** 2)); };
   const powerProps = (p1, p2, n, alpha) => { const za = qnorm(1 - alpha / 2), pb = (p1 + p2) / 2; return pnorm((Math.abs(p1 - p2) * Math.sqrt(n) - za * Math.sqrt(2 * pb * (1 - pb))) / Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))); };
 
-  return { dbinom, pbinom, dpois, ppois, propCI, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, mannWhitney, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
+  return { dbinom, pbinom, dpois, ppois, propCI, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, mannWhitney, oneT, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
 })();
 
 /* ---------- 格式 ---------- */
@@ -769,6 +770,25 @@ const AN = {
           `${G[1]} 組（n = ${b.length}）${s.y} ${F.n(m1)} ± ${F.n(w.s2)}；${G[0]} 組（n = ${a.length}）${F.n(m0)} ± ${F.n(w.s1)}；平均差 ${F.n(w.diff)}（95% CI ${F.ci(...w.ci)}；Welch t(${F.n(w.df, 1)}) = ${F.n(w.t, 2)}，${F.peq(w.p)}；Cohen's d = ${F.n(w.d, 2)}）。Mann–Whitney U = ${F.n(mw.U, 1)}，${F.peq(mw.p)}。`,
           `${s.y} was compared between groups using Welch's t test, which does not assume equal variances, and the Mann–Whitney U test; effect size is reported as Cohen's d. All tests were two-sided.`,
           `${s.y}: ${F.n(m1)} ± ${F.n(w.s2)} in the ${G[1]} group (n = ${b.length}) and ${F.n(m0)} ± ${F.n(w.s1)} in the ${G[0]} group (n = ${a.length}); mean difference ${F.n(w.diff)} (95% CI ${F.cien(...w.ci)}; Welch's t(${F.n(w.df, 1)}) = ${F.n(w.t, 2)}, ${F.peq(w.p)}; Cohen's d = ${F.n(w.d, 2)}). Mann–Whitney U = ${F.n(mw.U, 1)}, ${F.peq(mw.p)}.`),
+      };
+    },
+  },
+  onet: {
+    name: '單一樣本 t 檢定', when: '樣本平均和一個已知的參考值比較',
+    fields: [{ k: 'y', label: '變數（數值）', t: 'num' }, { k: 'mu0', label: '參考值 μ₀', t: 'value', def: 0 }],
+    run(ds, s) {
+      const mu0 = Number(s.mu0); if (!Number.isFinite(mu0)) throw new Error('請輸入參考值 μ₀。');
+      const yc = colOf(ds, s.y), { idx, dropped } = complete(ds, [s.y]); if (idx.length < 3) throw new Error('至少需要 3 筆資料。');
+      const x = idx.map(i => yc.values[i]), R = S.oneT(x, mu0), [lo, hi] = S.minmax([...x, mu0, ...R.ci]);
+      const ch = chart({ x: [lo, hi], y: [0, 1], noY: true, h: 200, xlab: s.y, m: { t: 24 } }, (X, Y) => x.map((v, k) => `<circle cx="${X(v).toFixed(1)}" cy="${(Y(0.35) + (((k * 0.618) % 1) - 0.5) * 50).toFixed(1)}" r="3" style="fill:var(--c1);fill-opacity:.45"/>`).join('')
+        + `<g data-k="ci mean"><line x1="${X(R.ci[0])}" x2="${X(R.ci[1])}" y1="${Y(0.8)}" y2="${Y(0.8)}" style="stroke:var(--c2);stroke-width:5"/><circle cx="${X(R.m)}" cy="${Y(0.8)}" r="6" style="fill:var(--c2)"/></g><g data-k="mu0"><line x1="${X(mu0)}" x2="${X(mu0)}" y1="${Y(0)}" y2="${Y(1)}" style="stroke:var(--ink);stroke-width:2.5;stroke-dasharray:6 4"/><text x="${X(mu0) + 5}" y="${Y(1) + 4}" style="fill:var(--ink)">μ₀ = ${F.n(mu0)}</text></g>`);
+      return {
+        title: `${esc(s.y)} 與 μ₀ = ${F.n(mu0)} 比較`, meta: meta(idx.length, dropped), facts: [],
+        charts: [{ svg: ch, cap: '點為個別觀察值；紅色為平均與 95% 信賴區間；黑色虛線為參考值 μ₀。μ₀ 落在信賴區間外時，雙尾 p < 0.05。' }, { svg: distChart('t', R.t, R.df, `t（自由度 ${R.df}）`), cap: distCap.t }],
+        cards: [cd('mean', '平均', `${F.n(R.m)}（SD ${F.n(R.s)}）`, 'mean'), cd('ci', '平均的 95% CI', F.ci(...R.ci), 'ci'), cd('mu0', '參考值 μ₀', F.n(mu0), 'diff'), cd('t', 't', `${F.n(R.t, 2)}（df ${R.df}）`, 't'), cd('p', 'p 值', F.p(R.p), 'p')],
+        tables: [{ head: ['n', '平均 ± SD', '平均 − μ₀', '95% CI', 't', 'p 值'], rows: [[R.n, `${F.n(R.m)} ± ${F.n(R.s)}`, F.n(R.m - mu0), F.ci(...R.ci), `t(${R.df}) = ${F.n(R.t, 2)}`, F.p(R.p)]] }],
+        write: W2(`${s.y} 的平均與參考值 ${F.n(mu0)} 以單一樣本 t 檢定比較（雙尾）。`, `${s.y} 平均 ${F.n(R.m)} ± ${F.n(R.s)}（95% CI ${F.ci(...R.ci)}，n = ${R.n}）；與 ${F.n(mu0)} 比較：t(${R.df}) = ${F.n(R.t, 2)}，${F.peq(R.p)}。`,
+          `The mean of ${s.y} was compared with the reference value ${F.n(mu0)} using a two-sided one-sample t test.`, `Mean ${s.y} ${F.n(R.m)} ± ${F.n(R.s)} (95% CI ${F.cien(...R.ci)}, n = ${R.n}); compared with ${F.n(mu0)}: t(${R.df}) = ${F.n(R.t, 2)}, ${F.peq(R.p)}.`),
       };
     },
   },

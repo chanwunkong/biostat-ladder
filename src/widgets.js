@@ -764,6 +764,19 @@ Object.assign(W, {
     el.addEventListener('input', e => { if (e.target.type === 'range') { if (e.target.id !== 'wpc-x') sim = null; if (!sim) $('#wpc-s').innerHTML = ''; up(); } });
     $('#wpc-go', el).onclick = runSim; up();
   },
+  onetw(el) {
+    const z = std(Array.from({ length: 40 }, normOf(rngOf(251))));
+    el.innerHTML = `<p class="w-cap">量 n 位受試者的體溫，和參考值 μ₀ 比較。看 μ₀ 落在信賴區間內外時，p 值怎麼變。</p>
+<div class="w-row">${slider('wo1-m', '樣本平均', 36.4, 37.4, 0.05, 36.8)}${slider('wo1-s', '標準差', 0.1, 0.8, 0.05, 0.3)}${slider('wo1-n', '人數 n', 3, 40, 1, 10)}${slider('wo1-u', '參考值 μ₀', 36.4, 37.4, 0.05, 37)}</div>
+<div class="chart-wrap" id="wo1-c"></div><div class="chart-wrap" id="wo1-t"></div><div class="kv" id="wo1-k"></div>`;
+    const up = () => {
+      const m = sv('wo1-m', v => v.toFixed(2)), sd = sv('wo1-s', v => v.toFixed(2)), n = sv('wo1-n'), u = sv('wo1-u', v => v.toFixed(2)), x = z.slice(0, n).map(v => m + sd * (n > 2 ? (v - S.mean(z.slice(0, n))) / S.sd(z.slice(0, n)) : v)), R = S.oneT(x, u);
+      $('#wo1-c').innerHTML = chart({ x: [36, 37.8], y: [0, 1], noY: true, h: 170, xlab: '體溫（°C）', m: { t: 24 } }, (X, Y) => x.map((v, k) => `<circle cx="${X(v).toFixed(1)}" cy="${(Y(0.3) + (((k * 0.618) % 1) - 0.5) * 40).toFixed(1)}" r="3.5" style="fill:var(--c1);fill-opacity:.5"/>`).join('') + `<g data-k="ci se"><line x1="${X(R.ci[0])}" x2="${X(R.ci[1])}" y1="${Y(0.78)}" y2="${Y(0.78)}" style="stroke:var(--c2);stroke-width:5"/><circle cx="${X(R.m)}" cy="${Y(0.78)}" r="6" style="fill:var(--c2)"/></g><g data-k="mu0 t"><line x1="${X(u)}" x2="${X(u)}" y1="${Y(0)}" y2="${Y(1)}" style="stroke:var(--ink);stroke-width:2.5;stroke-dasharray:6 4"/><text x="${X(u) + 5}" y="${Y(1) + 4}" style="fill:var(--ink)">μ₀</text></g>`);
+      $('#wo1-t').innerHTML = distChart('t', R.t, R.df, `t（自由度 ${R.df}）`);
+      $('#wo1-k').innerHTML = kvs([['標準誤 s ÷ √n', F.n(R.se, 3), 'se'], ['95% 信賴區間', F.ci(...R.ci, 2), 'ci'], ['參考值 μ₀', u.toFixed(2), 'mu0'], ['t = (x̄ − μ₀) ÷ 標準誤', F.n(R.t, 2), 't'], ['p 值', F.p(R.p), 'p']]);
+    };
+    el.addEventListener('input', up); up();
+  },
   mosaic(el) {
     el.innerHTML = `<p class="w-cap">正方形代表全部的人（面積 = 1）。左右寬度是吸菸與不吸菸的比例；每一欄內，紅色的高度是該群中有高血壓的比例。</p>
 <div class="w-row">${slider('wm2-a', 'P(吸菸)', 5, 95, 5, 30, '%')}${slider('wm2-ba', 'P(高血壓 | 吸菸)', 0, 100, 5, 30, '%')}${slider('wm2-bn', 'P(高血壓 | 不吸菸)', 0, 100, 5, 15, '%')}</div>
@@ -781,5 +794,5 @@ Object.assign(W, {
   },
 });
 
-const WMAP = { 'prop-ci': ['propciw', '三種比例信賴區間'], 'tdist': ['tdistw', 't 分佈與常態分佈'], 'poisson': ['poissonw', 'Poisson 分佈與培養皿'], 'binom': ['binomw', '二項分佈'], 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
+const WMAP = { 'one-t': ['onetw', '單一樣本 t 檢定'], 'prop-ci': ['propciw', '三種比例信賴區間'], 'tdist': ['tdistw', 't 分佈與常態分佈'], 'poisson': ['poissonw', 'Poisson 分佈與培養皿'], 'binom': ['binomw', '二項分佈'], 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
 for (const [id, [w, t]] of Object.entries(WMAP)) { const c = CH.find(x => x.id === id); c.widget = w; c.wtitle = t; }

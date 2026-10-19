@@ -777,6 +777,24 @@ const CH = [
       { q: '想讓比例的信賴區間寬度減半，樣本數大約要變成幾倍？', o: ['4 倍', '2 倍', '一半', '不變'], why: '寬度與 1 ÷ √n 成正比。' },
     ],
   },
+  {
+    id: 'one-t', title: '單一樣本 t 檢定與信賴區間的關係',
+    body: `<p>有時候要比較的不是兩組，而是一組樣本和一個<b>已知的參考值</b> μ₀：健康成人的體溫 37.0 °C、試劑標示的濃度、文獻報告的族群平均、理論預測值。這時用<b>單一樣本 t 檢定</b>。</p>
+<div class="formula">虛無假設 H₀：μ = μ₀<br>t = (x̄ − μ₀) ÷ (s ÷ √n)　　自由度 = n − 1</div>
+<p>例：量 10 位受試者的體溫，平均 36.8 °C、SD 0.3。t = (36.8 − 37.0) ÷ (0.3 ÷ √10) ≈ −2.11，自由度 9，雙尾 p ≈ 0.064。</p>
+<h3>檢定與信賴區間是一體兩面</h3>
+<p>同一份資料的雙尾檢定（α = 0.05）和 95% 信賴區間，結論永遠一致：</p>
+<ul><li>μ₀ <b>落在</b> 95% 信賴區間<b>外</b> ⇔ p &lt; 0.05</li><li>μ₀ 落在 95% 信賴區間內 ⇔ p ≥ 0.05</li></ul>
+<p>所以信賴區間除了告訴你「是否不同」，還告訴你「和資料相容的真值範圍有多大」，資訊比單一個 p 值多。這也是期刊要求報告信賴區間的原因。</p>
+<h3>和配對 t 檢定的關係</h3>
+<p>配對 t 檢定（{{c3-1}} 章）其實就是：先算出每個人的差值（後 − 前），再對差值做 μ₀ = 0 的單一樣本 t 檢定。</p>
+<p class="note">單一樣本 t 檢定的前提和其他 t 檢定相同：觀察值獨立、資料（或樣本數夠大時的平均數）接近常態。資料嚴重偏態時，可用 Wilcoxon 符號等級檢定比較中位數與參考值。</p>`,
+    quiz: [
+      { q: '10 位受試者體溫平均 36.8 °C、SD 0.3，與 37.0 °C 比較。t 值約是多少？', o: ['−2.11', '−0.67', '−0.2', '−6.67'], why: 'SE = 0.3 ÷ √10 ≈ 0.095；t = (36.8 − 37.0) ÷ 0.095 ≈ −2.11。' },
+      { q: '某樣本平均的 95% 信賴區間是 36.6 至 37.0。檢定 μ₀ = 37.1 時，雙尾 p 值會？', o: ['小於 0.05', '大於 0.05', '剛好等於 0.05', '無法判斷'], why: '37.1 落在 95% 信賴區間之外，相對應的雙尾檢定 p < 0.05。' },
+      { q: '配對 t 檢定其實等於？', o: ['對每個人的差值做 μ₀ = 0 的單一樣本 t 檢定', '兩組獨立的 Welch t 檢定', '卡方檢定', '把兩次測量相加後做 t 檢定'], why: '配對設計只關心每個人的變化量，所以就是對差值做單一樣本檢定。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -914,6 +932,8 @@ const GLOSS = [
   ['信賴區間', ['CI'], '估計值 ± 臨界值 × 標準誤。以同樣方法重複研究時，95% 的區間會涵蓋真值。', 'c2-3'],
   ['t 分佈', [], '用樣本標準差代替母體標準差時，標準化平均數的分佈；尾巴比常態分佈厚，形狀由自由度決定。', 'tdist'],
   ['臨界值', [], '信賴區間或檢定所用的分界值，例如 95% 雙尾的常態臨界值 1.96。', 'tdist'],
+  ['單一樣本 t 檢定', [], '比較一組樣本的平均和一個已知參考值 μ₀ 的 t 檢定。', 'one-t'],
+  ['參考值', ['μ₀'], '單一樣本檢定中要比較的已知數值。', 'one-t'],
   ['樣本比例', ['p̂'], '樣本中「成功」的比例 x ÷ n，用來估計母體比例。', 'prop-ci'],
   ['Wald 法', ['Wald'], '比例的信賴區間 p̂ ± 1.96 × SE；小樣本或比例接近 0、1 時不準確。', 'prop-ci'],
   ['Wilson 法', ['Wilson'], '涵蓋率較穩定的比例信賴區間，目前最常建議。', 'prop-ci'],
@@ -990,7 +1010,7 @@ const ORDER = [
   ['c0-1', 'c0-2', 'c0-3', 'c0-4'],
   ['c1-1', 'c1-2', 'c1-3', 'c1-4', 'c1-5'],
   ['prob-rules', 'c2-1', 'roc', 'rv', 'binom', 'poisson'],
-  ['c2-2', 'c2-3', 'tdist', 'prop-ci', 'c2-4', 'c4-5', 'c5-1'],
+  ['c2-2', 'c2-3', 'tdist', 'prop-ci', 'c2-4', 'one-t', 'c4-5', 'c5-1'],
   ['c3-1', 'c3-3', 'c3-5'],
   ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff', 'ancova'],
   ['c3-4', 'c4-1', 'c4-2'],
@@ -1002,7 +1022,7 @@ const ORDER = [
 const REFS = {
   'c0-1': 'Rosner 3.10', 'c1-1': 'Whitlock 第 1 章；Kirkwood 第 2 章', 'c1-2': 'Whitlock 第 3 章；Rosner 2.2–2.3；Kirkwood 第 4 章',
   'c1-3': 'Whitlock 第 3 章；Rosner 2.4–2.5；Kirkwood 第 4 章', 'c1-4': 'Whitlock 第 10 章；Rosner 第 5 章；Kirkwood 第 5 章', 'c1-5': 'Kirkwood 第 34 章',
-  'prob-rules': 'Whitlock 第 5 章；Rosner 3.2–3.6', 'roc': 'Rosner 3.9；UTHealth GSBS 課綱第 10 週', 'rv': 'Rosner 4.2–4.6', 'binom': 'Whitlock 7.1；Rosner 4.7–4.9、5.7；Kirkwood 第 15 章', 'poisson': 'Whitlock 8.4；Rosner 4.10–4.13；Kirkwood 第 22 章', 'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'tdist': 'Whitlock 11.1；Rosner 6.5', 'prop-ci': 'Whitlock 7.3；Rosner 6.8；Kirkwood 第 15 章', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
+  'prob-rules': 'Whitlock 第 5 章；Rosner 3.2–3.6', 'roc': 'Rosner 3.9；UTHealth GSBS 課綱第 10 週', 'rv': 'Rosner 4.2–4.6', 'binom': 'Whitlock 7.1；Rosner 4.7–4.9、5.7；Kirkwood 第 15 章', 'poisson': 'Whitlock 8.4；Rosner 4.10–4.13；Kirkwood 第 22 章', 'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'tdist': 'Whitlock 11.1；Rosner 6.5', 'prop-ci': 'Whitlock 7.3；Rosner 6.8；Kirkwood 第 15 章', 'one-t': 'Whitlock 11.2；Rosner 7.3–7.5；UTHealth GSBS 課綱第 2 週', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
   'c2-4': 'Whitlock 第 6 章；Rosner 7.1–7.5；Kirkwood 第 8 章', 'c4-5': 'Whitlock 14.6；Rosner 7.6–7.7、8.9；Kirkwood 第 35 章', 'c5-1': 'Rosner 13.2；Kirkwood 第 34 章',
   'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
   'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
