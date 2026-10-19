@@ -1008,6 +1008,35 @@ Object.assign(W, {
     };
     el.addEventListener('input', up); up();
   },
+  stdw(el) {
+    el.innerHTML = `<div class="seg wrap" id="wsd-m"><button type="button" data-m="std" aria-selected="true">年齡標準化</button><button type="button" data-m="paf" aria-selected="false">族群歸因分率</button></div><div id="wsd-body"></div>`;
+    let mode = 'std';
+    const draw = () => {
+      const body = $('#wsd-body', el);
+      if (mode === 'std') {
+        body.innerHTML = `<p class="w-cap">甲、乙兩鎮各 10,000 人。調整各鎮的老年人口比例與各年齡層死亡率（每千人）。標準人口：老年人 30%。</p>
+<div class="w-row">${slider('wsd-oa', '甲鎮老年人比例', 0.05, 0.6, 0.05, 0.5)}${slider('wsd-ob', '乙鎮老年人比例', 0.05, 0.6, 0.05, 0.1)}</div>
+<div class="w-row">${slider('wsd-ya', '甲鎮年輕人死亡率', 0.5, 10, 0.5, 1.5)}${slider('wsd-oa2', '甲鎮老年人死亡率', 5, 80, 1, 40)}${slider('wsd-yb', '乙鎮年輕人死亡率', 0.5, 10, 0.5, 2)}${slider('wsd-ob2', '乙鎮老年人死亡率', 5, 80, 1, 50)}</div><div class="chart-wrap" id="wsd-c"></div><div class="kv" id="wsd-k"></div>`;
+      } else body.innerHTML = `<div class="w-row">${slider('wsd-pe', '族群中暴露者的比例 Pe', 0.05, 0.9, 0.05, 0.3)}${slider('wsd-rr', '相對風險 RR', 1, 10, 0.1, 2)}</div><div class="chart-wrap" id="wsd-c"></div><div class="kv" id="wsd-k"></div>`;
+      up();
+    };
+    const up = () => {
+      if (mode === 'std') {
+        const oa = sv('wsd-oa', v => Math.round(v * 100) + '%'), ob = sv('wsd-ob', v => Math.round(v * 100) + '%'), ya = sv('wsd-ya'), o2a = sv('wsd-oa2'), yb = sv('wsd-yb'), o2b = sv('wsd-ob2');
+        const crA = (1 - oa) * ya + oa * o2a, crB = (1 - ob) * yb + ob * o2b, sA = 0.7 * ya + 0.3 * o2a, sB = 0.7 * yb + 0.3 * o2b, expA = (1 - oa) * yb + oa * o2b, smr = crA / expA, top = Math.max(crA, crB, sA, sB) * 1.15;
+        $('#wsd-c').innerHTML = chart({ xcats: ['粗死亡率', '年齡標準化率'], y: [0, top], h: 240, ylab: '每千人死亡' }, (X, Y) => [[crA, crB, 'crude'], [sA, sB, 'std']].map(([a, b, k], i) => `<g data-k="${k}"><rect x="${X(i) - 34}" y="${Y(a)}" width="30" height="${Y(0) - Y(a)}" style="fill:var(--c1)"/><rect x="${X(i) + 4}" y="${Y(b)}" width="30" height="${Y(0) - Y(b)}" style="fill:var(--c2)"/></g>`).join(''));
+        $('#wsd-c').insertAdjacentHTML('beforeend', legend([['var(--c1)', '甲鎮'], ['var(--c2)', '乙鎮']]));
+        $('#wsd-k').innerHTML = kvs([['粗率（甲 vs 乙）', `${F.n(crA, 1)} vs ${F.n(crB, 1)}`, 'crude'], ['年齡標準化率（甲 vs 乙）', `${F.n(sA, 1)} vs ${F.n(sB, 1)}`, 'std'], ['甲鎮以乙鎮為標準的 SMR', F.n(smr, 2), 'std']]);
+      } else {
+        const pe = sv('wsd-pe', v => Math.round(v * 100) + '%'), rr = sv('wsd-rr', v => v.toFixed(1)), paf = pe * (rr - 1) / (1 + pe * (rr - 1)), afe = (rr - 1) / rr, r0 = 0.05, cases0 = 10000 * ((1 - pe) * r0), cases1 = 10000 * pe * r0 * rr, attr = 10000 * pe * r0 * (rr - 1);
+        $('#wsd-c').innerHTML = chart({ xcats: ['非暴露者的病例', '暴露者的病例'], y: [0, Math.max(cases0, cases1) * 1.15], h: 240, ylab: '病例數（每萬人，基礎風險 5%）' }, (X, Y) => `<rect data-k="base" x="${X(0) - 34}" y="${Y(cases0)}" width="68" height="${Y(0) - Y(cases0)}" style="fill:var(--c1)"/><rect data-k="base afe" x="${X(1) - 34}" y="${Y(cases1 - attr)}" width="68" height="${Y(0) - Y(cases1 - attr)}" style="fill:var(--c1)"/><rect data-k="paf afe" x="${X(1) - 34}" y="${Y(cases1)}" width="68" height="${Y(cases1 - attr) - Y(cases1)}" style="fill:var(--c2)"/>`);
+        $('#wsd-c').insertAdjacentHTML('beforeend', legend([['var(--c2)', '可歸因於暴露的病例'], ['var(--c1)', '即使沒有暴露也會發生的病例']]));
+        $('#wsd-k').innerHTML = kvs([['族群歸因分率 PAF', F.n(100 * paf, 1) + '%', 'paf'], ['暴露組歸因分率 (RR − 1) ÷ RR', F.n(100 * afe, 1) + '%', 'afe'], ['可歸因的病例（= PAF × 全部病例，每萬人）', F.n(attr, 0), 'paf']]);
+      }
+    };
+    segBind(el, '#wsd-m', b => { mode = b.dataset.m; draw(); });
+    el.addEventListener('input', up); draw();
+  },
   mosaic(el) {
     el.innerHTML = `<p class="w-cap">正方形代表全部的人（面積 = 1）。左右寬度是吸菸與不吸菸的比例；每一欄內，紅色的高度是該群中有高血壓的比例。</p>
 <div class="w-row">${slider('wm2-a', 'P(吸菸)', 5, 95, 5, 30, '%')}${slider('wm2-ba', 'P(高血壓 | 吸菸)', 0, 100, 5, 30, '%')}${slider('wm2-bn', 'P(高血壓 | 不吸菸)', 0, 100, 5, 15, '%')}</div>
@@ -1025,5 +1054,5 @@ Object.assign(W, {
   },
 });
 
-const WMAP = { 'mh': ['mhw', '辛普森悖論'], 'bland-altman': ['blandw', '兩台血糖儀'], 'poisson-reg': ['ratew', '發生率與率比'], 'reg-diag': ['regdiagw', '看殘差圖找問題'], 'simple-reg': ['simpleregw', '信賴帶與預測帶'], 'graphs': ['graphsw', '同一份資料，四種圖'], 'kappa': ['kappaw', '兩位病理師的一致性'], 'mcnemar': ['mcnemarw', '只看不一致的人'], 'two-prop': ['twopropw', '兩組反應率'], 'nonpar': ['nonparw', '用名次比較'], 'two-assume': ['twoassume', '轉換與極端值'], 'boot': ['bootw', '重抽 2000 次'], 'gof': ['gofw', '孟德爾的豌豆'], 'binom-test': ['binomtestw', '二項檢定'], 'one-t': ['onetw', '單一樣本 t 檢定'], 'prop-ci': ['propciw', '三種比例信賴區間'], 'tdist': ['tdistw', 't 分佈與常態分佈'], 'poisson': ['poissonw', 'Poisson 分佈與培養皿'], 'binom': ['binomw', '二項分佈'], 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
+const WMAP = { 'standardize': ['stdw', '標準化與歸因分率'], 'mh': ['mhw', '辛普森悖論'], 'bland-altman': ['blandw', '兩台血糖儀'], 'poisson-reg': ['ratew', '發生率與率比'], 'reg-diag': ['regdiagw', '看殘差圖找問題'], 'simple-reg': ['simpleregw', '信賴帶與預測帶'], 'graphs': ['graphsw', '同一份資料，四種圖'], 'kappa': ['kappaw', '兩位病理師的一致性'], 'mcnemar': ['mcnemarw', '只看不一致的人'], 'two-prop': ['twopropw', '兩組反應率'], 'nonpar': ['nonparw', '用名次比較'], 'two-assume': ['twoassume', '轉換與極端值'], 'boot': ['bootw', '重抽 2000 次'], 'gof': ['gofw', '孟德爾的豌豆'], 'binom-test': ['binomtestw', '二項檢定'], 'one-t': ['onetw', '單一樣本 t 檢定'], 'prop-ci': ['propciw', '三種比例信賴區間'], 'tdist': ['tdistw', 't 分佈與常態分佈'], 'poisson': ['poissonw', 'Poisson 分佈與培養皿'], 'binom': ['binomw', '二項分佈'], 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
 for (const [id, [w, t]] of Object.entries(WMAP)) { const c = CH.find(x => x.id === id); c.widget = w; c.wtitle = t; }

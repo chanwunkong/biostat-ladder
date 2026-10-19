@@ -1076,6 +1076,30 @@ const CH = [
       { q: '吸菸與疾病的勝算比在男性是 3.0、在女性是 0.8。應該怎麼報告？', o: ['分別報告兩性的勝算比：這是效果修飾（交互作用）', '只報告 Mantel–Haenszel 合併的勝算比', '取平均 1.9', '刪掉女性'], why: '各層效果明顯不同時，合併成一個數字會掩蓋差異。' },
     ],
   },
+  {
+    id: 'standardize', title: '標準化與歸因風險',
+    body: `<p>比較兩個族群（兩個鄉鎮、兩個年代、兩家醫院）的死亡率時，如果年齡結構不同，直接比較<b>粗率</b>（總死亡數 ÷ 總人口）會誤導：老年人多的地方，死亡率自然比較高。年齡在這裡是干擾因子，<b>標準化</b>就是處理它的方法。</p>
+<h3>直接標準化</h3>
+<p>把兩個族群<b>各年齡層的死亡率</b>，套用到同一個「標準人口」的年齡結構上，算出「如果兩地的年齡結構相同，死亡率會是多少」。得到的叫<b>年齡標準化率</b>，可以直接比較。各國衛生統計常用 WHO 或本國某年的人口當標準人口。</p>
+<div class="formula">直接標準化率 = Σ（各年齡層的死亡率 × 標準人口在該層的比例）</div>
+<h3>間接標準化與 SMR</h3>
+<p>當研究族群很小、各年齡層的死亡率不穩定時，改用間接法：把<b>標準族群的各年齡層死亡率</b>套用到研究族群上，算出「預期死亡數」，再和觀察到的死亡數比較：</p>
+<div class="formula">標準化死亡比 SMR = 觀察死亡數 ÷ 預期死亡數</div>
+<p>SMR = 1.5 代表觀察到的死亡比依標準族群死亡率預期的多 50%。職業流病（例如某工廠員工）常用 SMR。</p>
+<h3>歸因風險</h3>
+<p>知道暴露會增加風險之後，公共衛生更關心：<b>有多少病例是這個暴露造成的？</b></p>
+<div class="tbl-wrap"><table class="st"><thead><tr><th>指標</th><th>公式</th><th>回答的問題</th></tr></thead><tbody>
+<tr><td>歸因風險（風險差）</td><td>暴露組風險 − 非暴露組風險</td><td>暴露者因暴露多出的風險</td></tr>
+<tr><td>暴露組歸因分率</td><td>(RR − 1) ÷ RR</td><td>暴露者的病例中，有多少比例是暴露造成的</td></tr>
+<tr><td><b>族群歸因分率</b> PAF</td><td>P<sub>e</sub>(RR − 1) ÷ [1 + P<sub>e</sub>(RR − 1)]</td><td>整個族群的病例中，有多少比例可歸因於暴露</td></tr></tbody></table></div>
+<p>P<sub>e</sub> 是族群中暴露者的比例。例：吸菸盛行率 30%、RR = 2，PAF = 0.3 ÷ 1.3 ≈ 23%：如果完全沒有人吸菸（而且關聯是因果的），病例可以少約 23%。</p>
+<p class="note">歸因分率的解讀前提是：關聯是因果的，而且 RR 已經校正了干擾因子。</p>`,
+    quiz: [
+      { q: '甲鎮的粗死亡率比乙鎮高，但每個年齡層的死亡率甲鎮都比較低。最可能的原因是？', o: ['甲鎮的老年人口比例較高；應比較年齡標準化死亡率', '計算錯誤', '甲鎮的醫療較差', '乙鎮人口較少'], why: '年齡結構不同時，粗率混進了年齡的影響；標準化讓兩地放在同樣的年齡結構下比較。' },
+      { q: '某工廠員工的 SMR = 1.5。這代表什麼？', o: ['觀察到的死亡數比依標準族群死亡率預期的多 50%', '死亡率是 1.5%', '有 1.5 倍的人在工廠工作', '員工比一般人少死 50%'], why: 'SMR = 觀察 ÷ 預期。' },
+      { q: '吸菸盛行率 30%、吸菸的相對風險 RR = 2。族群歸因分率約是多少？', o: ['約 23%', '50%', '30%', '約 60%'], why: '0.3 × (2 − 1) ÷ [1 + 0.3 × (2 − 1)] = 0.3 ÷ 1.3 ≈ 0.23。50% 是暴露組歸因分率 (RR − 1) ÷ RR。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -1316,6 +1340,11 @@ const GLOSS = [
   ['Mantel–Haenszel 勝算比', ['Mantel–Haenszel', 'MH 勝算比'], '各層勝算比的加權平均，代表校正分層變數後的共同勝算比。', 'mh'],
   ['粗勝算比', [], '沒有分層或校正時算出的勝算比。', 'mh'],
   ['效果修飾', [], '暴露與結果的關聯強弱隨另一個變數而不同，也就是交互作用。', 'mh'],
+  ['粗率', [], '不考慮年齡等結構，直接以總事件數 ÷ 總人口（或人時）算出的率。', 'standardize'],
+  ['年齡標準化率', ['直接標準化', '標準化率'], '把各年齡層的率套用到同一個標準人口結構上算出的率。', 'standardize'],
+  ['標準化死亡比', ['SMR', '間接標準化'], '觀察死亡數 ÷ 依標準族群各年齡層死亡率算出的預期死亡數。', 'standardize'],
+  ['族群歸因分率', ['PAF'], '整個族群的病例中，可歸因於暴露的比例：Pe(RR − 1) ÷ [1 + Pe(RR − 1)]。', 'standardize'],
+  ['暴露組歸因分率', [], '暴露者的病例中，可歸因於暴露的比例：(RR − 1) ÷ RR。', 'standardize'],
   ['Kaplan–Meier', ['KM'], '能正確處理設限的存活曲線估計法。', 'c4-3'],
   ['中位存活時間', ['中位存活'], '存活曲線降到 0.5（一半的人發生事件）的時間。', 'c4-3'],
   ['危險比', ['HR'], '兩組在同一時間點事件瞬間發生率的比值。', 'c4-3'],
@@ -1348,7 +1377,7 @@ const ORDER = [
   ['c3-1', 'two-assume', 'nonpar', 'c3-3', 'two-prop', 'mcnemar', 'kappa', 'c3-5'],
   ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff', 'ancova'],
   ['c3-4', 'simple-reg', 'c4-1', 'reg-diag', 'c4-2', 'poisson-reg', 'bland-altman'],
-  ['mh', 'c4-3'],
+  ['mh', 'standardize', 'c4-3'],
   ['c4-4', 'c4-6'],
   ['c5-2', 'c5-3', 'c5-4', 'c5-5'],
 ];
@@ -1360,7 +1389,7 @@ const REFS = {
   'c2-4': 'Whitlock 第 6 章；Rosner 7.1–7.5；Kirkwood 第 8 章', 'c4-5': 'Whitlock 14.6；Rosner 7.6–7.7、8.9；Kirkwood 第 35 章', 'c5-1': 'Rosner 13.2；Kirkwood 第 34 章',
   'nonpar': 'Whitlock 13.4–13.7；Rosner 9.2–9.4', 'two-prop': 'Rosner 10.2、10.5；Kirkwood 第 16 章', 'kappa': 'Rosner 10.8；Landis & Koch (1977) Biometrics 33:159', 'mcnemar': 'Rosner 10.4；Kirkwood 第 21 章；Agresti, Categorical Data Analysis', 'two-assume': 'Whitlock 13.1–13.3；Rosner 8.6、8.10；Kirkwood 第 13 章', 'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
   'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'bland-altman': 'Kirkwood 第 36 章；Bland & Altman (1986) Lancet 327:307', 'poisson-reg': 'Kirkwood 第 22–24 章；Rosner 14.1–14.3', 'reg-diag': 'Kirkwood 第 12–13 章；Rosner 11.6；Whitlock 17.5–17.6', 'simple-reg': 'Whitlock 第 17 章；Rosner 11.2–11.6；Kirkwood 第 10 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
-  'c4-2': 'Rosner 13.7–13.8；Kirkwood 第 19–20 章', 'mh': 'Rosner 13.5–13.6；Kirkwood 第 18 章；Bickel 等 (1975) Science 187:398', 'c4-3': 'Whitlock 第 21 章；Rosner 14.8–14.11；Kirkwood 第 26–27 章', 'c4-4': 'Benjamini & Hochberg (1995), J R Stat Soc B 57:289–300',
+  'c4-2': 'Rosner 13.7–13.8；Kirkwood 第 19–20 章', 'standardize': 'Rosner 13.4–13.5；Kirkwood 第 25、37 章', 'mh': 'Rosner 13.5–13.6；Kirkwood 第 18 章；Bickel 等 (1975) Science 187:398', 'c4-3': 'Whitlock 第 21 章；Rosner 14.8–14.11；Kirkwood 第 26–27 章', 'c4-4': 'Benjamini & Hochberg (1995), J R Stat Soc B 57:289–300',
   'c4-6': 'Rosner 12.10、13.13–13.14；Kirkwood 第 31 章', 'c5-2': 'Kirkwood 第 38 章；EQUATOR Network', 'c5-3': 'Kirkwood 第 38 章', 'c5-4': 'Kirkwood 第 34、38 章',
 };
 (() => {

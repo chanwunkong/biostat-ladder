@@ -2,6 +2,11 @@
    每題的 demo：set = 設定輸入元件（id → 值）；click = 依序點擊的按鈕；custom = 交給互動圖自己的 _demo()；look = 示範時的觀察提示。
    有 q 的項目會整題替換（原題無法在圖上示範時）。 */
 const QD = {
+  'standardize': [
+    { demo: { click: ['#wsd-m [data-m="std"]'], set: { 'wsd-oa': 0.5, 'wsd-ob': 0.1, 'wsd-ya': 1.5, 'wsd-oa2': 40, 'wsd-yb': 2, 'wsd-ob2': 50 }, look: '甲鎮每個年齡層的死亡率都比乙鎮低，但老年人多一半：粗率甲鎮高，年齡標準化率甲鎮低。' } },
+    { demo: { click: ['#wsd-m [data-m="std"]'], set: { 'wsd-oa': 0.3, 'wsd-ob': 0.3, 'wsd-ya': 3, 'wsd-oa2': 75, 'wsd-yb': 2, 'wsd-ob2': 50 }, look: '點「SMR」：甲鎮觀察到的死亡，是用乙鎮各年齡層死亡率預期的 1.5 倍。' } },
+    { demo: { click: ['#wsd-m [data-m="paf"]'], set: { 'wsd-pe': 0.3, 'wsd-rr': 2 }, look: '紅色是可歸因於暴露的病例。比較 PAF（約 23%）與暴露組歸因分率（50%）。' } },
+  ],
   'mh': [
     { demo: { set: { 'wmh-f': 0.8, 'wmh-m': 0.2, 'wmh-g': 0 }, look: '兩個科系內男女錄取率完全相同（勝算比 = 1），但合起來的粗勝算比遠大於 1：女性多數申請難進的乙系。' } },
     { demo: { set: { 'wmh-f': 0.8, 'wmh-m': 0.2, 'wmh-g': 0 }, look: '點「Mantel–Haenszel 勝算比」：合併兩層後回到約 1。' } },
