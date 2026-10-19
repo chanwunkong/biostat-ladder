@@ -739,5 +739,12 @@ const WTERM = {
   'repeated': { '重複測量': 'subj', 'Greenhouse–Geisser 校正': 'time' },
   'random-eff': { '變異成分': 'vb vw', '組內相關係數': 'icc', '設計效應': 'pts', '有效樣本數': 'pts', '隨機效果': 'vb' },
   'ancova': { '共變數分析': 'adj', '校正後平均': 'adj', '平行斜率': 'inter', '共變數': 'adj' },
+  'c3-4': { '相關係數': 'r', 'Spearman': 'rho', 'r²': 'r2' },
+  'simple-reg': { '簡單線性迴歸': 'slope', '預測區間': 'pi', '信賴帶': 'ci', '預測值': 'fit' },
+  'c4-1': { '校正': 'adj', '迴歸係數': 'adj' },
+  'reg-diag': { '殘差圖': 'res', 'Cook 距離': 'cook', '影響點': 'cook' },
+  'c4-2': { '勝算': 'odds', 'e^β': 'or1 or10', '對數概似': 'll' },
+  'poisson-reg': { '率比': 'rr', 'Poisson 迴歸': 'rr', '發生率': 'ra rb' },
+  'bland-altman': { '偏差（一致性）': 'bias', '一致性界限': 'loa', 'Bland–Altman 圖': 'bias loa', '一致性': 'bias loa' },
   'c0-4': { '斜率': 'b', '截距': 'a', '殘差': 'ssr', '殘差平方和': 'ssr', '最小平方法': 'best' },
 };
