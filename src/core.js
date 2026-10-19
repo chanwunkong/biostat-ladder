@@ -196,6 +196,8 @@ const S = (() => {
   const pbinom = (k, n, p) => { let s = 0; for (let i = 0; i <= Math.min(k, n); i++) s += dbinom(i, n, p); return Math.min(1, s); };
   const dpois = (k, lam) => (k < 0 ? 0 : Math.exp(-lam + k * Math.log(lam) - lgamma(k + 1)));
   const ppois = (k, lam) => { let s = 0; for (let i = 0; i <= k; i++) s += dpois(i, lam); return Math.min(1, s); };
+  // 卡方適合度檢定：obs 為各類觀察次數，probs 為預期比例（會自動標準化）
+  function gof(obs, probs) { const n = sum(obs), ps = probs.map(p => p / sum(probs)), E = ps.map(p => n * p), chi2 = sum(obs.map((o, i) => (o - E[i]) ** 2 / E[i])), df = obs.length - 1; return { chi2, df, p: pchisq(chi2, df), E, minExp: Math.min(...E) }; }
   // 精確二項檢定（雙尾：加總機率不大於觀察結果的所有結果，與 R 的 binom.test 相同）
   function binomTest(x, n, p0) { const d0 = dbinom(x, n, p0); let p = 0; for (let k = 0; k <= n; k++) { const d = dbinom(k, n, p0); if (d <= d0 * (1 + 1e-7)) p += d; } const z = (x - n * p0) / Math.sqrt(n * p0 * (1 - p0)); return { p: Math.min(1, p), z, pz: pz2(z) }; }
   // 比例的信賴區間：Wald、Wilson、精確法（Clopper–Pearson，以 Beta 分佈的分位數計算）
@@ -337,7 +339,7 @@ const S = (() => {
   const nProps = (p1, p2, alpha, power) => { const za = qnorm(1 - alpha / 2), zb = qnorm(power), pb = (p1 + p2) / 2; return Math.ceil((za * Math.sqrt(2 * pb * (1 - pb)) + zb * Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))) ** 2 / ((p1 - p2) ** 2)); };
   const powerProps = (p1, p2, n, alpha) => { const za = qnorm(1 - alpha / 2), pb = (p1 + p2) / 2; return pnorm((Math.abs(p1 - p2) * Math.sqrt(n) - za * Math.sqrt(2 * pb * (1 - pb))) / Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))); };
 
-  return { dbinom, pbinom, dpois, ppois, propCI, binomTest, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, mannWhitney, oneT, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
+  return { dbinom, pbinom, dpois, ppois, propCI, binomTest, gof, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, mannWhitney, oneT, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
 })();
 
 /* ---------- 格式 ---------- */
@@ -808,6 +810,24 @@ const AN = {
         tables: [{ head: ['n', '事件數', '比例', '95% CI（Wilson）', '95% CI（精確法）', '精確 p', 'z 近似 p'], rows: [[n, x, F.n(x / n, 3), F.ci(...CI.wilson, 3), F.ci(...CI.exact, 3), F.p(T.p), F.p(T.pz)]] }],
         write: W2(`${s.y} 為「${B.ev}」的比例與預期比例 ${F.n(p0)} 以精確二項檢定比較（雙尾），信賴區間以 Wilson 法計算。`, `${x}/${n}（${F.n(100 * x / n, 1)}%，95% CI ${F.ci(100 * CI.wilson[0], 100 * CI.wilson[1], 1)}%）；與 ${F.n(p0)} 比較：精確二項檢定 ${F.peq(T.p)}。`,
           `The proportion with ${s.y} = ${B.ev} was compared with the expected proportion ${F.n(p0)} using a two-sided exact binomial test; the confidence interval was calculated by the Wilson method.`, `${x}/${n} (${F.n(100 * x / n, 1)}%, 95% CI ${F.cien(100 * CI.wilson[0], 100 * CI.wilson[1], 1)}%); exact binomial test against ${F.n(p0)}: ${F.peq(T.p)}.`),
+      };
+    },
+  },
+  gof: {
+    name: '卡方適合度檢定', when: '一個類別變數各類的人數，是否符合預期的比例（例如 9:3:3:1）',
+    fields: [{ k: 'y', label: '類別變數', t: 'cat' }, { k: 'probs', label: '預期比例（依類別順序，以逗號或冒號分隔；留空＝各類相等）', t: 'text', ph: '例如 9:3:3:1' }],
+    run(ds, s) {
+      const yc = colOf(ds, s.y), { idx, dropped } = complete(ds, [s.y]), L = levelsOf(ds, yc, idx), obs = L.map(l => idx.filter(i => lab(yc.values[i]) === l).length);
+      const txt = String(s.probs || '').trim(), probs = txt ? txt.split(/[\s,，:：]+/).filter(Boolean).map(Number) : L.map(() => 1);
+      if (probs.length !== L.length || probs.some(p => !(p > 0))) throw new Error(`「${s.y}」有 ${L.length} 個類別（${L.join('、')}），請依序輸入 ${L.length} 個正數作為預期比例。`);
+      const G = S.gof(obs, probs), mx = Math.max(...obs, ...G.E);
+      const ch = chart({ xcats: L, y: [0, mx * 1.1], h: 280, ylab: '人數' }, (X, Y, { iw }) => { const bw = iw / L.length * 0.3; return obs.map((o, i) => `<rect data-k="obs" x="${X(i) - bw - 2}" y="${Y(o)}" width="${bw}" height="${Y(0) - Y(o)}" style="fill:var(--c1)"/><rect data-k="exp" x="${X(i) + 2}" y="${Y(G.E[i])}" width="${bw}" height="${Y(0) - Y(G.E[i])}" style="fill:var(--muted);fill-opacity:.6"/><line class="hlx" data-k="chi2" x1="${X(i)}" x2="${X(i)}" y1="${Y(o)}" y2="${Y(G.E[i])}" style="stroke:var(--c2);stroke-width:4"/>`).join(''); });
+      return {
+        title: `${esc(s.y)} 的分佈 vs 預期比例 ${probs.join(':')}`, meta: meta(idx.length, dropped), facts: [`類別順序：${L.map(esc).join('、')}`],
+        charts: [{ svg: ch, legend: legend([['var(--c1)', '觀察次數'], ['var(--muted)', '期望次數']]), cap: '亮起時：紅線為每一類觀察與期望的差距。' }, { svg: distChart('chi2', G.chi2, G.df, `χ²（自由度 ${G.df}）`), cap: distCap.chi2 }],
+        cards: [cd('chi2', 'χ²', `${F.n(G.chi2, 2)}（df ${G.df}）`, 'chi2'), cd('p', 'p 值', F.p(G.p), 'p'), cd('exp', '最小期望次數', F.n(G.minExp, 2), 'minexp')],
+        tables: [{ head: ['類別', '觀察次數', '預期比例', '期望次數', '(觀察 − 期望)² ÷ 期望'], rows: L.map((l, i) => [esc(l), obs[i], F.n(probs[i] / S.sum(probs), 3), F.n(G.E[i], 1), F.n((obs[i] - G.E[i]) ** 2 / G.E[i], 3)]) }],
+        write: W2(`${s.y} 各類別的分佈與預期比例 ${probs.join(':')} 以卡方適合度檢定比較。`, `χ²(${G.df}) = ${F.n(G.chi2, 2)}，${F.peq(G.p)}；n = ${idx.length}。`, `The distribution of ${s.y} was compared with the expected ratio ${probs.join(':')} using the chi-square goodness-of-fit test.`, `χ²(${G.df}) = ${F.n(G.chi2, 2)}, ${F.peq(G.p)}; n = ${idx.length}.`),
       };
     },
   },

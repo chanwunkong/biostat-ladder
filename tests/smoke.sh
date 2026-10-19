@@ -17,7 +17,7 @@ setTimeout(() => {
     c.click();
   });
   if (location.hash === '#lab') {
-    const P = { table1: ['bp_trial', { g: 'group', vars: ['age', 'sex', 'bmi'] }], ttest: ['bp_trial', { y: 'sbp_wk12', g: 'group' }], paired: ['bp_trial', { a: 'sbp_base', b: 'sbp_wk12' }], onet: ['bp_trial', { y: 'sbp_base', mu0: 150 }], binomtest: ['bp_trial', { y: 'ae', p0: 0.1 }],
+    const P = { table1: ['bp_trial', { g: 'group', vars: ['age', 'sex', 'bmi'] }], ttest: ['bp_trial', { y: 'sbp_wk12', g: 'group' }], paired: ['bp_trial', { a: 'sbp_base', b: 'sbp_wk12' }], onet: ['bp_trial', { y: 'sbp_base', mu0: 150 }], binomtest: ['bp_trial', { y: 'ae', p0: 0.1 }], gof: ['lung_surv', { y: 'stage', probs: '1:1:1' }],
       anova: ['plant_growth', { y: 'height_cm', g: 'fertilizer' }], block: ['plant_growth', { y: 'height_cm', tr: 'fertilizer', bk: 'block' }], rm: ['wound', { vars: ['day0', 'day3', 'day7', 'day14'] }], ancova: ['bp_trial', { y: 'sbp_wk12', g: 'group', x: 'sbp_base' }], anova2: ['diet_geno', { y: 'weight_gain_g', a: 'diet', b: 'genotype' }], chisq: ['cvd_cohort', { r: 'smoker', c: 'cvd_10y' }], corr: ['cvd_cohort', { x: 'age', y: 'sbp' }],
       linreg: ['bp_trial', { y: 'sbp_wk12', xs: ['group', 'sbp_base'] }], logreg: ['cvd_cohort', { y: 'cvd_10y', xs: ['smoker', 'age'] }],
       surv: ['lung_surv', { time: 'time_months', status: 'status', g: 'treatment', xs: ['treatment', 'stage'] }], multi: ['gene_expr', { g: 'tissue' }], power: ['bp_trial', {}] };

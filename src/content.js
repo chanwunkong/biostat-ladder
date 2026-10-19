@@ -812,6 +812,25 @@ const CH = [
       { q: '雜交實驗預期紫花比例 0.75，929 株中觀察到 705 株紫花。最適合的分析是？', o: ['精確二項檢定（p₀ = 0.75）', '兩組獨立 t 檢定', '配對 t 檢定', '相關分析'], why: '一個樣本、一個二元結果、和已知的預期比例比較，就是二項檢定。' },
     ],
   },
+  {
+    id: 'gof', title: '卡方適合度檢定',
+    body: `<p>二項檢定只處理兩個類別。類別有三個以上時，要問「觀察到的各類人數，是否符合某個預期比例」，就用<b>卡方適合度檢定</b>。經典例子是孟德爾的雙因子雜交：圓黃、皺黃、圓綠、皺綠四種豌豆，理論預期 9：3：3：1。他觀察到 315、108、101、32 粒（共 556 粒）。</p>
+<h3>計算步驟</h3>
+<ol><li>依預期比例算出每一類的<b>期望次數</b>：總數 × 預期比例。例：圓黃 556 × 9/16 = 312.75。</li>
+<li>每一類算 (觀察 − 期望)² ÷ 期望，全部加總就是 χ²。觀察和預期越接近，χ² 越小。</li>
+<li>自由度 = 類別數 − 1（如果預期比例中有參數是從同一份資料估計出來的，每估計一個再減 1）。</li>
+<li>和 χ² 分佈比較得到 p 值。</li></ol>
+<p>孟德爾的資料：χ² = 0.47、自由度 3、p = 0.93，觀察值和 9：3：3：1 非常吻合。</p>
+<h3>前提</h3>
+<ul><li>每個觀察值獨立，只屬於一個類別。</li>
+<li>期望次數不能太小。Whitlock 的建議是：沒有任何一類的期望次數小於 1，而且期望次數小於 5 的類別不超過 20%。不符合時，可以合併相鄰的類別，或改用精確檢定。</li></ul>
+<p class="note">只有兩類時，卡方適合度檢定和二項檢定的 z 近似是同一件事（χ² = z²）。卡方檢定用在列聯表（{{c3-3}} 章）時，檢定的是兩個變數是否有關；用在一個變數時，檢定的是分佈是否符合預期。</p>`,
+    quiz: [
+      { q: '孟德爾的雙因子雜交有 4 種表現型，預期 9：3：3：1。卡方適合度檢定的自由度是多少？', o: ['3', '4', '1', '555'], why: '自由度 = 類別數 − 1 = 4 − 1 = 3。' },
+      { q: '孟德爾資料的 χ² = 0.47，p = 0.93。這代表什麼？', o: ['觀察次數和 9：3：3：1 的預期非常接近', '觀察次數顯著偏離預期', '證明 9：3：3：1 一定正確', '樣本數不夠'], why: 'χ² 小代表觀察與期望接近；p 大代表沒有證據顯示不符合，但這不等於「證明」理論正確。' },
+      { q: '某一類的期望次數只有 2.1，其他類都超過 10。較適當的處理是？', o: ['把這一類和相鄰的類別合併，或改用精確檢定', '直接刪掉這一類的資料', '照算不必處理', '把期望次數四捨五入成 5'], why: '期望次數太小時，卡方近似不準確；合併類別或使用精確檢定。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -951,6 +970,7 @@ const GLOSS = [
   ['臨界值', [], '信賴區間或檢定所用的分界值，例如 95% 雙尾的常態臨界值 1.96。', 'tdist'],
   ['單一樣本 t 檢定', [], '比較一組樣本的平均和一個已知參考值 μ₀ 的 t 檢定。', 'one-t'],
   ['參考值', ['μ₀'], '單一樣本檢定中要比較的已知數值。', 'one-t'],
+  ['卡方適合度檢定', ['適合度'], '檢定一個類別變數的各類人數是否符合預期比例。', 'gof'],
   ['二項檢定', ['精確二項檢定'], '用二項分佈直接計算的單一比例檢定。', 'binom-test'],
   ['預期比例', ['p₀'], '虛無假設下的比例，例如孟德爾預期的 0.75。', 'binom-test'],
   ['樣本比例', ['p̂'], '樣本中「成功」的比例 x ÷ n，用來估計母體比例。', 'prop-ci'],
@@ -1029,7 +1049,7 @@ const ORDER = [
   ['c0-1', 'c0-2', 'c0-3', 'c0-4'],
   ['c1-1', 'c1-2', 'c1-3', 'c1-4', 'c1-5'],
   ['prob-rules', 'c2-1', 'roc', 'rv', 'binom', 'poisson'],
-  ['c2-2', 'c2-3', 'tdist', 'prop-ci', 'c2-4', 'one-t', 'binom-test', 'c4-5', 'c5-1'],
+  ['c2-2', 'c2-3', 'tdist', 'prop-ci', 'c2-4', 'one-t', 'binom-test', 'gof', 'c4-5', 'c5-1'],
   ['c3-1', 'c3-3', 'c3-5'],
   ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff', 'ancova'],
   ['c3-4', 'c4-1', 'c4-2'],
@@ -1041,7 +1061,7 @@ const ORDER = [
 const REFS = {
   'c0-1': 'Rosner 3.10', 'c1-1': 'Whitlock 第 1 章；Kirkwood 第 2 章', 'c1-2': 'Whitlock 第 3 章；Rosner 2.2–2.3；Kirkwood 第 4 章',
   'c1-3': 'Whitlock 第 3 章；Rosner 2.4–2.5；Kirkwood 第 4 章', 'c1-4': 'Whitlock 第 10 章；Rosner 第 5 章；Kirkwood 第 5 章', 'c1-5': 'Kirkwood 第 34 章',
-  'prob-rules': 'Whitlock 第 5 章；Rosner 3.2–3.6', 'roc': 'Rosner 3.9；UTHealth GSBS 課綱第 10 週', 'rv': 'Rosner 4.2–4.6', 'binom': 'Whitlock 7.1；Rosner 4.7–4.9、5.7；Kirkwood 第 15 章', 'poisson': 'Whitlock 8.4；Rosner 4.10–4.13；Kirkwood 第 22 章', 'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'tdist': 'Whitlock 11.1；Rosner 6.5', 'prop-ci': 'Whitlock 7.3；Rosner 6.8；Kirkwood 第 15 章', 'binom-test': 'Whitlock 7.2；Rosner 7.9', 'one-t': 'Whitlock 11.2；Rosner 7.3–7.5；UTHealth GSBS 課綱第 2 週', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
+  'prob-rules': 'Whitlock 第 5 章；Rosner 3.2–3.6', 'roc': 'Rosner 3.9；UTHealth GSBS 課綱第 10 週', 'rv': 'Rosner 4.2–4.6', 'binom': 'Whitlock 7.1；Rosner 4.7–4.9、5.7；Kirkwood 第 15 章', 'poisson': 'Whitlock 8.4；Rosner 4.10–4.13；Kirkwood 第 22 章', 'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'tdist': 'Whitlock 11.1；Rosner 6.5', 'prop-ci': 'Whitlock 7.3；Rosner 6.8；Kirkwood 第 15 章', 'binom-test': 'Whitlock 7.2；Rosner 7.9', 'gof': 'Whitlock 8.1–8.3；Rosner 10.7', 'one-t': 'Whitlock 11.2；Rosner 7.3–7.5；UTHealth GSBS 課綱第 2 週', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
   'c2-4': 'Whitlock 第 6 章；Rosner 7.1–7.5；Kirkwood 第 8 章', 'c4-5': 'Whitlock 14.6；Rosner 7.6–7.7、8.9；Kirkwood 第 35 章', 'c5-1': 'Rosner 13.2；Kirkwood 第 34 章',
   'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
   'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',

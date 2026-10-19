@@ -709,6 +709,8 @@ const S = (() => {
   const pbinom = (k, n, p) => { let s = 0; for (let i = 0; i <= Math.min(k, n); i++) s += dbinom(i, n, p); return Math.min(1, s); };
   const dpois = (k, lam) => (k < 0 ? 0 : Math.exp(-lam + k * Math.log(lam) - lgamma(k + 1)));
   const ppois = (k, lam) => { let s = 0; for (let i = 0; i <= k; i++) s += dpois(i, lam); return Math.min(1, s); };
+  // 卡方適合度檢定：obs 為各類觀察次數，probs 為預期比例（會自動標準化）
+  function gof(obs, probs) { const n = sum(obs), ps = probs.map(p => p / sum(probs)), E = ps.map(p => n * p), chi2 = sum(obs.map((o, i) => (o - E[i]) ** 2 / E[i])), df = obs.length - 1; return { chi2, df, p: pchisq(chi2, df), E, minExp: Math.min(...E) }; }
   // 精確二項檢定（雙尾：加總機率不大於觀察結果的所有結果，與 R 的 binom.test 相同）
   function binomTest(x, n, p0) { const d0 = dbinom(x, n, p0); let p = 0; for (let k = 0; k <= n; k++) { const d = dbinom(k, n, p0); if (d <= d0 * (1 + 1e-7)) p += d; } const z = (x - n * p0) / Math.sqrt(n * p0 * (1 - p0)); return { p: Math.min(1, p), z, pz: pz2(z) }; }
   // 比例的信賴區間：Wald、Wilson、精確法（Clopper–Pearson，以 Beta 分佈的分位數計算）
@@ -850,7 +852,7 @@ const S = (() => {
   const nProps = (p1, p2, alpha, power) => { const za = qnorm(1 - alpha / 2), zb = qnorm(power), pb = (p1 + p2) / 2; return Math.ceil((za * Math.sqrt(2 * pb * (1 - pb)) + zb * Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))) ** 2 / ((p1 - p2) ** 2)); };
   const powerProps = (p1, p2, n, alpha) => { const za = qnorm(1 - alpha / 2), pb = (p1 + p2) / 2; return pnorm((Math.abs(p1 - p2) * Math.sqrt(n) - za * Math.sqrt(2 * pb * (1 - pb))) / Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))); };
 
-  return { dbinom, pbinom, dpois, ppois, propCI, binomTest, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, mannWhitney, oneT, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
+  return { dbinom, pbinom, dpois, ppois, propCI, binomTest, gof, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, mannWhitney, oneT, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
 })();
 
 /* ---------- 格式 ---------- */
@@ -1321,6 +1323,24 @@ const AN = {
         tables: [{ head: ['n', '事件數', '比例', '95% CI（Wilson）', '95% CI（精確法）', '精確 p', 'z 近似 p'], rows: [[n, x, F.n(x / n, 3), F.ci(...CI.wilson, 3), F.ci(...CI.exact, 3), F.p(T.p), F.p(T.pz)]] }],
         write: W2(`${s.y} 為「${B.ev}」的比例與預期比例 ${F.n(p0)} 以精確二項檢定比較（雙尾），信賴區間以 Wilson 法計算。`, `${x}/${n}（${F.n(100 * x / n, 1)}%，95% CI ${F.ci(100 * CI.wilson[0], 100 * CI.wilson[1], 1)}%）；與 ${F.n(p0)} 比較：精確二項檢定 ${F.peq(T.p)}。`,
           `The proportion with ${s.y} = ${B.ev} was compared with the expected proportion ${F.n(p0)} using a two-sided exact binomial test; the confidence interval was calculated by the Wilson method.`, `${x}/${n} (${F.n(100 * x / n, 1)}%, 95% CI ${F.cien(100 * CI.wilson[0], 100 * CI.wilson[1], 1)}%); exact binomial test against ${F.n(p0)}: ${F.peq(T.p)}.`),
+      };
+    },
+  },
+  gof: {
+    name: '卡方適合度檢定', when: '一個類別變數各類的人數，是否符合預期的比例（例如 9:3:3:1）',
+    fields: [{ k: 'y', label: '類別變數', t: 'cat' }, { k: 'probs', label: '預期比例（依類別順序，以逗號或冒號分隔；留空＝各類相等）', t: 'text', ph: '例如 9:3:3:1' }],
+    run(ds, s) {
+      const yc = colOf(ds, s.y), { idx, dropped } = complete(ds, [s.y]), L = levelsOf(ds, yc, idx), obs = L.map(l => idx.filter(i => lab(yc.values[i]) === l).length);
+      const txt = String(s.probs || '').trim(), probs = txt ? txt.split(/[\s,，:：]+/).filter(Boolean).map(Number) : L.map(() => 1);
+      if (probs.length !== L.length || probs.some(p => !(p > 0))) throw new Error(`「${s.y}」有 ${L.length} 個類別（${L.join('、')}），請依序輸入 ${L.length} 個正數作為預期比例。`);
+      const G = S.gof(obs, probs), mx = Math.max(...obs, ...G.E);
+      const ch = chart({ xcats: L, y: [0, mx * 1.1], h: 280, ylab: '人數' }, (X, Y, { iw }) => { const bw = iw / L.length * 0.3; return obs.map((o, i) => `<rect data-k="obs" x="${X(i) - bw - 2}" y="${Y(o)}" width="${bw}" height="${Y(0) - Y(o)}" style="fill:var(--c1)"/><rect data-k="exp" x="${X(i) + 2}" y="${Y(G.E[i])}" width="${bw}" height="${Y(0) - Y(G.E[i])}" style="fill:var(--muted);fill-opacity:.6"/><line class="hlx" data-k="chi2" x1="${X(i)}" x2="${X(i)}" y1="${Y(o)}" y2="${Y(G.E[i])}" style="stroke:var(--c2);stroke-width:4"/>`).join(''); });
+      return {
+        title: `${esc(s.y)} 的分佈 vs 預期比例 ${probs.join(':')}`, meta: meta(idx.length, dropped), facts: [`類別順序：${L.map(esc).join('、')}`],
+        charts: [{ svg: ch, legend: legend([['var(--c1)', '觀察次數'], ['var(--muted)', '期望次數']]), cap: '亮起時：紅線為每一類觀察與期望的差距。' }, { svg: distChart('chi2', G.chi2, G.df, `χ²（自由度 ${G.df}）`), cap: distCap.chi2 }],
+        cards: [cd('chi2', 'χ²', `${F.n(G.chi2, 2)}（df ${G.df}）`, 'chi2'), cd('p', 'p 值', F.p(G.p), 'p'), cd('exp', '最小期望次數', F.n(G.minExp, 2), 'minexp')],
+        tables: [{ head: ['類別', '觀察次數', '預期比例', '期望次數', '(觀察 − 期望)² ÷ 期望'], rows: L.map((l, i) => [esc(l), obs[i], F.n(probs[i] / S.sum(probs), 3), F.n(G.E[i], 1), F.n((obs[i] - G.E[i]) ** 2 / G.E[i], 3)]) }],
+        write: W2(`${s.y} 各類別的分佈與預期比例 ${probs.join(':')} 以卡方適合度檢定比較。`, `χ²(${G.df}) = ${F.n(G.chi2, 2)}，${F.peq(G.p)}；n = ${idx.length}。`, `The distribution of ${s.y} was compared with the expected ratio ${probs.join(':')} using the chi-square goodness-of-fit test.`, `χ²(${G.df}) = ${F.n(G.chi2, 2)}, ${F.peq(G.p)}; n = ${idx.length}.`),
       };
     },
   },
@@ -2495,6 +2515,25 @@ const CH = [
       { q: '雜交實驗預期紫花比例 0.75，929 株中觀察到 705 株紫花。最適合的分析是？', o: ['精確二項檢定（p₀ = 0.75）', '兩組獨立 t 檢定', '配對 t 檢定', '相關分析'], why: '一個樣本、一個二元結果、和已知的預期比例比較，就是二項檢定。' },
     ],
   },
+  {
+    id: 'gof', title: '卡方適合度檢定',
+    body: `<p>二項檢定只處理兩個類別。類別有三個以上時，要問「觀察到的各類人數，是否符合某個預期比例」，就用<b>卡方適合度檢定</b>。經典例子是孟德爾的雙因子雜交：圓黃、皺黃、圓綠、皺綠四種豌豆，理論預期 9：3：3：1。他觀察到 315、108、101、32 粒（共 556 粒）。</p>
+<h3>計算步驟</h3>
+<ol><li>依預期比例算出每一類的<b>期望次數</b>：總數 × 預期比例。例：圓黃 556 × 9/16 = 312.75。</li>
+<li>每一類算 (觀察 − 期望)² ÷ 期望，全部加總就是 χ²。觀察和預期越接近，χ² 越小。</li>
+<li>自由度 = 類別數 − 1（如果預期比例中有參數是從同一份資料估計出來的，每估計一個再減 1）。</li>
+<li>和 χ² 分佈比較得到 p 值。</li></ol>
+<p>孟德爾的資料：χ² = 0.47、自由度 3、p = 0.93，觀察值和 9：3：3：1 非常吻合。</p>
+<h3>前提</h3>
+<ul><li>每個觀察值獨立，只屬於一個類別。</li>
+<li>期望次數不能太小。Whitlock 的建議是：沒有任何一類的期望次數小於 1，而且期望次數小於 5 的類別不超過 20%。不符合時，可以合併相鄰的類別，或改用精確檢定。</li></ul>
+<p class="note">只有兩類時，卡方適合度檢定和二項檢定的 z 近似是同一件事（χ² = z²）。卡方檢定用在列聯表（{{c3-3}} 章）時，檢定的是兩個變數是否有關；用在一個變數時，檢定的是分佈是否符合預期。</p>`,
+    quiz: [
+      { q: '孟德爾的雙因子雜交有 4 種表現型，預期 9：3：3：1。卡方適合度檢定的自由度是多少？', o: ['3', '4', '1', '555'], why: '自由度 = 類別數 − 1 = 4 − 1 = 3。' },
+      { q: '孟德爾資料的 χ² = 0.47，p = 0.93。這代表什麼？', o: ['觀察次數和 9：3：3：1 的預期非常接近', '觀察次數顯著偏離預期', '證明 9：3：3：1 一定正確', '樣本數不夠'], why: 'χ² 小代表觀察與期望接近；p 大代表沒有證據顯示不符合，但這不等於「證明」理論正確。' },
+      { q: '某一類的期望次數只有 2.1，其他類都超過 10。較適當的處理是？', o: ['把這一類和相鄰的類別合併，或改用精確檢定', '直接刪掉這一類的資料', '照算不必處理', '把期望次數四捨五入成 5'], why: '期望次數太小時，卡方近似不準確；合併類別或使用精確檢定。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -2634,6 +2673,7 @@ const GLOSS = [
   ['臨界值', [], '信賴區間或檢定所用的分界值，例如 95% 雙尾的常態臨界值 1.96。', 'tdist'],
   ['單一樣本 t 檢定', [], '比較一組樣本的平均和一個已知參考值 μ₀ 的 t 檢定。', 'one-t'],
   ['參考值', ['μ₀'], '單一樣本檢定中要比較的已知數值。', 'one-t'],
+  ['卡方適合度檢定', ['適合度'], '檢定一個類別變數的各類人數是否符合預期比例。', 'gof'],
   ['二項檢定', ['精確二項檢定'], '用二項分佈直接計算的單一比例檢定。', 'binom-test'],
   ['預期比例', ['p₀'], '虛無假設下的比例，例如孟德爾預期的 0.75。', 'binom-test'],
   ['樣本比例', ['p̂'], '樣本中「成功」的比例 x ÷ n，用來估計母體比例。', 'prop-ci'],
@@ -2712,7 +2752,7 @@ const ORDER = [
   ['c0-1', 'c0-2', 'c0-3', 'c0-4'],
   ['c1-1', 'c1-2', 'c1-3', 'c1-4', 'c1-5'],
   ['prob-rules', 'c2-1', 'roc', 'rv', 'binom', 'poisson'],
-  ['c2-2', 'c2-3', 'tdist', 'prop-ci', 'c2-4', 'one-t', 'binom-test', 'c4-5', 'c5-1'],
+  ['c2-2', 'c2-3', 'tdist', 'prop-ci', 'c2-4', 'one-t', 'binom-test', 'gof', 'c4-5', 'c5-1'],
   ['c3-1', 'c3-3', 'c3-5'],
   ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff', 'ancova'],
   ['c3-4', 'c4-1', 'c4-2'],
@@ -2724,7 +2764,7 @@ const ORDER = [
 const REFS = {
   'c0-1': 'Rosner 3.10', 'c1-1': 'Whitlock 第 1 章；Kirkwood 第 2 章', 'c1-2': 'Whitlock 第 3 章；Rosner 2.2–2.3；Kirkwood 第 4 章',
   'c1-3': 'Whitlock 第 3 章；Rosner 2.4–2.5；Kirkwood 第 4 章', 'c1-4': 'Whitlock 第 10 章；Rosner 第 5 章；Kirkwood 第 5 章', 'c1-5': 'Kirkwood 第 34 章',
-  'prob-rules': 'Whitlock 第 5 章；Rosner 3.2–3.6', 'roc': 'Rosner 3.9；UTHealth GSBS 課綱第 10 週', 'rv': 'Rosner 4.2–4.6', 'binom': 'Whitlock 7.1；Rosner 4.7–4.9、5.7；Kirkwood 第 15 章', 'poisson': 'Whitlock 8.4；Rosner 4.10–4.13；Kirkwood 第 22 章', 'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'tdist': 'Whitlock 11.1；Rosner 6.5', 'prop-ci': 'Whitlock 7.3；Rosner 6.8；Kirkwood 第 15 章', 'binom-test': 'Whitlock 7.2；Rosner 7.9', 'one-t': 'Whitlock 11.2；Rosner 7.3–7.5；UTHealth GSBS 課綱第 2 週', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
+  'prob-rules': 'Whitlock 第 5 章；Rosner 3.2–3.6', 'roc': 'Rosner 3.9；UTHealth GSBS 課綱第 10 週', 'rv': 'Rosner 4.2–4.6', 'binom': 'Whitlock 7.1；Rosner 4.7–4.9、5.7；Kirkwood 第 15 章', 'poisson': 'Whitlock 8.4；Rosner 4.10–4.13；Kirkwood 第 22 章', 'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'tdist': 'Whitlock 11.1；Rosner 6.5', 'prop-ci': 'Whitlock 7.3；Rosner 6.8；Kirkwood 第 15 章', 'binom-test': 'Whitlock 7.2；Rosner 7.9', 'gof': 'Whitlock 8.1–8.3；Rosner 10.7', 'one-t': 'Whitlock 11.2；Rosner 7.3–7.5；UTHealth GSBS 課綱第 2 週', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
   'c2-4': 'Whitlock 第 6 章；Rosner 7.1–7.5；Kirkwood 第 8 章', 'c4-5': 'Whitlock 14.6；Rosner 7.6–7.7、8.9；Kirkwood 第 35 章', 'c5-1': 'Rosner 13.2；Kirkwood 第 34 章',
   'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
   'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
@@ -2857,6 +2897,7 @@ function ensureSel() {
   const ds = getDS(state.dsId), spec = AN[state.an], sel = state.sels[state.an] || (state.sels[state.an] = {}), used = new Set();
   spec.fields.forEach(f => {
     if (f.t === 'value') { if (sel[f.k] === undefined || sel[f.k] === '') sel[f.k] = f.def; return; }
+    if (f.t === 'text') { if (sel[f.k] === undefined) sel[f.k] = f.def || ''; return; }
     const el = eligible(ds, f);
     if (f.multi) { if (!sel[f.k]) sel[f.k] = f.def === 'all' ? el.filter(n => !used.has(n)) : f.def === 'some' ? el.filter(n => !used.has(n)).slice(0, 8) : []; sel[f.k] = sel[f.k].filter(n => el.includes(n)); }
     else { if (!el.includes(sel[f.k])) sel[f.k] = f.opt ? '' : el.find(n => !used.has(n)) || ''; if (sel[f.k]) used.add(sel[f.k]); }
@@ -2890,6 +2931,7 @@ function renderForm() {
   $('#runBtn').hidden = false;
   $('#form').innerHTML = spec.fields.map(f => {
     if (f.t === 'value') return `<label class="fld"><span>${f.label}</span><input id="f-${f.k}" data-k="${f.k}" type="number" inputmode="decimal" step="any" value="${esc(sel[f.k])}"></label>`;
+    if (f.t === 'text') return `<label class="fld"><span>${f.label}</span><input id="f-${f.k}" data-k="${f.k}" type="text" value="${esc(sel[f.k] ?? '')}" placeholder="${esc(f.ph || '')}"></label>`;
     const el = eligible(ds, f);
     if (f.multi) {
       const cur = sel[f.k] || [];
@@ -2898,7 +2940,7 @@ function renderForm() {
     return `<label class="fld"><span>${f.label}</span><select id="f-${f.k}" data-k="${f.k}">${f.opt ? '<option value="">（不選）</option>' : ''}${el.map(n => `<option value="${esc(n)}" ${sel[f.k] === n ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></label>`;
   }).join('');
   $$('#form select').forEach(s => { s.onchange = () => { sel[s.dataset.k] = s.value; }; });
-  $$('#form input[type=number]').forEach(s => { s.onchange = () => { sel[s.dataset.k] = s.value; }; });
+  $$('#form input[type=number], #form input[type=text]').forEach(s => { s.onchange = () => { sel[s.dataset.k] = s.value; }; });
   $$('#form input[type=checkbox]').forEach(cb => { cb.onchange = () => { const a = sel[cb.dataset.k] || (sel[cb.dataset.k] = []); if (cb.checked) { if (!a.includes(cb.value)) a.push(cb.value); } else a.splice(a.indexOf(cb.value), 1); renderForm(); const n = $('#' + cb.id); if (n) n.focus(); }; });
   $$('[data-all]').forEach(b => { b.onclick = () => { const f = spec.fields.find(x => x.k === b.dataset.all); sel[f.k] = eligible(ds, f); renderForm(); }; });
   $$('[data-none]').forEach(b => { b.onclick = () => { sel[b.dataset.none] = []; renderForm(); }; });
@@ -3780,6 +3822,23 @@ Object.assign(W, {
     };
     el.addEventListener('input', up); up();
   },
+  gofw(el) {
+    const names = ['圓黃', '皺黃', '圓綠', '皺綠'], init = [315, 108, 101, 32];
+    el.innerHTML = `<p class="w-cap">豌豆雙因子雜交：調整觀察到的粒數，或切換預期比例。</p>
+<div class="seg wrap" id="wg2-r"><button type="button" data-r="9,3,3,1" aria-selected="true">預期 9：3：3：1</button><button type="button" data-r="1,1,1,1" aria-selected="false">預期 1：1：1：1</button></div>
+<div class="w-grid5">${init.map((v, i) => slider('wg2-' + i, names[i], 0, 400, 1, v)).join('')}</div>
+<div class="chart-wrap" id="wg2-c"></div>${legend([['var(--c1)', '觀察次數'], ['var(--muted)', '期望次數']])}<div class="chart-wrap" id="wg2-d"></div><div class="kv" id="wg2-k"></div>`;
+    let ratio = [9, 3, 3, 1];
+    const up = () => {
+      const obs = init.map((_, i) => sv('wg2-' + i)); if (S.sum(obs) === 0) return;
+      const G = S.gof(obs, ratio), mx = Math.max(...obs, ...G.E);
+      $('#wg2-c').innerHTML = chart({ xcats: names, y: [0, mx * 1.1], h: 250, ylab: '粒數' }, (X, Y, { iw }) => { const bw = iw / 4 * 0.3; return obs.map((o, i) => `<rect data-k="obs" x="${X(i) - bw - 2}" y="${Y(o)}" width="${bw}" height="${Y(0) - Y(o)}" style="fill:var(--c1)"/><rect data-k="exp" x="${X(i) + 2}" y="${Y(G.E[i])}" width="${bw}" height="${Y(0) - Y(G.E[i])}" style="fill:var(--muted);fill-opacity:.6"/><line class="hlx" data-k="chi2" x1="${X(i)}" x2="${X(i)}" y1="${Y(o)}" y2="${Y(G.E[i])}" style="stroke:var(--c2);stroke-width:4"/>`).join(''); });
+      $('#wg2-d').innerHTML = distChart('chi2', G.chi2, G.df, `χ²（自由度 ${G.df}）`);
+      $('#wg2-k').innerHTML = kvs([['總數', S.sum(obs)], ['最小期望次數', F.n(G.minExp, 1), 'exp'], ['χ²', F.n(G.chi2, 3), 'chi2'], ['p 值', F.p(G.p), 'p']]);
+    };
+    segBind(el, '#wg2-r', b => { ratio = b.dataset.r.split(',').map(Number); up(); });
+    el.addEventListener('input', up); up();
+  },
   mosaic(el) {
     el.innerHTML = `<p class="w-cap">正方形代表全部的人（面積 = 1）。左右寬度是吸菸與不吸菸的比例；每一欄內，紅色的高度是該群中有高血壓的比例。</p>
 <div class="w-row">${slider('wm2-a', 'P(吸菸)', 5, 95, 5, 30, '%')}${slider('wm2-ba', 'P(高血壓 | 吸菸)', 0, 100, 5, 30, '%')}${slider('wm2-bn', 'P(高血壓 | 不吸菸)', 0, 100, 5, 15, '%')}</div>
@@ -3797,13 +3856,18 @@ Object.assign(W, {
   },
 });
 
-const WMAP = { 'binom-test': ['binomtestw', '二項檢定'], 'one-t': ['onetw', '單一樣本 t 檢定'], 'prop-ci': ['propciw', '三種比例信賴區間'], 'tdist': ['tdistw', 't 分佈與常態分佈'], 'poisson': ['poissonw', 'Poisson 分佈與培養皿'], 'binom': ['binomw', '二項分佈'], 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
+const WMAP = { 'gof': ['gofw', '孟德爾的豌豆'], 'binom-test': ['binomtestw', '二項檢定'], 'one-t': ['onetw', '單一樣本 t 檢定'], 'prop-ci': ['propciw', '三種比例信賴區間'], 'tdist': ['tdistw', 't 分佈與常態分佈'], 'poisson': ['poissonw', 'Poisson 分佈與培養皿'], 'binom': ['binomw', '二項分佈'], 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
 for (const [id, [w, t]] of Object.entries(WMAP)) { const c = CH.find(x => x.id === id); c.widget = w; c.wtitle = t; }
 
 /* ---------- 練習題示範：把題目情境帶入同一章的互動圖 ----------
    每題的 demo：set = 設定輸入元件（id → 值）；click = 依序點擊的按鈕；custom = 交給互動圖自己的 _demo()；look = 示範時的觀察提示。
    有 q 的項目會整題替換（原題無法在圖上示範時）。 */
 const QD = {
+  'gof': [
+    { demo: { click: ['#wg2-r [data-r="9,3,3,1"]'], set: { 'wg2-0': 315, 'wg2-1': 108, 'wg2-2': 101, 'wg2-3': 32 }, look: '4 個類別：下方 χ² 分佈的標題寫著自由度 3。' } },
+    { demo: { click: ['#wg2-r [data-r="9,3,3,1"]'], set: { 'wg2-0': 315, 'wg2-1': 108, 'wg2-2': 101, 'wg2-3': 32 }, look: '點「χ²」：每一類的紅線（觀察與期望的差）都很短，p 值很大。再切換到 1：1：1：1 比較。' } },
+    { demo: { click: ['#wg2-r [data-r="9,3,3,1"]'], set: { 'wg2-0': 20, 'wg2-1': 8, 'wg2-2': 6, 'wg2-3': 2 }, look: '總數只有 36 粒時，皺綠的期望次數只有約 2.3。點「最小期望次數」。' } },
+  ],
   'binom-test': [
     { demo: { set: { 'wbt-n': 20, 'wbt-x': 7, 'wbt-p': 0.5 }, look: '紅色長條是 7 以下與 13 以上（一樣或更極端）：點「精確二項檢定 p 值」。' } },
     { demo: { set: { 'wbt-n': 20, 'wbt-x': 4, 'wbt-p': 0.5 }, look: '觀察到 4 隻：紅色長條只剩兩端很矮的幾根，p 值變小。' } },

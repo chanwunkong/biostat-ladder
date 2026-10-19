@@ -113,6 +113,11 @@ near('單一樣本 t 的 p', S.oneT(g1, 0).p, 0.2176);
 
 near('binom.test(7, 20, 0.5) p', S.binomTest(7, 20, 0.5).p, 0.2632);
 
+near('卡方適合度 χ²（孟德爾 9:3:3:1）', S.gof([315, 108, 101, 32], [9, 3, 3, 1]).chi2, 0.47002);
+near('卡方適合度 p', S.gof([315, 108, 101, 32], [9, 3, 3, 1]).p, 0.9254);
+near('卡方適合度 χ²（20, 15, 25 均等）', S.gof([20, 15, 25], [1, 1, 1]).chi2, 2.5);
+near('卡方適合度 p（均等）', S.gof([20, 15, 25], [1, 1, 1]).p, 0.2865);
+
 const DS = {};
 for (const m of DATASETS) { const d = m.gen(); DS[m.id] = makeDS({ ...m, head: d.head, rows: d.rows }); }
 const runs = [
@@ -121,6 +126,7 @@ const runs = [
   ['bp_trial', 'paired', { a: 'sbp_base', b: 'sbp_wk12' }],
   ['bp_trial', 'onet', { y: 'sbp_base', mu0: 150 }],
   ['bp_trial', 'binomtest', { y: 'ae', p0: 0.1 }],
+  ['lung_surv', 'gof', { y: 'stage', probs: '1:1:1' }],
   ['bp_trial', 'linreg', { y: 'sbp_wk12', xs: ['group', 'sbp_base', 'age', 'bmi'] }],
   ['bp_trial', 'chisq', { r: 'group', c: 'ae' }],
   ['cvd_cohort', 'corr', { x: 'age', y: 'sbp' }],
