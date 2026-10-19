@@ -424,5 +424,43 @@ Object.assign(W, {
   },
 });
 
-const WMAP = { 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
+
+/* ---------- 第 5 階段：ANOVA 與實驗設計 ---------- */
+Object.assign(W, {
+  expdesign(el) {
+    el.innerHTML = `<p class="w-cap">情境：測試新藥能不能讓小鼠體重增加。每隻小鼠本來的健康狀況不同，健康的小鼠本來就長得比較好。下圖是把同一個實驗重做 400 次，每次估計的藥效（給藥組平均 − 對照組平均）。</p>
+<div class="seg wrap" id="wx-a"><button type="button" data-a="rand" aria-selected="true">隨機分派</button><button type="button" data-a="pick" aria-selected="false">研究者挑選（健康的給藥）</button></div>
+<label class="tog"><input type="checkbox" id="wx-b" checked> 量測者盲化</label>
+<div class="w-row">${slider('wx-e', '設定的藥效（公克）', 0, 3, 0.5, 0)}${slider('wx-n', '每組小鼠數', 4, 40, 2, 10)}</div>
+<div class="w-row"><button class="btn" id="wx-go" type="button">再做 400 次實驗</button></div>
+<div class="chart-wrap" id="wx-c"></div>${legend([['var(--c1)', 'p ≥ 0.05 的實驗'], ['var(--c2)', 'p < 0.05 的實驗'], ['var(--ink)', '設定的藥效（真值）']])}<div class="kv" id="wx-k"></div>`;
+    let alloc = 'rand';
+    const up = () => {
+      const blind = $('#wx-b').checked, eff = sv('wx-e', v => v.toFixed(1)), n = sv('wx-n'), est = [], sig = [];
+      for (let r = 0; r < 400; r++) {
+        const h = Array.from({ length: 2 * n }, rnorm), idx = h.map((_, i) => i);
+        if (alloc === 'pick') idx.sort((a, b) => h[b] - h[a]); else for (let i = idx.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [idx[i], idx[j]] = [idx[j], idx[i]]; }
+        const y = i => 20 + 1.5 * h[i] + 1.5 * rnorm(), yt = idx.slice(0, n).map(i => y(i) + eff + (blind ? 0 : 0.8)), yc = idx.slice(n).map(y), wv = S.welch(yc, yt);
+        est.push(wv.diff); sig.push(wv.p < 0.05);
+      }
+      const m = S.mean(est), sd = S.sd(est), lo = Math.min(-2, ...est), hi = Math.max(5, ...est), B = 32, bw = (hi - lo) / B, c0 = new Array(B).fill(0), c1 = new Array(B).fill(0);
+      est.forEach((e, i) => { const k = Math.min(B - 1, Math.floor((e - lo) / bw)); (sig[i] ? c1 : c0)[k]++; });
+      const top = Math.max(...c0.map((v, i) => v + c1[i]));
+      $('#wx-c').innerHTML = chart({ x: [lo, hi], y: [0, top * 1.25], h: 260, xlab: '估計的藥效（公克）', ylab: '實驗次數' }, (X, Y) => {
+        let g = '';
+        for (let i = 0; i < B; i++) { const x0 = X(lo + i * bw) + 0.5, wd = Math.max(0, X(lo + (i + 1) * bw) - X(lo + i * bw) - 1); g += `<rect x="${x0.toFixed(1)}" y="${Y(c0[i]).toFixed(1)}" width="${wd.toFixed(1)}" height="${(Y(0) - Y(c0[i])).toFixed(1)}" style="fill:var(--c1)"/><rect data-k="sig" x="${x0.toFixed(1)}" y="${Y(c0[i] + c1[i]).toFixed(1)}" width="${wd.toFixed(1)}" height="${(Y(c0[i]) - Y(c0[i] + c1[i])).toFixed(1)}" style="fill:var(--c2)"/>`; }
+        const yT = Y(top * 1.15);
+        return g + `<line data-k="true bias" x1="${X(eff)}" x2="${X(eff)}" y1="${Y(0)}" y2="${yT}" style="stroke:var(--ink);stroke-width:2.5"/>`
+          + `<line data-k="mean bias" x1="${X(m)}" x2="${X(m)}" y1="${Y(0)}" y2="${yT}" style="stroke:var(--c4);stroke-width:2.5;stroke-dasharray:6 4"/>`
+          + `<g class="hlx" data-k="bias"><line x1="${X(eff)}" x2="${X(m)}" y1="${yT}" y2="${yT}" style="stroke:var(--c4);stroke-width:4"/></g>`
+          + `<g class="hlx" data-k="sd"><line x1="${X(m - sd)}" x2="${X(m + sd)}" y1="${Y(top * 1.05)}" y2="${Y(top * 1.05)}" style="stroke:var(--c3);stroke-width:4"/></g>`;
+      });
+      $('#wx-k').innerHTML = kvs([['設定的藥效（真值）', eff.toFixed(1), 'true'], ['估計值的平均', F.n(m, 2), 'mean'], ['偏差（平均 − 真值）', F.n(m - eff, 2), 'bias'], ['估計值的標準差', F.n(sd, 2), 'sd'], ['p < 0.05 的比例', `${F.n(100 * S.mean(sig.map(Number)), 1)}%`, 'sig']]);
+    };
+    segBind(el, '#wx-a', b => { alloc = b.dataset.a; up(); });
+    $('#wx-b').onchange = up; $('#wx-e').oninput = up; $('#wx-n').oninput = up; $('#wx-go').onclick = up; up();
+  },
+});
+
+const WMAP = { 'exp-design': ['expdesign', '400 次小鼠實驗'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
 for (const [id, [w, t]] of Object.entries(WMAP)) { const c = CH.find(x => x.id === id); c.widget = w; c.wtitle = t; }

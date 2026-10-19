@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # 用無頭 Chrome 載入每一章：按下所有「在上方圖表示範這題」按鈕與所有數字卡；
 # 在實驗室頁跑過每一種分析並按遍數字卡。回報 JavaScript 錯誤，以及沒有對應圖上元素的數字卡。
 # 執行：sh tests/smoke.sh（需先 python3 build.py）
@@ -51,10 +51,16 @@ EOF
   printf '<script>window.__e=[];addEventListener("error",e=>__e.push(e.message));</script>'
   sed 's#</body>#<script src="probe.js"></script></body>#' docs/index.html
 } > "$PROBE"
-fail=0
-for h in home c0-1 c0-2 c0-3 c0-4 c1-1 c1-2 c1-3 c1-4 c1-5 c2-1 c2-2 c2-3 c2-4 c3-1 c3-2 c3-3 c3-4 c3-5 c4-1 c4-2 c4-3 c4-4 c4-5 c4-6 c5-1 c5-2 c5-3 c5-4 c5-5 lab data; do
-  r=$("$CHROME" --headless=new --disable-gpu --window-size=500,900 --virtual-time-budget=8000 --dump-dom "file://$PROBE#$h" 2>/dev/null | grep -o '<title>[^<]*</title>' | tail -1 | sed 's/<[^>]*>//g')
-  case "$r" in *"untaught= orphan= errors=") echo "ok   $h  $r" ;; *) echo "FAIL $h  $r"; fail=1 ;; esac
-done
+# 每頁開一個獨立的無頭瀏覽器，同時跑 8 頁
+export CHROME PROBE TMP
+run_page() {
+  r=$("$CHROME" --headless=new --disable-gpu --user-data-dir="$TMP/prof-$1" --window-size=500,900 --virtual-time-budget=8000 --dump-dom "file://$PROBE#$1" 2>/dev/null | grep -o '<title>[^<]*</title>' | tail -1 | sed 's/<[^>]*>//g')
+  case "$r" in *"untaught= orphan= errors=") echo "ok   $1  $r" ;; *) echo "FAIL $1  $r" ;; esac
+}
+export -f run_page 2>/dev/null
+CHAPTERS=$(node -e "const fs=require('fs');const r=f=>fs.readFileSync('src/'+f,'utf8');console.log(new Function(r('core.js')+r('content.js')+';return CH;')().map(c=>c.id).join(' '))")
+OUT=$(printf '%s\n' home $CHAPTERS lab data | xargs -P 8 -I{} bash -c 'run_page {}')
+echo "$OUT" | sort -k2
+case "$OUT" in *FAIL*) fail=1 ;; *) fail=0 ;; esac
 rm -rf "$TMP"
 exit $fail

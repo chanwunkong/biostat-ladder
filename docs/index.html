@@ -1853,6 +1853,27 @@ const CH = [
 <p>本站讓你不用寫程式也能理解並執行常用方法。真正投稿時，期刊越來越要求可重現的分析。建議路徑：先用 <a href="https://www.jamovi.org/" target="_blank" rel="noopener">jamovi</a> 或 <a href="https://jasp-stats.org/" target="_blank" rel="noopener">JASP</a>（免費、點選式、底層是 R），熟悉後再學 R（《R for Data Science》線上免費）。</p>`,
     quiz: [],
   },
+  {
+    id: 'exp-design', title: '實驗設計原則',
+    body: `<p><b>實驗</b>（experiment）是由研究者決定誰接受哪一種處理；<b>觀察研究</b>則只是記錄自然發生的暴露。只有設計良好的實驗，能讓我們把差異歸因於處理本身。好的設計要同時處理兩個問題：<b>偏差</b>和<b>抽樣誤差</b>。</p>
+<div class="formula">偏差：估計值平均起來偏離真值多少。重複再多次也不會消失。<br>抽樣誤差：每次實驗估計值的隨機起伏。增加樣本可以縮小，代表<b>精確度</b>提高。</div>
+<h3>減少偏差的三個做法</h3>
+<ul><li><b>對照組</b>：除了處理本身，其他條件都相同的一組。臨床試驗用<b>安慰劑</b>；動物實驗用假手術（sham）或只給溶劑（vehicle），讓「被處理」這件事本身的影響在兩組都一樣。</li>
+<li><b>隨機分派</b>：用亂數決定每個個體進哪一組，而不是由研究者挑選。研究者即使無意，也常會把較健康、較好抓的動物放進處理組，讓處理看起來比實際有效。</li>
+<li><b>盲化</b>：讓受試者、照顧者或量測者不知道每個個體屬於哪一組。<b>單盲</b>是受試者不知道；<b>雙盲</b>是受試者與研究人員都不知道。量測者知道組別時，量測值容易不自覺地偏向預期。</li></ul>
+<h3>減少抽樣誤差的三個做法</h3>
+<ul><li><b>重複</b>（replication）：每組要有足夠多的<b>實驗單位</b>。實驗單位是「獨立接受處理的單位」，例如每隻小鼠、每個培養皿；同一隻小鼠量很多個細胞不算重複，那是偽重複（{{c4-6}} 章）。</li>
+<li><b>平衡</b>：各組實驗單位數相同時，比較的精確度最高。</li>
+<li><b>區集</b>：把相似的實驗單位分成一群（例如同一天、同一個籠子、同一窩），在每一群裡面隨機分派所有處理，讓群與群之間的差異不會混進處理效果。本階段後面會專門介紹。</li></ul>
+<h3>無法做實驗時</h3>
+<p>很多問題（例如吸菸的影響）不能用實驗回答，只能做觀察研究。這時要靠配對、分層或迴歸校正來處理干擾因子，但永遠無法排除沒測量到的干擾。這也是為什麼實驗的證據等級比較高。</p>
+<p class="note">實驗開始前就要決定：每組幾個實驗單位（樣本數計算見 {{c4-5}} 章）、怎麼隨機分派、誰要被盲化、哪些情況要排除資料。事後才決定，就可能變成依結果挑選。</p>`,
+    quiz: [
+      { q: '研究者把看起來最健康的小鼠分到給藥組。即使藥物完全無效，會發生什麼事？', o: ['估計的藥效偏大，p < 0.05 的比例遠超過 5%', '估計不受影響', '只會讓估計比較不精確，平均仍然正確', 'p 值會變大'], why: '健康的小鼠本來就長得比較好，這個差異混進了「藥效」的估計，形成偏差。' },
+      { q: '把每組小鼠數從 10 增加到 40，主要改善了什麼？', o: ['估計值的分散變小（精確度提高），但偏差不會因此消失', '偏差會自動消失', '兩者都不變', '偽陽性一定會降到 5%'], why: '增加樣本只能縮小抽樣誤差；挑選造成的偏差要靠隨機分派解決。' },
+      { q: '藥物無效、而且有隨機分派，但量測者知道哪些小鼠有給藥。最可能的結果是？', o: ['量測值偏向預期，估計的藥效偏大', '隨機分派已經解決所有偏差', '只會影響對照組', '結果完全不受影響'], why: '隨機分派只處理「分組」造成的偏差；量測時的偏差要靠盲化。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -1868,6 +1889,8 @@ const GLOSS = [
   ['需治療人數', ['NNT'], '100 ÷ 絕對差（百分點）：平均要治療幾個人，才能讓一個人免於發生事件。', 'c0-1'],
   ['Σ', [], '希臘字母 sigma，意思是「全部加起來」。', 'c0-2'],
   ['離均差', ['x_i − x̄', 'x − x̄'], '每個值減掉平均數。', 'c0-2'],
+  ['估計值', [], '用樣本算出來、用來推測母體真值的數字。', 'c0-2'],
+  ['真值', [], '母體中真正的數值，研究想知道但看不到。', 'c0-2'],
   ['μ 與 σ', ['μ', 'σ'], '希臘字母：μ 是母體的平均，σ 是母體的標準差。', 'c0-2'],
   ['對數', ['log'], '「底數要幾次方才會得到這個數」。log₂(8) = 3，因為 2³ = 8。', 'c0-3'],
   ['倍數變化', ['fold change'], '處理組 ÷ 對照組。2 代表變成兩倍，0.5 代表變成一半。', 'c0-3'],
@@ -1898,6 +1921,18 @@ const GLOSS = [
   ['百分位', [], '第 p 百分位：有 p% 的值小於或等於它。', 'c1-4'],
   ['P(X ≤ x)', ['P(X > x)', 'P(X >'], '機率的寫法：P(X ≤ x) 是「X 小於或等於 x 的機率」。', 'c1-4'],
   ['Table 1', [], '論文的第一個表格，列出研究對象的基本特徵。', 'c1-5'],
+  ['實驗（experiment）', [], '由研究者決定誰接受哪一種處理的研究。', 'exp-design'],
+  ['觀察研究', [], '只記錄自然發生的暴露、不由研究者指派處理的研究。', 'exp-design'],
+  ['偏差', [], '估計值平均起來偏離真值的程度；重複再多次也不會消失。', 'exp-design'],
+  ['抽樣誤差', [], '每次抽樣得到的估計值隨機起伏的程度；樣本越大越小。', 'exp-design'],
+  ['精確度', [], '估計值彼此有多接近（抽樣誤差有多小）。', 'exp-design'],
+  ['對照組', [], '除了處理本身，其他條件都相同的比較組。', 'exp-design'],
+  ['安慰劑', [], '外觀相同但沒有有效成分的處理，讓兩組「接受處理」的經驗一樣。', 'exp-design'],
+  ['隨機分派', [], '用亂數決定每個個體進哪一組，而不是由研究者挑選。', 'exp-design'],
+  ['盲化', ['單盲', '雙盲'], '讓受試者、照顧者或量測者不知道組別。單盲是受試者不知道；雙盲是受試者與研究人員都不知道。', 'exp-design'],
+  ['實驗單位', [], '獨立接受處理的單位，例如每隻小鼠、每個培養皿。', 'exp-design'],
+  ['重複（replication）', [], '每組有多個實驗單位。', 'exp-design'],
+  ['區集', [], '把相似的實驗單位分成一群，在每一群內隨機分派所有處理。', 'exp-design'],
   ['隨機分派試驗', ['RCT', '隨機試驗', '隨機化'], '用抽籤般的隨機方式決定每個人接受哪一種處理的研究。', 'c1-5'],
   ['校正', [], '在比較兩組時，把其他會影響結果的變數（例如年齡）一併納入計算，讓比較像是在「這些變數相同」的人之間進行。', 'c1-5'],
   ['臨床意義', ['臨床上', '臨床重要性'], '差異大到對病人或治療決策真正有影響；和統計上的 p 值是兩回事。', 'c1-5'],
@@ -1982,7 +2017,7 @@ const ORDER = [
   ['c2-1'],
   ['c2-2', 'c2-3', 'c2-4', 'c4-5', 'c5-1'],
   ['c3-1', 'c3-3', 'c3-5'],
-  ['c3-2'],
+  ['exp-design', 'c3-2'],
   ['c3-4', 'c4-1', 'c4-2'],
   ['c4-3'],
   ['c4-4', 'c4-6'],
@@ -1995,7 +2030,7 @@ const REFS = {
   'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
   'c2-4': 'Whitlock 第 6 章；Rosner 7.1–7.5；Kirkwood 第 8 章', 'c4-5': 'Whitlock 14.6；Rosner 7.6–7.7、8.9；Kirkwood 第 35 章', 'c5-1': 'Rosner 13.2；Kirkwood 第 34 章',
   'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
-  'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
+  'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
   'c4-2': 'Rosner 13.7–13.8；Kirkwood 第 19–20 章', 'c4-3': 'Whitlock 第 21 章；Rosner 14.8–14.11；Kirkwood 第 26–27 章', 'c4-4': 'Benjamini & Hochberg (1995), J R Stat Soc B 57:289–300',
   'c4-6': 'Rosner 12.10、13.13–13.14；Kirkwood 第 31 章', 'c5-2': 'Kirkwood 第 38 章；EQUATOR Network', 'c5-3': 'Kirkwood 第 38 章', 'c5-4': 'Kirkwood 第 34、38 章',
 };
@@ -2683,13 +2718,56 @@ Object.assign(W, {
   },
 });
 
-const WMAP = { 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
+
+/* ---------- 第 5 階段：ANOVA 與實驗設計 ---------- */
+Object.assign(W, {
+  expdesign(el) {
+    el.innerHTML = `<p class="w-cap">情境：測試新藥能不能讓小鼠體重增加。每隻小鼠本來的健康狀況不同，健康的小鼠本來就長得比較好。下圖是把同一個實驗重做 400 次，每次估計的藥效（給藥組平均 − 對照組平均）。</p>
+<div class="seg wrap" id="wx-a"><button type="button" data-a="rand" aria-selected="true">隨機分派</button><button type="button" data-a="pick" aria-selected="false">研究者挑選（健康的給藥）</button></div>
+<label class="tog"><input type="checkbox" id="wx-b" checked> 量測者盲化</label>
+<div class="w-row">${slider('wx-e', '設定的藥效（公克）', 0, 3, 0.5, 0)}${slider('wx-n', '每組小鼠數', 4, 40, 2, 10)}</div>
+<div class="w-row"><button class="btn" id="wx-go" type="button">再做 400 次實驗</button></div>
+<div class="chart-wrap" id="wx-c"></div>${legend([['var(--c1)', 'p ≥ 0.05 的實驗'], ['var(--c2)', 'p < 0.05 的實驗'], ['var(--ink)', '設定的藥效（真值）']])}<div class="kv" id="wx-k"></div>`;
+    let alloc = 'rand';
+    const up = () => {
+      const blind = $('#wx-b').checked, eff = sv('wx-e', v => v.toFixed(1)), n = sv('wx-n'), est = [], sig = [];
+      for (let r = 0; r < 400; r++) {
+        const h = Array.from({ length: 2 * n }, rnorm), idx = h.map((_, i) => i);
+        if (alloc === 'pick') idx.sort((a, b) => h[b] - h[a]); else for (let i = idx.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [idx[i], idx[j]] = [idx[j], idx[i]]; }
+        const y = i => 20 + 1.5 * h[i] + 1.5 * rnorm(), yt = idx.slice(0, n).map(i => y(i) + eff + (blind ? 0 : 0.8)), yc = idx.slice(n).map(y), wv = S.welch(yc, yt);
+        est.push(wv.diff); sig.push(wv.p < 0.05);
+      }
+      const m = S.mean(est), sd = S.sd(est), lo = Math.min(-2, ...est), hi = Math.max(5, ...est), B = 32, bw = (hi - lo) / B, c0 = new Array(B).fill(0), c1 = new Array(B).fill(0);
+      est.forEach((e, i) => { const k = Math.min(B - 1, Math.floor((e - lo) / bw)); (sig[i] ? c1 : c0)[k]++; });
+      const top = Math.max(...c0.map((v, i) => v + c1[i]));
+      $('#wx-c').innerHTML = chart({ x: [lo, hi], y: [0, top * 1.25], h: 260, xlab: '估計的藥效（公克）', ylab: '實驗次數' }, (X, Y) => {
+        let g = '';
+        for (let i = 0; i < B; i++) { const x0 = X(lo + i * bw) + 0.5, wd = Math.max(0, X(lo + (i + 1) * bw) - X(lo + i * bw) - 1); g += `<rect x="${x0.toFixed(1)}" y="${Y(c0[i]).toFixed(1)}" width="${wd.toFixed(1)}" height="${(Y(0) - Y(c0[i])).toFixed(1)}" style="fill:var(--c1)"/><rect data-k="sig" x="${x0.toFixed(1)}" y="${Y(c0[i] + c1[i]).toFixed(1)}" width="${wd.toFixed(1)}" height="${(Y(c0[i]) - Y(c0[i] + c1[i])).toFixed(1)}" style="fill:var(--c2)"/>`; }
+        const yT = Y(top * 1.15);
+        return g + `<line data-k="true bias" x1="${X(eff)}" x2="${X(eff)}" y1="${Y(0)}" y2="${yT}" style="stroke:var(--ink);stroke-width:2.5"/>`
+          + `<line data-k="mean bias" x1="${X(m)}" x2="${X(m)}" y1="${Y(0)}" y2="${yT}" style="stroke:var(--c4);stroke-width:2.5;stroke-dasharray:6 4"/>`
+          + `<g class="hlx" data-k="bias"><line x1="${X(eff)}" x2="${X(m)}" y1="${yT}" y2="${yT}" style="stroke:var(--c4);stroke-width:4"/></g>`
+          + `<g class="hlx" data-k="sd"><line x1="${X(m - sd)}" x2="${X(m + sd)}" y1="${Y(top * 1.05)}" y2="${Y(top * 1.05)}" style="stroke:var(--c3);stroke-width:4"/></g>`;
+      });
+      $('#wx-k').innerHTML = kvs([['設定的藥效（真值）', eff.toFixed(1), 'true'], ['估計值的平均', F.n(m, 2), 'mean'], ['偏差（平均 − 真值）', F.n(m - eff, 2), 'bias'], ['估計值的標準差', F.n(sd, 2), 'sd'], ['p < 0.05 的比例', `${F.n(100 * S.mean(sig.map(Number)), 1)}%`, 'sig']]);
+    };
+    segBind(el, '#wx-a', b => { alloc = b.dataset.a; up(); });
+    $('#wx-b').onchange = up; $('#wx-e').oninput = up; $('#wx-n').oninput = up; $('#wx-go').onclick = up; up();
+  },
+});
+
+const WMAP = { 'exp-design': ['expdesign', '400 次小鼠實驗'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
 for (const [id, [w, t]] of Object.entries(WMAP)) { const c = CH.find(x => x.id === id); c.widget = w; c.wtitle = t; }
 
 /* ---------- 練習題示範：把題目情境帶入同一章的互動圖 ----------
    每題的 demo：set = 設定輸入元件（id → 值）；click = 依序點擊的按鈕；custom = 交給互動圖自己的 _demo()；look = 示範時的觀察提示。
    有 q 的項目會整題替換（原題無法在圖上示範時）。 */
 const QD = {
+  'exp-design': [
+    { demo: { click: ['#wx-a [data-a="pick"]'], set: { 'wx-b': true, 'wx-e': 0, 'wx-n': 10 }, look: '藥效設為 0、改成研究者挑選。看橘色虛線（估計值的平均）離黑線（真值）多遠，以及紅色（p < 0.05）的比例。' } },
+    { demo: { click: ['#wx-a [data-a="pick"]'], set: { 'wx-b': true, 'wx-e': 0, 'wx-n': 40 }, look: '每組 40 隻：分佈變窄了，但仍然整個偏離黑線。再切回「隨機分派」比較。' } },
+    { demo: { click: ['#wx-a [data-a="rand"]'], set: { 'wx-b': false, 'wx-e': 0, 'wx-n': 10 }, look: '隨機分派但沒有盲化：分佈仍然往右偏，偏差來自量測。把「量測者盲化」勾回來比較。' } },
+  ],
   'c0-1': [
     { demo: { set: { 'wr-a': 4, 'wr-b': 2 }, look: '對照組 4 人、治療組 2 人有副作用。比較「絕對差」與「相對變化」兩格。' } },
     { q: '對照組事件率 30%、治療組 20%，需治療人數（NNT）是多少？', o: ['10 人', '3 人', '20 人', '50 人'], why: '絕對差 = 10 個百分點，NNT = 100 ÷ 10 = 10：每治療 10 人，可以少 1 人發生事件。', demo: { set: { 'wr-a': 30, 'wr-b': 20 }, look: '看小人圖中兩組相差幾個紅色，以及 NNT 那一格。' } },
