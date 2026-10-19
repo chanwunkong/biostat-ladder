@@ -132,6 +132,10 @@ near('兩比例 p', tp2.p, 0.04123);
 near('差值 CI 下限', tp2.ci[0], 0.0120);
 near('差值 CI 上限', tp2.ci[1], 0.3880);
 
+// Agresti, Categorical Data Analysis：總統支持度（不一致對數 150 與 86），McNemar z² = 17.36
+near('McNemar χ²（Agresti 例）', S.mcnemar(150, 86).chi2, 17.36, 1e-3);
+near('McNemar 連續性校正 χ²', S.mcnemar(150, 86).chi2c, 63 * 63 / 236);
+
 const DS = {};
 for (const m of DATASETS) { const d = m.gen(); DS[m.id] = makeDS({ ...m, head: d.head, rows: d.rows }); }
 const runs = [
@@ -140,6 +144,7 @@ const runs = [
   ['bp_trial', 'paired', { a: 'sbp_base', b: 'sbp_wk12' }],
   ['bp_trial', 'onet', { y: 'sbp_base', mu0: 150 }],
   ['bp_trial', 'binomtest', { y: 'ae', p0: 0.1 }],
+  ['cvd_cohort', 'mcnemar', { a: 'smoker', b: 'diabetes' }],
   ['lung_surv', 'gof', { y: 'stage', probs: '1:1:1' }],
   ['bp_trial', 'linreg', { y: 'sbp_wk12', xs: ['group', 'sbp_base', 'age', 'bmi'] }],
   ['bp_trial', 'chisq', { r: 'group', c: 'ae' }],

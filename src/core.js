@@ -205,6 +205,8 @@ const S = (() => {
     const p1 = x1 / n1, p2 = x2 / n2, pb = (x1 + x2) / (n1 + n2), z = (p2 - p1) / Math.sqrt(pb * (1 - pb) * (1 / n1 + 1 / n2)), se = Math.sqrt(p1 * (1 - p1) / n1 + p2 * (1 - p2) / n2), d = p2 - p1;
     return { p1, p2, diff: d, se, ci: [d - 1.959964 * se, d + 1.959964 * se], z, chi2: z * z, p: pz2(z) };
   }
+  // McNemar 檢定（配對的二元資料）：只用不一致的對數 b、c。回傳未校正與連續性校正的 χ²，以及以二項分佈計算的精確 p 值
+  function mcnemar(b, c) { const n = b + c, chi2 = n ? (b - c) ** 2 / n : 0, chi2c = n ? Math.max(0, Math.abs(b - c) - 1) ** 2 / n : 0; return { chi2, chi2c, p: n ? pchisq(chi2, 1) : 1, pc: n ? pchisq(chi2c, 1) : 1, pExact: n ? binomTest(b, n, 0.5).p : 1 }; }
   // 卡方適合度檢定：obs 為各類觀察次數，probs 為預期比例（會自動標準化）
   function gof(obs, probs) { const n = sum(obs), ps = probs.map(p => p / sum(probs)), E = ps.map(p => n * p), chi2 = sum(obs.map((o, i) => (o - E[i]) ** 2 / E[i])), df = obs.length - 1; return { chi2, df, p: pchisq(chi2, df), E, minExp: Math.min(...E) }; }
   // 精確二項檢定（雙尾：加總機率不大於觀察結果的所有結果，與 R 的 binom.test 相同）
@@ -348,7 +350,7 @@ const S = (() => {
   const nProps = (p1, p2, alpha, power) => { const za = qnorm(1 - alpha / 2), zb = qnorm(power), pb = (p1 + p2) / 2; return Math.ceil((za * Math.sqrt(2 * pb * (1 - pb)) + zb * Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))) ** 2 / ((p1 - p2) ** 2)); };
   const powerProps = (p1, p2, n, alpha) => { const za = qnorm(1 - alpha / 2), pb = (p1 + p2) / 2; return pnorm((Math.abs(p1 - p2) * Math.sqrt(n) - za * Math.sqrt(2 * pb * (1 - pb))) / Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))); };
 
-  return { dbinom, pbinom, dpois, ppois, propCI, binomTest, gof, signTest, twoProp, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, varTest, mannWhitney, oneT, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
+  return { dbinom, pbinom, dpois, ppois, propCI, binomTest, gof, signTest, twoProp, mcnemar, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, varTest, mannWhitney, oneT, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
 })();
 
 /* ---------- 格式 ---------- */
@@ -524,6 +526,7 @@ const DEF = {
   adjMean: '校正後平均：用 ANCOVA 模型預測「共變數等於全體平均時」各組的平均；括號內是未校正的原始平均。', parallel: '斜率平行性檢定：在模型中加入「組別 × 共變數」交互作用，檢定各組的迴歸斜率是否相同；ANCOVA 假設斜率相同。',
   gmr: '幾何平均數比：取對數後的平均差，再取 e 的次方換回原尺度，代表第二組的幾何平均數是第一組的幾倍。',
   rdDef: '風險差：第二列的事件比例減第一列的事件比例（百分點）；信賴區間以 Wald 法計算。',
+  mcDef: 'McNemar 檢定只用兩次結果不一致的人數 b、c：χ² = (b − c)² ÷ (b + c)。精確 p 值把 b 視為 b + c 次中、成功機率 0.5 的二項結果。',
   n: '分析使用的觀察數。', ev: '結果為事件（編碼 1）的人數。',
 };
 const cd = (k, l, v, d) => ({ k, l, v, d });
@@ -841,6 +844,24 @@ const AN = {
         cards: [cd('chi2', 'χ²', `${F.n(G.chi2, 2)}（df ${G.df}）`, 'chi2'), cd('p', 'p 值', F.p(G.p), 'p'), cd('exp', '最小期望次數', F.n(G.minExp, 2), 'minexp')],
         tables: [{ head: ['類別', '觀察次數', '預期比例', '期望次數', '(觀察 − 期望)² ÷ 期望'], rows: L.map((l, i) => [esc(l), obs[i], F.n(probs[i] / S.sum(probs), 3), F.n(G.E[i], 1), F.n((obs[i] - G.E[i]) ** 2 / G.E[i], 3)]) }],
         write: W2(`${s.y} 各類別的分佈與預期比例 ${probs.join(':')} 以卡方適合度檢定比較。`, `χ²(${G.df}) = ${F.n(G.chi2, 2)}，${F.peq(G.p)}；n = ${idx.length}。`, `The distribution of ${s.y} was compared with the expected ratio ${probs.join(':')} using the chi-square goodness-of-fit test.`, `χ²(${G.df}) = ${F.n(G.chi2, 2)}, ${F.peq(G.p)}; n = ${idx.length}.`),
+      };
+    },
+  },
+  mcnemar: {
+    name: 'McNemar 檢定', when: '同一個體兩次的有／無結果（配對的二元資料）',
+    fields: [{ k: 'a', label: '第一次（二元）', t: 'bin' }, { k: 'b', label: '第二次（二元）', t: 'bin' }],
+    run(ds, s) {
+      if (s.a === s.b) throw new Error('請選擇兩個不同的欄位。');
+      const ac = colOf(ds, s.a), bc = colOf(ds, s.b), { idx, dropped } = complete(ds, [s.a, s.b]), A = binCode(ds, ac, idx), B = binCode(ds, bc, idx);
+      const t = [[0, 0], [0, 0]]; idx.forEach((_, k) => { t[A.y[k]][B.y[k]]++; }); const b = t[1][0], cc = t[0][1], M = S.mcnemar(b, cc), n = idx.length;
+      const ch = chart({ xcats: ['兩次都有', `只有第一次`, `只有第二次`, '兩次都沒有'], y: [0, Math.max(t[1][1], b, cc, t[0][0]) * 1.1], h: 250, ylab: '人數' }, (X, Y, { iw }) => [[t[1][1], 'same'], [b, 'disc'], [cc, 'disc'], [t[0][0], 'same']].map(([v, k], i) => `<rect data-k="${k}" x="${X(i) - iw / 10}" y="${Y(v)}" width="${iw / 5}" height="${Y(0) - Y(v)}" style="fill:${k === 'disc' ? 'var(--c2)' : 'var(--muted)'};fill-opacity:.8"/><text x="${X(i)}" y="${Y(v) - 6}" text-anchor="middle" style="fill:var(--ink)">${v}</text>`).join(''));
+      return {
+        title: `${esc(s.a)} → ${esc(s.b)}（配對）`, meta: meta(n, dropped), facts: [`「有」＝${esc(s.a)} 為 ${esc(A.ev)}、${esc(s.b)} 為 ${esc(B.ev)}`],
+        charts: [{ svg: ch, cap: '紅色是兩次結果不一致的人：McNemar 檢定只用這兩格。' }, { svg: distChart('chi2', M.chi2, 1, 'χ²（自由度 1）'), cap: distCap.chi2 }],
+        cards: [cd('disc', '只有第一次為「有」', `${b} 人`, 'mcDef'), cd('disc', '只有第二次為「有」', `${cc} 人`, 'mcDef'), cd('chi2', 'McNemar χ²', F.n(M.chi2, 2), 'chi2'), cd('p', 'p 值', F.p(M.p), 'p'), cd('disc', '精確 p 值（二項）', F.p(M.pExact), 'mcDef')],
+        tables: [{ head: ['', `${esc(s.b)}：${esc(B.ev)}`, `${esc(s.b)}：${esc(B.ref)}`], rows: [[`${esc(s.a)}：${esc(A.ev)}`, t[1][1], b], [`${esc(s.a)}：${esc(A.ref)}`, cc, t[0][0]]], foot: `連續性校正 χ² = ${F.n(M.chi2c, 2)}，${F.peq(M.pc)}。` }],
+        write: W2(`${s.a} 與 ${s.b} 的配對比例以 McNemar 檢定比較。`, `第一次為「有」的比例 ${F.n(100 * (t[1][1] + b) / n, 1)}%，第二次 ${F.n(100 * (t[1][1] + cc) / n, 1)}%；不一致的對數 ${b} 與 ${cc}；McNemar χ²(1) = ${F.n(M.chi2, 2)}，${F.peq(M.p)}（精確 ${F.peq(M.pExact)}）。`,
+          `Paired proportions of ${s.a} and ${s.b} were compared using McNemar's test.`, `Proportion positive: ${F.n(100 * (t[1][1] + b) / n, 1)}% at the first and ${F.n(100 * (t[1][1] + cc) / n, 1)}% at the second assessment; discordant pairs ${b} and ${cc}; McNemar's χ²(1) = ${F.n(M.chi2, 2)}, ${F.peq(M.p)} (exact ${F.peq(M.pExact)}).`),
       };
     },
   },

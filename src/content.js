@@ -911,6 +911,23 @@ const CH = [
       { q: '風險差 20 個百分點，95% CI 1.2 到 38.8。最恰當的解讀是？', o: ['差異可能從很小到很大，估計還不夠精確', '新藥一定讓反應率增加 20 個百分點', '因為下限接近 0，所以沒有差異', 'p 值一定大於 0.05'], why: '區間不含 0（p < 0.05），但很寬，代表真實差異的不確定性還很大。' },
     ],
   },
+  {
+    id: 'mcnemar', title: '配對的二元資料：McNemar 檢定',
+    body: `<p>同一群人被評估兩次、結果是「有／無」：治療前後是否有症狀、同一批病人分別做兩種檢驗是否陽性、配對的病例對照研究。這些資料是<b>配對</b>的，不能當成兩組獨立的人做一般卡方檢定。</p>
+<h3>只有「不一致」的人帶有資訊</h3>
+<div class="tbl-wrap"><table class="st"><thead><tr><th></th><th>治療後：有症狀</th><th>治療後：沒症狀</th></tr></thead><tbody><tr><td>治療前：有症狀</td><td>a（兩次都有）</td><td><b>b（變好）</b></td></tr><tr><td>治療前：沒症狀</td><td><b>c（變差）</b></td><td>d（兩次都沒有）</td></tr></tbody></table></div>
+<p>兩次結果一樣的人（a、d）不提供「前後是否不同」的資訊。如果治療沒有效果，變好和變差的人數應該差不多，所以 <b>McNemar 檢定</b>只比較 b 和 c：</p>
+<div class="formula">χ² = (b − c)² ÷ (b + c)　　自由度 1</div>
+<p>例：100 位病人，治療後 20 人從有症狀變成沒症狀、5 人從沒症狀變成有症狀。χ² = (20 − 5)² ÷ 25 = 9，p ≈ 0.003。</p>
+<h3>小樣本：精確檢定</h3>
+<p>b + c 很小時，把 b 看成「b + c 次中，成功機率 0.5」的二項結果，用精確二項檢定（{{binom-test}} 章）計算 p 值。這和符號檢定（{{nonpar}} 章）是同一個想法。有些軟體預設使用連續性校正 (|b − c| − 1)² ÷ (b + c)，結果會稍微保守。</p>
+<p class="warn">把配對資料當成兩組獨立的人做一般卡方檢定，違反獨立性，而且浪費了配對設計帶來的檢定力。</p>`,
+    quiz: [
+      { q: '100 位病人中，治療後 20 人從有症狀變成沒症狀、5 人從沒症狀變成有症狀。McNemar χ² 是多少？', o: ['9', '15', '25', '0.6'], why: '(20 − 5)² ÷ (20 + 5) = 225 ÷ 25 = 9。兩次結果一樣的人不列入計算。' },
+      { q: '為什麼治療前後的有／無症狀資料，不能直接用一般的 2×2 卡方檢定？', o: ['同一個人的兩次結果不獨立；要用 McNemar 檢定', '因為樣本數太大', '因為卡方檢定只能用在三組以上', '因為結果不是連續數值'], why: '一般卡方檢定假設每個觀察值來自不同的人。' },
+      { q: '同一批 200 位病人分別做 A、B 兩種快篩，想比較兩種快篩的陽性率。應該用？', o: ['McNemar 檢定', '兩組獨立的卡方檢定', 'Welch t 檢定', 'Mann–Whitney'], why: '每位病人都做了兩種檢驗，是配對的二元資料。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -1095,6 +1112,8 @@ const GLOSS = [
   ['病例對照研究', [], '先找有病的人（病例）和沒病的人（對照），再回頭比較過去暴露的研究。', 'c3-3'],
   ['風險差', ['比例差'], '兩組事件比例相減，單位是百分點；它的倒數是需治療人數。', 'two-prop'],
   ['合併比例', ['p̄'], '把兩組合在一起算出的比例，用於兩比例 z 檢定的標準誤。', 'two-prop'],
+  ['McNemar 檢定', ['McNemar'], '配對二元資料的檢定，只用兩次結果不一致的人數。', 'mcnemar'],
+  ['不一致對', ['不一致'], '配對資料中兩次結果不同的個體。', 'mcnemar'],
   ['相關係數', ['Pearson'], '−1 到 +1，描述兩個數值變數直線關係的強弱與方向。', 'c3-4'],
   ['Spearman', [], '先把資料換成名次再算的相關係數，較不受極端值影響。', 'c3-4'],
   ['r²', ['R²'], '相關係數的平方：一個變數的變異中，能被另一個變數以直線解釋的比例。', 'c3-4'],
@@ -1144,7 +1163,7 @@ const ORDER = [
   ['c1-1', 'c1-2', 'c1-3', 'c1-4', 'c1-5'],
   ['prob-rules', 'c2-1', 'roc', 'rv', 'binom', 'poisson'],
   ['c2-2', 'c2-3', 'tdist', 'prop-ci', 'c2-4', 'one-t', 'binom-test', 'gof', 'boot', 'c4-5', 'c5-1'],
-  ['c3-1', 'two-assume', 'nonpar', 'c3-3', 'two-prop', 'c3-5'],
+  ['c3-1', 'two-assume', 'nonpar', 'c3-3', 'two-prop', 'mcnemar', 'c3-5'],
   ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff', 'ancova'],
   ['c3-4', 'c4-1', 'c4-2'],
   ['c4-3'],
@@ -1157,7 +1176,7 @@ const REFS = {
   'c1-3': 'Whitlock 第 3 章；Rosner 2.4–2.5；Kirkwood 第 4 章', 'c1-4': 'Whitlock 第 10 章；Rosner 第 5 章；Kirkwood 第 5 章', 'c1-5': 'Kirkwood 第 34 章',
   'prob-rules': 'Whitlock 第 5 章；Rosner 3.2–3.6', 'roc': 'Rosner 3.9；UTHealth GSBS 課綱第 10 週', 'rv': 'Rosner 4.2–4.6', 'binom': 'Whitlock 7.1；Rosner 4.7–4.9、5.7；Kirkwood 第 15 章', 'poisson': 'Whitlock 8.4；Rosner 4.10–4.13；Kirkwood 第 22 章', 'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'tdist': 'Whitlock 11.1；Rosner 6.5', 'prop-ci': 'Whitlock 7.3；Rosner 6.8；Kirkwood 第 15 章', 'binom-test': 'Whitlock 7.2；Rosner 7.9', 'gof': 'Whitlock 8.1–8.3；Rosner 10.7', 'boot': 'Whitlock 13.8、第 19 章；Rosner 6.11、9.6', 'one-t': 'Whitlock 11.2；Rosner 7.3–7.5；UTHealth GSBS 課綱第 2 週', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
   'c2-4': 'Whitlock 第 6 章；Rosner 7.1–7.5；Kirkwood 第 8 章', 'c4-5': 'Whitlock 14.6；Rosner 7.6–7.7、8.9；Kirkwood 第 35 章', 'c5-1': 'Rosner 13.2；Kirkwood 第 34 章',
-  'nonpar': 'Whitlock 13.4–13.7；Rosner 9.2–9.4', 'two-prop': 'Rosner 10.2、10.5；Kirkwood 第 16 章', 'two-assume': 'Whitlock 13.1–13.3；Rosner 8.6、8.10；Kirkwood 第 13 章', 'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
+  'nonpar': 'Whitlock 13.4–13.7；Rosner 9.2–9.4', 'two-prop': 'Rosner 10.2、10.5；Kirkwood 第 16 章', 'mcnemar': 'Rosner 10.4；Kirkwood 第 21 章；Agresti, Categorical Data Analysis', 'two-assume': 'Whitlock 13.1–13.3；Rosner 8.6、8.10；Kirkwood 第 13 章', 'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
   'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
   'c4-2': 'Rosner 13.7–13.8；Kirkwood 第 19–20 章', 'c4-3': 'Whitlock 第 21 章；Rosner 14.8–14.11；Kirkwood 第 26–27 章', 'c4-4': 'Benjamini & Hochberg (1995), J R Stat Soc B 57:289–300',
   'c4-6': 'Rosner 12.10、13.13–13.14；Kirkwood 第 31 章', 'c5-2': 'Kirkwood 第 38 章；EQUATOR Network', 'c5-3': 'Kirkwood 第 38 章', 'c5-4': 'Kirkwood 第 34、38 章',
