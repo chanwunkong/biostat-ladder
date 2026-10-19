@@ -587,6 +587,26 @@ Object.assign(W, {
     };
     el.addEventListener('input', up); up();
   },
+  ancovaw(el) {
+    const zx = std(Array.from({ length: 40 }, normOf(rngOf(201)))), ze = std(Array.from({ length: 40 }, normOf(rngOf(202))));
+    el.innerHTML = `<p class="w-cap">兩組各 20 隻小鼠，處理前先量體重（共變數），處理 4 週後再量。比較「不校正」與 ANCOVA。</p>
+<div class="w-row">${slider('wc3-e', '處理效果（公克）', 0, 4, 0.5, 2)}${slider('wc3-r', '起始體重與結果的關係（斜率）', 0, 1.5, 0.1, 0.9)}${slider('wc3-d', '處理組起始體重多（公克）', -4, 4, 0.5, 0)}</div>
+<label class="tog"><input type="checkbox" id="wc3-i"> 兩組斜率不同（違反平行斜率）</label>
+<div class="chart-wrap" id="wc3-c"></div>${legend([['var(--c1)', '對照組'], ['var(--c2)', '處理組']])}<div class="kv" id="wc3-k"></div>`;
+    const up = () => {
+      const e = sv('wc3-e', v => v.toFixed(1)), b = sv('wc3-r', v => v.toFixed(1)), dd = sv('wc3-d', v => v.toFixed(1)), inter = $('#wc3-i').checked;
+      const g = zx.map((_, i) => (i < 20 ? 0 : 1)), x = zx.map((z, i) => 25 + 3 * z + (g[i] ? dd : 0)), y = x.map((v, i) => 10 + b * (v - 25) * (inter && g[i] ? 0.2 : 1) + (g[i] ? e : 0) + 1.5 * ze[i]);
+      const R = S.ancova(y, g, x), raw = [0, 1].map(l => S.mean(y.filter((_, i) => g[i] === l))), w = S.welch(y.filter((_, i) => !g[i]), y.filter((_, i) => g[i]));
+      const seAdj = Math.sqrt(R.fit.se[1] ** 2), [x0, x1] = S.minmax(x), [y0, y1] = S.minmax(y), sl = R.cov.slope;
+      $('#wc3-c').innerHTML = chart({ x: [x0, x1], y: [y0, y1], xlab: '起始體重（公克）', ylab: '4 週後的結果', h: 300, xgrid: true }, (X, Y, { M, iw }) => y.map((v, i) => `<circle cx="${X(x[i]).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="3.5" style="fill:${col4(g[i])};fill-opacity:.55"/>`).join('')
+        + [0, 1].map(l => `<line class="hlx" data-k="raw" x1="${M.l}" x2="${M.l + iw}" y1="${Y(raw[l])}" y2="${Y(raw[l])}" style="stroke:${col4(l)};stroke-width:2.5;stroke-dasharray:7 4"/>`).join('')
+        + [0, 1].map(l => `<line data-k="adj" x1="${X(x0)}" x2="${X(x1)}" y1="${Y(R.adj[l] + sl * (x0 - R.xm))}" y2="${Y(R.adj[l] + sl * (x1 - R.xm))}" style="stroke:${col4(l)};stroke-width:2.5"/>`).join('')
+        + `<g class="hlx" data-k="adj"><line x1="${X(R.xm)}" x2="${X(R.xm)}" y1="${Y(R.adj[0])}" y2="${Y(R.adj[1])}" style="stroke:var(--c4);stroke-width:4"/></g>`
+        + [0, 1].map(l => { const xs = x.filter((_, i) => g[i] === l), ys = y.filter((_, i) => g[i] === l), P = S.pearson(xs, ys); return `<line class="hlx" data-k="inter" x1="${X(x0)}" x2="${X(x1)}" y1="${Y(P.intercept + P.slope * x0)}" y2="${Y(P.intercept + P.slope * x1)}" style="stroke:${col4(l)};stroke-width:2;stroke-dasharray:3 3"/>`; }).join(''));
+      $('#wc3-k').innerHTML = kvs([['未校正的差異（標準誤）', `${F.n(w.diff, 2)}（${F.n(w.se, 2)}）`, 'raw'], ['ANCOVA 校正後差異（標準誤）', `${F.n(R.adj[1] - R.adj[0], 2)}（${F.n(seAdj, 2)}）`, 'adj'], ['設定的處理效果（真值）', e.toFixed(1)], ['斜率平行性檢定 p', F.p(R.inter.p), 'inter']]);
+    };
+    el.addEventListener('input', up); el.addEventListener('change', up); up();
+  },
   expdesign(el) {
     el.innerHTML = `<p class="w-cap">情境：測試新藥能不能讓小鼠體重增加。每隻小鼠本來的健康狀況不同，健康的小鼠本來就長得比較好。下圖是把同一個實驗重做 400 次，每次估計的藥效（給藥組平均 − 對照組平均）。</p>
 <div class="seg wrap" id="wx-a"><button type="button" data-a="rand" aria-selected="true">隨機分派</button><button type="button" data-a="pick" aria-selected="false">研究者挑選（健康的給藥）</button></div>
@@ -622,5 +642,5 @@ Object.assign(W, {
   },
 });
 
-const WMAP = { 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
+const WMAP = { 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
 for (const [id, [w, t]] of Object.entries(WMAP)) { const c = CH.find(x => x.id === id); c.widget = w; c.wtitle = t; }

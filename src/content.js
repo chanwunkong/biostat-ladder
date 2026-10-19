@@ -625,6 +625,28 @@ const CH = [
       { q: '每群 10 個觀察值、ICC = 0.1。設計效應是多少？', o: ['1.9', '1.1', '10', '0.1'], why: '1 + (10 − 1) × 0.1 = 1.9：有效樣本數約為總數的一半。' },
     ],
   },
+  {
+    id: 'ancova', title: '共變數分析與線性模型',
+    body: `<p>比較各組時，常有一個連續變數也會影響結果，例如處理前的體重、基線血壓、植株的起始高度。這種在處理前就測量、和結果有關的連續變數，叫做<b>共變數</b>。<b>共變數分析</b>（ANCOVA）在比較組別時，同時校正共變數。</p>
+<div class="formula">結果 = 截距 + 組別效果 + 斜率 × 共變數 + 誤差</div>
+<h3>校正後平均</h3>
+<p>ANCOVA 為每一組配一條迴歸直線，各組的斜率相同、高低不同。<b>校正後平均</b>是「如果每一組的共變數都等於全體平均」時，各組的預測平均。兩組直線之間的垂直距離，就是校正後的組間差異。</p>
+<h3>為什麼要校正</h3>
+<ul><li><b>提高精確度</b>：共變數解釋掉一部分個體差異，殘差變小，組別比較的標準誤變小。即使各組共變數平均相同，校正仍然有幫助。</li>
+<li><b>處理機遇造成的不平衡</b>：隨機分派後兩組基線仍可能有些差異，校正可以把它扣掉。</li></ul>
+<h3>前提與注意事項</h3>
+<ul><li><b>平行斜率</b>：共變數和結果的關係在各組相同。檢查方式是在模型中加入「組別 × 共變數」交互作用；它顯著時，代表處理效果會隨共變數大小而不同，不能只報告一個校正後差異。</li>
+<li>共變數和結果之間大致是直線關係。</li>
+<li>共變數必須在處理<b>之前</b>測量、不受處理影響。如果處理會改變共變數，校正它反而會扣掉一部分真正的處理效果。</li></ul>
+<h3>它們其實都是線性模型</h3>
+<p>t 檢定、ANOVA、ANCOVA 和多元迴歸（{{c4-1}} 章），都可以寫成同一種形式：結果 = 截距 + Σ 係數 × 預測變數 + 誤差。組別用虛擬變數（0／1）表示，連續變數直接放入。這一類模型叫做<b>線性模型</b>，所以統計軟體常用同一個指令（例如 R 的 lm）完成它們。理解這一點之後，不同方法之間的關係就清楚了：兩組時的 ANOVA 等於 t 檢定，ANCOVA 等於「組別 + 共變數」的迴歸。</p>`,
+    labs: [{ label: '降血壓試驗：校正基線血壓', ds: 'bp_trial', an: 'ancova', sel: { y: 'sbp_wk12', g: 'group', x: 'sbp_base' } }],
+    quiz: [
+      { q: 'ANCOVA 的「校正後平均」是什麼意思？', o: ['假設每一組的共變數都等於全體平均時，各組的預測平均', '刪掉極端值後的平均', '各組的中位數', '把共變數加到結果上的平均'], why: '校正後平均把各組放在相同的共變數值上比較。' },
+      { q: '下列哪一個變數「不適合」當作 ANCOVA 的共變數？', o: ['治療 4 週後測量、可能被治療改變的體重', '治療前測量的基線血壓', '入組時的年齡', '處理前植株的高度'], why: '共變數要在處理前測量、不受處理影響；否則校正會扣掉一部分真正的處理效果。' },
+      { q: '「組別 × 共變數」交互作用顯著，代表什麼？', o: ['各組的迴歸斜率不同，處理效果會隨共變數大小而改變', '共變數和結果無關', '校正後兩組一定沒有差異', '資料不是常態'], why: 'ANCOVA 假設斜率平行；交互作用顯著時，要分別描述不同共變數值下的處理效果。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -672,6 +694,11 @@ const GLOSS = [
   ['百分位', [], '第 p 百分位：有 p% 的值小於或等於它。', 'c1-4'],
   ['P(X ≤ x)', ['P(X > x)', 'P(X >'], '機率的寫法：P(X ≤ x) 是「X 小於或等於 x 的機率」。', 'c1-4'],
   ['Table 1', [], '論文的第一個表格，列出研究對象的基本特徵。', 'c1-5'],
+  ['共變數', [], '在處理前測量、和結果有關的連續變數，例如基線值、起始體重。', 'ancova'],
+  ['共變數分析', ['ANCOVA'], '比較組別平均時，同時校正一個連續共變數的方法。', 'ancova'],
+  ['校正後平均', [], '假設每一組的共變數都等於全體平均時，各組的預測平均。', 'ancova'],
+  ['平行斜率', [], 'ANCOVA 的前提：共變數和結果的關係（斜率）在各組相同。', 'ancova'],
+  ['線性模型', [], '結果 = 截距 + Σ 係數 × 預測變數 + 誤差。t 檢定、ANOVA、ANCOVA、迴歸都是線性模型。', 'ancova'],
   ['固定效果', [], '水準由研究者特別挑選、本身就是研究對象的因子，例如三種肥料。', 'random-eff'],
   ['隨機效果', [], '水準是從更大群體隨機抽出的樣本的因子，例如個體、窩、醫院。', 'random-eff'],
   ['變異成分', [], '把總變異拆成群間變異與群內變異等來源。', 'random-eff'],
@@ -800,7 +827,7 @@ const ORDER = [
   ['c2-1'],
   ['c2-2', 'c2-3', 'c2-4', 'c4-5', 'c5-1'],
   ['c3-1', 'c3-3', 'c3-5'],
-  ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff'],
+  ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff', 'ancova'],
   ['c3-4', 'c4-1', 'c4-2'],
   ['c4-3'],
   ['c4-4', 'c4-6'],
@@ -813,7 +840,7 @@ const REFS = {
   'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
   'c2-4': 'Whitlock 第 6 章；Rosner 7.1–7.5；Kirkwood 第 8 章', 'c4-5': 'Whitlock 14.6；Rosner 7.6–7.7、8.9；Kirkwood 第 35 章', 'c5-1': 'Rosner 13.2；Kirkwood 第 34 章',
   'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
-  'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
+  'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
   'c4-2': 'Rosner 13.7–13.8；Kirkwood 第 19–20 章', 'c4-3': 'Whitlock 第 21 章；Rosner 14.8–14.11；Kirkwood 第 26–27 章', 'c4-4': 'Benjamini & Hochberg (1995), J R Stat Soc B 57:289–300',
   'c4-6': 'Rosner 12.10、13.13–13.14；Kirkwood 第 31 章', 'c5-2': 'Kirkwood 第 38 章；EQUATOR Network', 'c5-3': 'Kirkwood 第 38 章', 'c5-4': 'Kirkwood 第 34、38 章',
 };

@@ -157,6 +157,15 @@ const S = (() => {
     const vb = Math.max(0, (A.msb - A.msw) / n0), vw = A.msw;
     return { vb, vw, icc: (A.msb - A.msw) / (A.msb + (n0 - 1) * A.msw), n0, F: A.F, df1: A.df1, df2: A.df2, p: A.p };
   }
+  // 共變數分析：y ~ 組別 + 共變數 x。g 為組別編號（0 起算）。回傳 Type II F、校正後平均與斜率平行性檢定
+  function ancova(y, g, x) {
+    const k = Math.max(...g) + 1, N = y.length, xm = mean(x);
+    const D = (useG, useX, useInt) => y.map((_, i) => { const r = [1]; if (useG) for (let l = 1; l < k; l++) r.push(g[i] === l ? 1 : 0); if (useX) r.push(x[i] - xm); if (useInt) for (let l = 1; l < k; l++) r.push(g[i] === l ? x[i] - xm : 0); return r; });
+    const full = ols(D(1, 1, 0), y), rss = M => sum(ols(M, y).resid.map(r => r * r)), rFull = sum(full.resid.map(r => r * r)), dfE = N - k - 1, mse = rFull / dfE;
+    const Fg = (rss(D(0, 1, 0)) - rFull) / (k - 1) / mse, Fx = (rss(D(1, 0, 0)) - rFull) / mse, rInt = rss(D(1, 1, 1)), dfI = N - 2 * k, Fi = (rFull - rInt) / (k - 1) / (rInt / dfI);
+    const adj = Array.from({ length: k }, (_, l) => full.b[0] + (l ? full.b[l] : 0));
+    return { group: { F: Fg, df1: k - 1, df2: dfE, p: pf(Fg, k - 1, dfE) }, cov: { F: Fx, df1: 1, df2: dfE, p: pf(Fx, 1, dfE), slope: full.b[k] }, inter: { F: Fi, df1: k - 1, df2: dfI, p: pf(Fi, k - 1, dfI) }, adj, xm, fit: full };
+  }
   // Welch ANOVA（不假設各組變異數相等；R 的 oneway.test(var.equal = FALSE)）
   function welchAnova(groups) {
     const k = groups.length, n = groups.map(g => g.length), m = groups.map(mean), w = groups.map((g, i) => n[i] / variance(g)), W = sum(w);
@@ -315,7 +324,7 @@ const S = (() => {
   const nProps = (p1, p2, alpha, power) => { const za = qnorm(1 - alpha / 2), zb = qnorm(power), pb = (p1 + p2) / 2; return Math.ceil((za * Math.sqrt(2 * pb * (1 - pb)) + zb * Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))) ** 2 / ((p1 - p2) ** 2)); };
   const powerProps = (p1, p2, n, alpha) => { const za = qnorm(1 - alpha / 2), pb = (p1 + p2) / 2; return pnorm((Math.abs(p1 - p2) * Math.sqrt(n) - za * Math.sqrt(2 * pb * (1 - pb))) / Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))); };
 
-  return { lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, mannWhitney, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
+  return { lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, mannWhitney, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
 })();
 
 /* ---------- 格式 ---------- */
@@ -488,6 +497,7 @@ const DEF = {
   mainEff: '主效果：把另一個因子的各水準平均起來後，這個因子各水準之間的差異。圖上的 ◆ 或虛線是邊際平均。', interEff: '交互作用：一個因子的效果是否隨另一個因子的水準而不同。圖上虛線是「沒有交互作用時」第二條線應在的位置，紅色線段是實際偏離的量。',
   blockDef: '區集 ANOVA 先扣除區集之間的差異，再比較處理；區集解釋掉的變異越多，殘差均方越小。最後一張卡是忽略區集、直接做單因子 ANOVA 的結果，供比較。',
   rmDef: '重複測量 ANOVA：把每個個體當成區集，扣除個體之間的差異後，比較各時間點的平均。', ggDef: 'Greenhouse–Geisser ε：用各時間點的共變異數矩陣估計違反球形假設的程度，介於 1/(時間點數 − 1) 與 1；自由度乘上 ε 後重新計算 p 值。', friedDef: 'Friedman 檢定：在每個個體內把各時間點的值排名，再比較各時間點的名次總和。',
+  adjMean: '校正後平均：用 ANCOVA 模型預測「共變數等於全體平均時」各組的平均；括號內是未校正的原始平均。', parallel: '斜率平行性檢定：在模型中加入「組別 × 共變數」交互作用，檢定各組的迴歸斜率是否相同；ANCOVA 假設斜率相同。',
   n: '分析使用的觀察數。', ev: '結果為事件（編碼 1）的人數。',
 };
 const cd = (k, l, v, d) => ({ k, l, v, d });
@@ -874,6 +884,31 @@ const AN = {
           `時間：F(${R.df1}, ${R.df2}) = ${F.n(R.F, 2)}，Greenhouse–Geisser ε = ${F.n(R.eps, 2)}，校正後 ${F.peq(R.pGG)}；Friedman χ²(${Fr.df}) = ${F.n(Fr.Q, 2)}，${F.peq(Fr.p)}；n = ${M.length}。`,
           `Changes across ${vars.join(', ')} were tested by one-way repeated-measures analysis of variance with the Greenhouse–Geisser correction for sphericity, and by the Friedman test.`,
           `Time: F(${R.df1}, ${R.df2}) = ${F.n(R.F, 2)}, Greenhouse–Geisser ε = ${F.n(R.eps, 2)}, corrected ${F.peq(R.pGG)}; Friedman χ²(${Fr.df}) = ${F.n(Fr.Q, 2)}, ${F.peq(Fr.p)}; n = ${M.length}.`),
+      };
+    },
+  },
+  ancova: {
+    name: '共變數分析（ANCOVA）', when: '比較組別平均，同時校正一個連續的共變數（例如基線值）',
+    fields: [{ k: 'y', label: '結果變數（數值）', t: 'num' }, { k: 'g', label: '組別', t: 'cat' }, { k: 'x', label: '共變數（數值，處理前測量）', t: 'num' }],
+    run(ds, s) {
+      if (s.y === s.x) throw new Error('結果變數與共變數要選不同的欄位。');
+      const yc = colOf(ds, s.y), gc = colOf(ds, s.g), xc = colOf(ds, s.x), { idx, dropped } = complete(ds, [s.y, s.g, s.x]), G = levelsOf(ds, gc, idx);
+      if (G.length < 2) throw new Error('組別至少需要兩組。'); if (G.length > 8) throw new Error('組別超過 8 組。');
+      const y = idx.map(i => yc.values[i]), x = idx.map(i => xc.values[i]), gi = idx.map(i => G.indexOf(lab(gc.values[i])));
+      let R; try { R = S.ancova(y, gi, x); } catch (e) { catFail(e); }
+      const raw = G.map((_, l) => S.mean(y.filter((__, i) => gi[i] === l))), [x0, x1] = S.minmax(x), [y0, y1] = S.minmax(y), sl = R.cov.slope;
+      const ch = chart({ x: [x0, x1], y: [y0, y1], xlab: s.x, ylab: s.y, h: 330, xgrid: true }, (X, Y) => y.map((v, i) => `<circle cx="${X(x[i]).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="3" style="fill:${col4(gi[i])};fill-opacity:.45"/>`).join('')
+        + G.map((_, l) => `<line data-k="adj${l} slope" x1="${X(x0)}" x2="${X(x1)}" y1="${Y(R.adj[l] + sl * (x0 - R.xm))}" y2="${Y(R.adj[l] + sl * (x1 - R.xm))}" style="stroke:${col4(l)};stroke-width:2.5"/><circle class="hlx" data-k="adj${l}" cx="${X(R.xm)}" cy="${Y(R.adj[l])}" r="6" style="fill:${col4(l)}"/>`).join('')
+        + `<line class="hlx" data-k="${G.map((_, l) => 'adj' + l).join(' ')}" x1="${X(R.xm)}" x2="${X(R.xm)}" y1="${Y(y0)}" y2="${Y(y1)}" style="stroke:var(--muted);stroke-dasharray:5 4"/>`);
+      return {
+        title: `ANCOVA：${esc(s.y)}，依「${esc(s.g)}」校正 ${esc(s.x)}`, meta: meta(idx.length, dropped), facts: [`校正後平均＝共變數 ${esc(s.x)} 等於全體平均（${F.n(R.xm)}）時，各組的預測平均`],
+        charts: [{ svg: ch, legend: legend(G.map((l, j) => [col4(j), esc(l)])), cap: '各組一條斜率相同的迴歸直線；亮起時，直線與灰色虛線（共變數的全體平均）的交點就是校正後平均。' }, { svg: distChart('F', R.group.F, [R.group.df1, R.group.df2], `組別的 F（自由度 ${R.group.df1}, ${R.group.df2}）`), cap: distCap.F + '（組別，已校正共變數）' }],
+        cards: [...G.map((l, j) => cd('adj' + j, `${esc(l)} 校正後平均`, `${F.n(R.adj[j])}（未校正 ${F.n(raw[j])}）`, 'adjMean')), cd('F', '組別 F（校正後）', `${F.n(R.group.F, 2)}（df ${R.group.df1}, ${R.group.df2}）`, 'F'), cd('p', 'p 值（組別，校正後）', F.p(R.group.p), 'p'), cd('slope', `共變數斜率`, `${F.n(sl)}（p ${F.p(R.cov.p)}）`, 'slope'), cd('slope', '斜率平行性檢定 p', F.p(R.inter.p), 'parallel')],
+        tables: [{ head: ['組別', '未校正平均', '校正後平均'], rows: G.map((l, j) => [esc(l), F.n(raw[j]), F.n(R.adj[j])]) }, { head: ['來源', 'F', '自由度', 'p 值'], rows: [[esc(s.g), F.n(R.group.F, 2), `${R.group.df1}, ${R.group.df2}`, F.p(R.group.p)], [esc(s.x), F.n(R.cov.F, 2), `1, ${R.cov.df2}`, F.p(R.cov.p)], [`${esc(s.g)} × ${esc(s.x)}（斜率是否平行）`, F.n(R.inter.F, 2), `${R.inter.df1}, ${R.inter.df2}`, F.p(R.inter.p)]], foot: '組別與共變數為 Type II F；最後一列為加入交互作用項的檢定。' }],
+        write: W2(`以共變數分析比較各組 ${s.y}，校正 ${s.x}；並以 ${s.g} × ${s.x} 交互作用檢定迴歸斜率是否平行。`,
+          `校正 ${s.x} 後，${s.g}：F(${R.group.df1}, ${R.group.df2}) = ${F.n(R.group.F, 2)}，${F.peq(R.group.p)}；校正後平均：${G.map((l, j) => `${l} ${F.n(R.adj[j])}`).join('、')}；${s.x} 斜率 = ${F.n(sl)}；斜率平行性檢定 ${F.peq(R.inter.p)}。`,
+          `${s.y} was compared across ${s.g} groups by analysis of covariance adjusting for ${s.x}; parallelism of slopes was tested with the ${s.g} × ${s.x} interaction.`,
+          `After adjustment for ${s.x}, ${s.g}: F(${R.group.df1}, ${R.group.df2}) = ${F.n(R.group.F, 2)}, ${F.peq(R.group.p)}; adjusted means ${G.map((l, j) => `${F.n(R.adj[j])} (${l})`).join(', ')}; slope for ${s.x} = ${F.n(sl)}; test of parallel slopes ${F.peq(R.inter.p)}.`),
       };
     },
   },

@@ -87,6 +87,15 @@ if (!(rmA.eps >= 0.5 && rmA.eps <= 1)) { fail++; console.log('FAIL Greenhouse–
 const sf = [[9, 2, 5, 8], [6, 1, 3, 2], [8, 4, 6, 8], [7, 1, 2, 6], [10, 5, 6, 9], [6, 2, 4, 7]];
 near('ICC(1,1) Shrout & Fleiss', S.icc(sf).icc, 0.17, 0.05);
 
+// R: summary(lm(dist ~ speed, data = cars))
+const cs = [4, 4, 7, 7, 8, 9, 10, 10, 10, 11, 11, 12, 12, 12, 12, 13, 13, 13, 13, 14, 14, 14, 14, 15, 15, 15, 16, 16, 17, 17, 17, 18, 18, 18, 18, 19, 19, 19, 20, 20, 20, 20, 20, 22, 23, 24, 24, 24, 24, 25];
+const cdist = [2, 10, 4, 22, 16, 10, 18, 26, 34, 17, 28, 14, 20, 24, 28, 26, 34, 34, 46, 26, 36, 60, 80, 20, 26, 54, 32, 40, 32, 40, 50, 42, 56, 76, 84, 36, 46, 68, 32, 48, 52, 56, 64, 66, 54, 70, 92, 93, 120, 85];
+const lmc = S.ols(cs.map(v => [1, v]), cdist);
+near('lm 截距 (cars)', lmc.b[0], -17.5791);
+near('lm 斜率', lmc.b[1], 3.9324);
+near('lm 斜率標準誤', lmc.se[1], 0.4155);
+near('lm R²', lmc.r2, 0.6511);
+
 const DS = {};
 for (const m of DATASETS) { const d = m.gen(); DS[m.id] = makeDS({ ...m, head: d.head, rows: d.rows }); }
 const runs = [
@@ -102,6 +111,7 @@ const runs = [
   ['plant_growth', 'anova', { y: 'height_cm', g: 'fertilizer' }],
   ['plant_growth', 'block', { y: 'height_cm', tr: 'fertilizer', bk: 'block' }],
   ['wound', 'rm', { vars: ['day0', 'day3', 'day7', 'day14'] }],
+  ['bp_trial', 'ancova', { y: 'sbp_wk12', g: 'group', x: 'sbp_base' }],
   ['diet_geno', 'anova2', { y: 'weight_gain_g', a: 'diet', b: 'genotype' }],
 ];
 for (const [id, an, sel] of runs) {

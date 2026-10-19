@@ -670,6 +670,15 @@ const S = (() => {
     const vb = Math.max(0, (A.msb - A.msw) / n0), vw = A.msw;
     return { vb, vw, icc: (A.msb - A.msw) / (A.msb + (n0 - 1) * A.msw), n0, F: A.F, df1: A.df1, df2: A.df2, p: A.p };
   }
+  // 共變數分析：y ~ 組別 + 共變數 x。g 為組別編號（0 起算）。回傳 Type II F、校正後平均與斜率平行性檢定
+  function ancova(y, g, x) {
+    const k = Math.max(...g) + 1, N = y.length, xm = mean(x);
+    const D = (useG, useX, useInt) => y.map((_, i) => { const r = [1]; if (useG) for (let l = 1; l < k; l++) r.push(g[i] === l ? 1 : 0); if (useX) r.push(x[i] - xm); if (useInt) for (let l = 1; l < k; l++) r.push(g[i] === l ? x[i] - xm : 0); return r; });
+    const full = ols(D(1, 1, 0), y), rss = M => sum(ols(M, y).resid.map(r => r * r)), rFull = sum(full.resid.map(r => r * r)), dfE = N - k - 1, mse = rFull / dfE;
+    const Fg = (rss(D(0, 1, 0)) - rFull) / (k - 1) / mse, Fx = (rss(D(1, 0, 0)) - rFull) / mse, rInt = rss(D(1, 1, 1)), dfI = N - 2 * k, Fi = (rFull - rInt) / (k - 1) / (rInt / dfI);
+    const adj = Array.from({ length: k }, (_, l) => full.b[0] + (l ? full.b[l] : 0));
+    return { group: { F: Fg, df1: k - 1, df2: dfE, p: pf(Fg, k - 1, dfE) }, cov: { F: Fx, df1: 1, df2: dfE, p: pf(Fx, 1, dfE), slope: full.b[k] }, inter: { F: Fi, df1: k - 1, df2: dfI, p: pf(Fi, k - 1, dfI) }, adj, xm, fit: full };
+  }
   // Welch ANOVA（不假設各組變異數相等；R 的 oneway.test(var.equal = FALSE)）
   function welchAnova(groups) {
     const k = groups.length, n = groups.map(g => g.length), m = groups.map(mean), w = groups.map((g, i) => n[i] / variance(g)), W = sum(w);
@@ -828,7 +837,7 @@ const S = (() => {
   const nProps = (p1, p2, alpha, power) => { const za = qnorm(1 - alpha / 2), zb = qnorm(power), pb = (p1 + p2) / 2; return Math.ceil((za * Math.sqrt(2 * pb * (1 - pb)) + zb * Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))) ** 2 / ((p1 - p2) ** 2)); };
   const powerProps = (p1, p2, n, alpha) => { const za = qnorm(1 - alpha / 2), pb = (p1 + p2) / 2; return pnorm((Math.abs(p1 - p2) * Math.sqrt(n) - za * Math.sqrt(2 * pb * (1 - pb))) / Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))); };
 
-  return { lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, mannWhitney, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
+  return { lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, mannWhitney, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
 })();
 
 /* ---------- 格式 ---------- */
@@ -1001,6 +1010,7 @@ const DEF = {
   mainEff: '主效果：把另一個因子的各水準平均起來後，這個因子各水準之間的差異。圖上的 ◆ 或虛線是邊際平均。', interEff: '交互作用：一個因子的效果是否隨另一個因子的水準而不同。圖上虛線是「沒有交互作用時」第二條線應在的位置，紅色線段是實際偏離的量。',
   blockDef: '區集 ANOVA 先扣除區集之間的差異，再比較處理；區集解釋掉的變異越多，殘差均方越小。最後一張卡是忽略區集、直接做單因子 ANOVA 的結果，供比較。',
   rmDef: '重複測量 ANOVA：把每個個體當成區集，扣除個體之間的差異後，比較各時間點的平均。', ggDef: 'Greenhouse–Geisser ε：用各時間點的共變異數矩陣估計違反球形假設的程度，介於 1/(時間點數 − 1) 與 1；自由度乘上 ε 後重新計算 p 值。', friedDef: 'Friedman 檢定：在每個個體內把各時間點的值排名，再比較各時間點的名次總和。',
+  adjMean: '校正後平均：用 ANCOVA 模型預測「共變數等於全體平均時」各組的平均；括號內是未校正的原始平均。', parallel: '斜率平行性檢定：在模型中加入「組別 × 共變數」交互作用，檢定各組的迴歸斜率是否相同；ANCOVA 假設斜率相同。',
   n: '分析使用的觀察數。', ev: '結果為事件（編碼 1）的人數。',
 };
 const cd = (k, l, v, d) => ({ k, l, v, d });
@@ -1387,6 +1397,31 @@ const AN = {
           `時間：F(${R.df1}, ${R.df2}) = ${F.n(R.F, 2)}，Greenhouse–Geisser ε = ${F.n(R.eps, 2)}，校正後 ${F.peq(R.pGG)}；Friedman χ²(${Fr.df}) = ${F.n(Fr.Q, 2)}，${F.peq(Fr.p)}；n = ${M.length}。`,
           `Changes across ${vars.join(', ')} were tested by one-way repeated-measures analysis of variance with the Greenhouse–Geisser correction for sphericity, and by the Friedman test.`,
           `Time: F(${R.df1}, ${R.df2}) = ${F.n(R.F, 2)}, Greenhouse–Geisser ε = ${F.n(R.eps, 2)}, corrected ${F.peq(R.pGG)}; Friedman χ²(${Fr.df}) = ${F.n(Fr.Q, 2)}, ${F.peq(Fr.p)}; n = ${M.length}.`),
+      };
+    },
+  },
+  ancova: {
+    name: '共變數分析（ANCOVA）', when: '比較組別平均，同時校正一個連續的共變數（例如基線值）',
+    fields: [{ k: 'y', label: '結果變數（數值）', t: 'num' }, { k: 'g', label: '組別', t: 'cat' }, { k: 'x', label: '共變數（數值，處理前測量）', t: 'num' }],
+    run(ds, s) {
+      if (s.y === s.x) throw new Error('結果變數與共變數要選不同的欄位。');
+      const yc = colOf(ds, s.y), gc = colOf(ds, s.g), xc = colOf(ds, s.x), { idx, dropped } = complete(ds, [s.y, s.g, s.x]), G = levelsOf(ds, gc, idx);
+      if (G.length < 2) throw new Error('組別至少需要兩組。'); if (G.length > 8) throw new Error('組別超過 8 組。');
+      const y = idx.map(i => yc.values[i]), x = idx.map(i => xc.values[i]), gi = idx.map(i => G.indexOf(lab(gc.values[i])));
+      let R; try { R = S.ancova(y, gi, x); } catch (e) { catFail(e); }
+      const raw = G.map((_, l) => S.mean(y.filter((__, i) => gi[i] === l))), [x0, x1] = S.minmax(x), [y0, y1] = S.minmax(y), sl = R.cov.slope;
+      const ch = chart({ x: [x0, x1], y: [y0, y1], xlab: s.x, ylab: s.y, h: 330, xgrid: true }, (X, Y) => y.map((v, i) => `<circle cx="${X(x[i]).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="3" style="fill:${col4(gi[i])};fill-opacity:.45"/>`).join('')
+        + G.map((_, l) => `<line data-k="adj${l} slope" x1="${X(x0)}" x2="${X(x1)}" y1="${Y(R.adj[l] + sl * (x0 - R.xm))}" y2="${Y(R.adj[l] + sl * (x1 - R.xm))}" style="stroke:${col4(l)};stroke-width:2.5"/><circle class="hlx" data-k="adj${l}" cx="${X(R.xm)}" cy="${Y(R.adj[l])}" r="6" style="fill:${col4(l)}"/>`).join('')
+        + `<line class="hlx" data-k="${G.map((_, l) => 'adj' + l).join(' ')}" x1="${X(R.xm)}" x2="${X(R.xm)}" y1="${Y(y0)}" y2="${Y(y1)}" style="stroke:var(--muted);stroke-dasharray:5 4"/>`);
+      return {
+        title: `ANCOVA：${esc(s.y)}，依「${esc(s.g)}」校正 ${esc(s.x)}`, meta: meta(idx.length, dropped), facts: [`校正後平均＝共變數 ${esc(s.x)} 等於全體平均（${F.n(R.xm)}）時，各組的預測平均`],
+        charts: [{ svg: ch, legend: legend(G.map((l, j) => [col4(j), esc(l)])), cap: '各組一條斜率相同的迴歸直線；亮起時，直線與灰色虛線（共變數的全體平均）的交點就是校正後平均。' }, { svg: distChart('F', R.group.F, [R.group.df1, R.group.df2], `組別的 F（自由度 ${R.group.df1}, ${R.group.df2}）`), cap: distCap.F + '（組別，已校正共變數）' }],
+        cards: [...G.map((l, j) => cd('adj' + j, `${esc(l)} 校正後平均`, `${F.n(R.adj[j])}（未校正 ${F.n(raw[j])}）`, 'adjMean')), cd('F', '組別 F（校正後）', `${F.n(R.group.F, 2)}（df ${R.group.df1}, ${R.group.df2}）`, 'F'), cd('p', 'p 值（組別，校正後）', F.p(R.group.p), 'p'), cd('slope', `共變數斜率`, `${F.n(sl)}（p ${F.p(R.cov.p)}）`, 'slope'), cd('slope', '斜率平行性檢定 p', F.p(R.inter.p), 'parallel')],
+        tables: [{ head: ['組別', '未校正平均', '校正後平均'], rows: G.map((l, j) => [esc(l), F.n(raw[j]), F.n(R.adj[j])]) }, { head: ['來源', 'F', '自由度', 'p 值'], rows: [[esc(s.g), F.n(R.group.F, 2), `${R.group.df1}, ${R.group.df2}`, F.p(R.group.p)], [esc(s.x), F.n(R.cov.F, 2), `1, ${R.cov.df2}`, F.p(R.cov.p)], [`${esc(s.g)} × ${esc(s.x)}（斜率是否平行）`, F.n(R.inter.F, 2), `${R.inter.df1}, ${R.inter.df2}`, F.p(R.inter.p)]], foot: '組別與共變數為 Type II F；最後一列為加入交互作用項的檢定。' }],
+        write: W2(`以共變數分析比較各組 ${s.y}，校正 ${s.x}；並以 ${s.g} × ${s.x} 交互作用檢定迴歸斜率是否平行。`,
+          `校正 ${s.x} 後，${s.g}：F(${R.group.df1}, ${R.group.df2}) = ${F.n(R.group.F, 2)}，${F.peq(R.group.p)}；校正後平均：${G.map((l, j) => `${l} ${F.n(R.adj[j])}`).join('、')}；${s.x} 斜率 = ${F.n(sl)}；斜率平行性檢定 ${F.peq(R.inter.p)}。`,
+          `${s.y} was compared across ${s.g} groups by analysis of covariance adjusting for ${s.x}; parallelism of slopes was tested with the ${s.g} × ${s.x} interaction.`,
+          `After adjustment for ${s.x}, ${s.g}: F(${R.group.df1}, ${R.group.df2}) = ${F.n(R.group.F, 2)}, ${F.peq(R.group.p)}; adjusted means ${G.map((l, j) => `${F.n(R.adj[j])} (${l})`).join(', ')}; slope for ${s.x} = ${F.n(sl)}; test of parallel slopes ${F.peq(R.inter.p)}.`),
       };
     },
   },
@@ -2224,6 +2259,28 @@ const CH = [
       { q: '每群 10 個觀察值、ICC = 0.1。設計效應是多少？', o: ['1.9', '1.1', '10', '0.1'], why: '1 + (10 − 1) × 0.1 = 1.9：有效樣本數約為總數的一半。' },
     ],
   },
+  {
+    id: 'ancova', title: '共變數分析與線性模型',
+    body: `<p>比較各組時，常有一個連續變數也會影響結果，例如處理前的體重、基線血壓、植株的起始高度。這種在處理前就測量、和結果有關的連續變數，叫做<b>共變數</b>。<b>共變數分析</b>（ANCOVA）在比較組別時，同時校正共變數。</p>
+<div class="formula">結果 = 截距 + 組別效果 + 斜率 × 共變數 + 誤差</div>
+<h3>校正後平均</h3>
+<p>ANCOVA 為每一組配一條迴歸直線，各組的斜率相同、高低不同。<b>校正後平均</b>是「如果每一組的共變數都等於全體平均」時，各組的預測平均。兩組直線之間的垂直距離，就是校正後的組間差異。</p>
+<h3>為什麼要校正</h3>
+<ul><li><b>提高精確度</b>：共變數解釋掉一部分個體差異，殘差變小，組別比較的標準誤變小。即使各組共變數平均相同，校正仍然有幫助。</li>
+<li><b>處理機遇造成的不平衡</b>：隨機分派後兩組基線仍可能有些差異，校正可以把它扣掉。</li></ul>
+<h3>前提與注意事項</h3>
+<ul><li><b>平行斜率</b>：共變數和結果的關係在各組相同。檢查方式是在模型中加入「組別 × 共變數」交互作用；它顯著時，代表處理效果會隨共變數大小而不同，不能只報告一個校正後差異。</li>
+<li>共變數和結果之間大致是直線關係。</li>
+<li>共變數必須在處理<b>之前</b>測量、不受處理影響。如果處理會改變共變數，校正它反而會扣掉一部分真正的處理效果。</li></ul>
+<h3>它們其實都是線性模型</h3>
+<p>t 檢定、ANOVA、ANCOVA 和多元迴歸（{{c4-1}} 章），都可以寫成同一種形式：結果 = 截距 + Σ 係數 × 預測變數 + 誤差。組別用虛擬變數（0／1）表示，連續變數直接放入。這一類模型叫做<b>線性模型</b>，所以統計軟體常用同一個指令（例如 R 的 lm）完成它們。理解這一點之後，不同方法之間的關係就清楚了：兩組時的 ANOVA 等於 t 檢定，ANCOVA 等於「組別 + 共變數」的迴歸。</p>`,
+    labs: [{ label: '降血壓試驗：校正基線血壓', ds: 'bp_trial', an: 'ancova', sel: { y: 'sbp_wk12', g: 'group', x: 'sbp_base' } }],
+    quiz: [
+      { q: 'ANCOVA 的「校正後平均」是什麼意思？', o: ['假設每一組的共變數都等於全體平均時，各組的預測平均', '刪掉極端值後的平均', '各組的中位數', '把共變數加到結果上的平均'], why: '校正後平均把各組放在相同的共變數值上比較。' },
+      { q: '下列哪一個變數「不適合」當作 ANCOVA 的共變數？', o: ['治療 4 週後測量、可能被治療改變的體重', '治療前測量的基線血壓', '入組時的年齡', '處理前植株的高度'], why: '共變數要在處理前測量、不受處理影響；否則校正會扣掉一部分真正的處理效果。' },
+      { q: '「組別 × 共變數」交互作用顯著，代表什麼？', o: ['各組的迴歸斜率不同，處理效果會隨共變數大小而改變', '共變數和結果無關', '校正後兩組一定沒有差異', '資料不是常態'], why: 'ANCOVA 假設斜率平行；交互作用顯著時，要分別描述不同共變數值下的處理效果。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -2271,6 +2328,11 @@ const GLOSS = [
   ['百分位', [], '第 p 百分位：有 p% 的值小於或等於它。', 'c1-4'],
   ['P(X ≤ x)', ['P(X > x)', 'P(X >'], '機率的寫法：P(X ≤ x) 是「X 小於或等於 x 的機率」。', 'c1-4'],
   ['Table 1', [], '論文的第一個表格，列出研究對象的基本特徵。', 'c1-5'],
+  ['共變數', [], '在處理前測量、和結果有關的連續變數，例如基線值、起始體重。', 'ancova'],
+  ['共變數分析', ['ANCOVA'], '比較組別平均時，同時校正一個連續共變數的方法。', 'ancova'],
+  ['校正後平均', [], '假設每一組的共變數都等於全體平均時，各組的預測平均。', 'ancova'],
+  ['平行斜率', [], 'ANCOVA 的前提：共變數和結果的關係（斜率）在各組相同。', 'ancova'],
+  ['線性模型', [], '結果 = 截距 + Σ 係數 × 預測變數 + 誤差。t 檢定、ANOVA、ANCOVA、迴歸都是線性模型。', 'ancova'],
   ['固定效果', [], '水準由研究者特別挑選、本身就是研究對象的因子，例如三種肥料。', 'random-eff'],
   ['隨機效果', [], '水準是從更大群體隨機抽出的樣本的因子，例如個體、窩、醫院。', 'random-eff'],
   ['變異成分', [], '把總變異拆成群間變異與群內變異等來源。', 'random-eff'],
@@ -2399,7 +2461,7 @@ const ORDER = [
   ['c2-1'],
   ['c2-2', 'c2-3', 'c2-4', 'c4-5', 'c5-1'],
   ['c3-1', 'c3-3', 'c3-5'],
-  ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff'],
+  ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff', 'ancova'],
   ['c3-4', 'c4-1', 'c4-2'],
   ['c4-3'],
   ['c4-4', 'c4-6'],
@@ -2412,7 +2474,7 @@ const REFS = {
   'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
   'c2-4': 'Whitlock 第 6 章；Rosner 7.1–7.5；Kirkwood 第 8 章', 'c4-5': 'Whitlock 14.6；Rosner 7.6–7.7、8.9；Kirkwood 第 35 章', 'c5-1': 'Rosner 13.2；Kirkwood 第 34 章',
   'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
-  'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
+  'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
   'c4-2': 'Rosner 13.7–13.8；Kirkwood 第 19–20 章', 'c4-3': 'Whitlock 第 21 章；Rosner 14.8–14.11；Kirkwood 第 26–27 章', 'c4-4': 'Benjamini & Hochberg (1995), J R Stat Soc B 57:289–300',
   'c4-6': 'Rosner 12.10、13.13–13.14；Kirkwood 第 31 章', 'c5-2': 'Kirkwood 第 38 章；EQUATOR Network', 'c5-3': 'Kirkwood 第 38 章', 'c5-4': 'Kirkwood 第 34、38 章',
 };
@@ -2622,7 +2684,7 @@ function runAnalysis(scroll) {
   }
   if (res.tables && res.tables.length) h += `<details class="more"><summary>完整統計表</summary>${res.tables.map(t => tableHTML(t)).join('')}</details>`;
   const defs = [...new Set((res.cards || []).map(c => c.d).filter(Boolean))];
-  if (defs.length) h += `<details class="more"><summary>每個數字怎麼算</summary><dl class="defs">${defs.map(d => `<div><dt>${{ mean: '平均', sd: '標準差', median: '中位數', iqr: '四分位距', diff: '平均差', ci: '95% 信賴區間', t: 't', p: 'p 值', d: "Cohen's d", U: 'Mann–Whitney', V: 'Wilcoxon 符號等級', F: 'F', eta2: 'η²', H: 'Kruskal–Wallis', welchF: 'Welch ANOVA', levene: 'Levene 檢定與 Q-Q 圖', cldDef: 'Tukey 字母標記', mainEff: '主效果', interEff: '交互作用', blockDef: '區集 ANOVA', rmDef: '重複測量 ANOVA', ggDef: 'Greenhouse–Geisser 校正', friedDef: 'Friedman 檢定', chi2: 'χ²', minexp: '期望次數', cv: "Cramér's V", or: '勝算比', rr: '風險比', prop: '比例', fisher: 'Fisher 精確檢定', r: 'Pearson r', rho: 'Spearman ρ', r2: 'R²', slope: '斜率', sigma: '殘差標準誤', beta: '迴歸係數 β', OR: '勝算比（模型）', auc: 'AUC', lr: '概似比 χ²', hr: '危險比', medsurv: '中位存活時間', surv: '存活率', logrank: 'Log-rank χ²', sig: '未校正', q: 'BH q 值', bonf: 'Bonferroni' }[d] || d}</dt><dd>${DEF[d]}</dd></div>`).join('')}</dl></details>`;
+  if (defs.length) h += `<details class="more"><summary>每個數字怎麼算</summary><dl class="defs">${defs.map(d => `<div><dt>${{ mean: '平均', sd: '標準差', median: '中位數', iqr: '四分位距', diff: '平均差', ci: '95% 信賴區間', t: 't', p: 'p 值', d: "Cohen's d", U: 'Mann–Whitney', V: 'Wilcoxon 符號等級', F: 'F', eta2: 'η²', H: 'Kruskal–Wallis', welchF: 'Welch ANOVA', levene: 'Levene 檢定與 Q-Q 圖', cldDef: 'Tukey 字母標記', mainEff: '主效果', interEff: '交互作用', blockDef: '區集 ANOVA', rmDef: '重複測量 ANOVA', ggDef: 'Greenhouse–Geisser 校正', friedDef: 'Friedman 檢定', adjMean: '校正後平均', parallel: '斜率平行性檢定', chi2: 'χ²', minexp: '期望次數', cv: "Cramér's V", or: '勝算比', rr: '風險比', prop: '比例', fisher: 'Fisher 精確檢定', r: 'Pearson r', rho: 'Spearman ρ', r2: 'R²', slope: '斜率', sigma: '殘差標準誤', beta: '迴歸係數 β', OR: '勝算比（模型）', auc: 'AUC', lr: '概似比 χ²', hr: '危險比', medsurv: '中位存活時間', surv: '存活率', logrank: 'Log-rank χ²', sig: '未校正', q: 'BH q 值', bonf: 'Bonferroni' }[d] || d}</dt><dd>${DEF[d]}</dd></div>`).join('')}</dl></details>`;
   out.innerHTML = h + '</div>';
   const root = $('#res-root'); linkify(root, res.table1 && res.picks.length ? res.picks[0].k : null);
   if (scroll === true && innerWidth < 960) out.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -3263,6 +3325,26 @@ Object.assign(W, {
     };
     el.addEventListener('input', up); up();
   },
+  ancovaw(el) {
+    const zx = std(Array.from({ length: 40 }, normOf(rngOf(201)))), ze = std(Array.from({ length: 40 }, normOf(rngOf(202))));
+    el.innerHTML = `<p class="w-cap">兩組各 20 隻小鼠，處理前先量體重（共變數），處理 4 週後再量。比較「不校正」與 ANCOVA。</p>
+<div class="w-row">${slider('wc3-e', '處理效果（公克）', 0, 4, 0.5, 2)}${slider('wc3-r', '起始體重與結果的關係（斜率）', 0, 1.5, 0.1, 0.9)}${slider('wc3-d', '處理組起始體重多（公克）', -4, 4, 0.5, 0)}</div>
+<label class="tog"><input type="checkbox" id="wc3-i"> 兩組斜率不同（違反平行斜率）</label>
+<div class="chart-wrap" id="wc3-c"></div>${legend([['var(--c1)', '對照組'], ['var(--c2)', '處理組']])}<div class="kv" id="wc3-k"></div>`;
+    const up = () => {
+      const e = sv('wc3-e', v => v.toFixed(1)), b = sv('wc3-r', v => v.toFixed(1)), dd = sv('wc3-d', v => v.toFixed(1)), inter = $('#wc3-i').checked;
+      const g = zx.map((_, i) => (i < 20 ? 0 : 1)), x = zx.map((z, i) => 25 + 3 * z + (g[i] ? dd : 0)), y = x.map((v, i) => 10 + b * (v - 25) * (inter && g[i] ? 0.2 : 1) + (g[i] ? e : 0) + 1.5 * ze[i]);
+      const R = S.ancova(y, g, x), raw = [0, 1].map(l => S.mean(y.filter((_, i) => g[i] === l))), w = S.welch(y.filter((_, i) => !g[i]), y.filter((_, i) => g[i]));
+      const seAdj = Math.sqrt(R.fit.se[1] ** 2), [x0, x1] = S.minmax(x), [y0, y1] = S.minmax(y), sl = R.cov.slope;
+      $('#wc3-c').innerHTML = chart({ x: [x0, x1], y: [y0, y1], xlab: '起始體重（公克）', ylab: '4 週後的結果', h: 300, xgrid: true }, (X, Y, { M, iw }) => y.map((v, i) => `<circle cx="${X(x[i]).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="3.5" style="fill:${col4(g[i])};fill-opacity:.55"/>`).join('')
+        + [0, 1].map(l => `<line class="hlx" data-k="raw" x1="${M.l}" x2="${M.l + iw}" y1="${Y(raw[l])}" y2="${Y(raw[l])}" style="stroke:${col4(l)};stroke-width:2.5;stroke-dasharray:7 4"/>`).join('')
+        + [0, 1].map(l => `<line data-k="adj" x1="${X(x0)}" x2="${X(x1)}" y1="${Y(R.adj[l] + sl * (x0 - R.xm))}" y2="${Y(R.adj[l] + sl * (x1 - R.xm))}" style="stroke:${col4(l)};stroke-width:2.5"/>`).join('')
+        + `<g class="hlx" data-k="adj"><line x1="${X(R.xm)}" x2="${X(R.xm)}" y1="${Y(R.adj[0])}" y2="${Y(R.adj[1])}" style="stroke:var(--c4);stroke-width:4"/></g>`
+        + [0, 1].map(l => { const xs = x.filter((_, i) => g[i] === l), ys = y.filter((_, i) => g[i] === l), P = S.pearson(xs, ys); return `<line class="hlx" data-k="inter" x1="${X(x0)}" x2="${X(x1)}" y1="${Y(P.intercept + P.slope * x0)}" y2="${Y(P.intercept + P.slope * x1)}" style="stroke:${col4(l)};stroke-width:2;stroke-dasharray:3 3"/>`; }).join(''));
+      $('#wc3-k').innerHTML = kvs([['未校正的差異（標準誤）', `${F.n(w.diff, 2)}（${F.n(w.se, 2)}）`, 'raw'], ['ANCOVA 校正後差異（標準誤）', `${F.n(R.adj[1] - R.adj[0], 2)}（${F.n(seAdj, 2)}）`, 'adj'], ['設定的處理效果（真值）', e.toFixed(1)], ['斜率平行性檢定 p', F.p(R.inter.p), 'inter']]);
+    };
+    el.addEventListener('input', up); el.addEventListener('change', up); up();
+  },
   expdesign(el) {
     el.innerHTML = `<p class="w-cap">情境：測試新藥能不能讓小鼠體重增加。每隻小鼠本來的健康狀況不同，健康的小鼠本來就長得比較好。下圖是把同一個實驗重做 400 次，每次估計的藥效（給藥組平均 − 對照組平均）。</p>
 <div class="seg wrap" id="wx-a"><button type="button" data-a="rand" aria-selected="true">隨機分派</button><button type="button" data-a="pick" aria-selected="false">研究者挑選（健康的給藥）</button></div>
@@ -3298,13 +3380,18 @@ Object.assign(W, {
   },
 });
 
-const WMAP = { 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
+const WMAP = { 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
 for (const [id, [w, t]] of Object.entries(WMAP)) { const c = CH.find(x => x.id === id); c.widget = w; c.wtitle = t; }
 
 /* ---------- 練習題示範：把題目情境帶入同一章的互動圖 ----------
    每題的 demo：set = 設定輸入元件（id → 值）；click = 依序點擊的按鈕；custom = 交給互動圖自己的 _demo()；look = 示範時的觀察提示。
    有 q 的項目會整題替換（原題無法在圖上示範時）。 */
 const QD = {
+  'ancova': [
+    { demo: { set: { 'wc3-e': 2, 'wc3-r': 0.9, 'wc3-d': 2, 'wc3-i': false }, look: '處理組起始體重比較重。點「ANCOVA 校正後差異」：兩條平行線在灰色虛線（起始體重的全體平均）位置的距離，就是校正後差異。' } },
+    { demo: { set: { 'wc3-e': 2, 'wc3-r': 1.2, 'wc3-d': 0, 'wc3-i': false }, look: '起始體重平均相同時，校正後差異的標準誤仍然比未校正小：共變數解釋掉了個體差異。' } },
+    { demo: { set: { 'wc3-e': 2, 'wc3-r': 1.2, 'wc3-d': 0, 'wc3-i': true }, look: '兩組斜率不同。點「斜率平行性檢定」，虛線是兩組各自的迴歸線，明顯不平行。' } },
+  ],
   'random-eff': [
     { demo: { set: { 'wi2-b': 3, 'wi2-w': 1.5, 'wi2-m': 5 }, look: '每一欄是一隻小鼠（從族群中隨機抽出）。點「小鼠之間的變異成分」，看各隻平均離全體平均多遠。' } },
     { demo: { set: { 'wi2-b': 4, 'wi2-w': 2, 'wi2-m': 3 }, look: 'ICC 約 0.8：同一隻小鼠的幾次測量很接近，差異主要來自不同小鼠。' } },
