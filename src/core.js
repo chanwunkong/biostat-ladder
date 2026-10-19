@@ -126,6 +126,14 @@ const S = (() => {
     const dfE = N - na * nb, mse = rFull / dfE, row = (ss, df) => ({ ss, df, ms: ss / df, F: ss / df / mse, p: pf(ss / df / mse, df, dfE) });
     return { A: row(rB - rAB, na - 1), B: row(rA - rAB, nb - 1), AB: row(rAB - rFull, (na - 1) * (nb - 1)), E: { ss: rFull, df: dfE, ms: mse }, sst };
   }
+  // 區集 ANOVA（處理 + 區集，不含交互作用）。t、b 為處理與區集的編號（0 起算）
+  function blockAnova(y, t, b) {
+    const nt = Math.max(...t) + 1, nb = Math.max(...b) + 1, N = y.length;
+    const X = (useT, useB) => y.map((_, i) => { const r = [1]; if (useT) for (let l = 1; l < nt; l++) r.push(t[i] === l ? 1 : 0); if (useB) for (let l = 1; l < nb; l++) r.push(b[i] === l ? 1 : 0); return r; });
+    const rss = M => { const XtX = M[0].map((_, p) => M[0].map((__, q) => M.reduce((s, r) => s + r[p] * r[q], 0))), Xty = M[0].map((_, p) => M.reduce((s, r, i) => s + r[p] * y[i], 0)), V = inv(XtX), bb = V.map(r => dot(r, Xty)); return y.reduce((s, v, i) => s + (v - dot(M[i], bb)) ** 2, 0); };
+    const rFull = rss(X(1, 1)), rT = rss(X(1, 0)), rB = rss(X(0, 1)), dfE = N - nt - nb + 1, mse = rFull / dfE, row = (ss, df) => ({ ss, df, ms: ss / df, F: ss / df / mse, p: pf(ss / df / mse, df, dfE) });
+    return { T: row(rB - rFull, nt - 1), B: row(rT - rFull, nb - 1), E: { ss: rFull, df: dfE, ms: mse } };
+  }
   // Welch ANOVA（不假設各組變異數相等；R 的 oneway.test(var.equal = FALSE)）
   function welchAnova(groups) {
     const k = groups.length, n = groups.map(g => g.length), m = groups.map(mean), w = groups.map((g, i) => n[i] / variance(g)), W = sum(w);
@@ -284,7 +292,7 @@ const S = (() => {
   const nProps = (p1, p2, alpha, power) => { const za = qnorm(1 - alpha / 2), zb = qnorm(power), pb = (p1 + p2) / 2; return Math.ceil((za * Math.sqrt(2 * pb * (1 - pb)) + zb * Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))) ** 2 / ((p1 - p2) ** 2)); };
   const powerProps = (p1, p2, n, alpha) => { const za = qnorm(1 - alpha / 2), pb = (p1 + p2) / 2; return pnorm((Math.abs(p1 - p2) * Math.sqrt(n) - za * Math.sqrt(2 * pb * (1 - pb))) / Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))); };
 
-  return { lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, mannWhitney, pairedT, wilcoxonSR, anova, twoway, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
+  return { lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, mannWhitney, pairedT, wilcoxonSR, anova, twoway, blockAnova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
 })();
 
 /* ---------- 格式 ---------- */
@@ -455,6 +463,7 @@ const DEF = {
   welchF: 'Welch ANOVA：各組變異數分別估計、以各組人數 ÷ 變異數為權重的 F 檢定，不要求變異數相等。', levene: 'Levene 檢定：算出每個值與自己那組中位數的距離，再用 ANOVA 比較這些距離；p 值小代表各組變異數不同。Q-Q 圖則用來看殘差是否接近常態。',
   cldDef: 'Tukey–Kramer 事後比較後，平均由大到小排列；彼此沒有顯著差異的組別共用同一個字母。兩組沒有共同字母，代表 Tukey 校正 p < 0.05。',
   mainEff: '主效果：把另一個因子的各水準平均起來後，這個因子各水準之間的差異。圖上的 ◆ 或虛線是邊際平均。', interEff: '交互作用：一個因子的效果是否隨另一個因子的水準而不同。圖上虛線是「沒有交互作用時」第二條線應在的位置，紅色線段是實際偏離的量。',
+  blockDef: '區集 ANOVA 先扣除區集之間的差異，再比較處理；區集解釋掉的變異越多，殘差均方越小。最後一張卡是忽略區集、直接做單因子 ANOVA 的結果，供比較。',
   n: '分析使用的觀察數。', ev: '結果為事件（編碼 1）的人數。',
 };
 const cd = (k, l, v, d) => ({ k, l, v, d });
@@ -785,6 +794,29 @@ const AN = {
           `${s.a}：F(${T.A.df}, ${T.E.df}) = ${F.n(T.A.F, 2)}，${F.peq(T.A.p)}；${s.b}：F(${T.B.df}, ${T.E.df}) = ${F.n(T.B.F, 2)}，${F.peq(T.B.p)}；${s.a} × ${s.b} 交互作用：F(${T.AB.df}, ${T.E.df}) = ${F.n(T.AB.F, 2)}，${F.peq(T.AB.p)}。`,
           `${s.y} was analysed by two-way analysis of variance with ${s.a}, ${s.b}, and their interaction (Type II sums of squares).`,
           `${s.a}: F(${T.A.df}, ${T.E.df}) = ${F.n(T.A.F, 2)}, ${F.peq(T.A.p)}; ${s.b}: F(${T.B.df}, ${T.E.df}) = ${F.n(T.B.F, 2)}, ${F.peq(T.B.p)}; ${s.a} × ${s.b} interaction: F(${T.AB.df}, ${T.E.df}) = ${F.n(T.AB.F, 2)}, ${F.peq(T.AB.p)}.`),
+      };
+    },
+  },
+  block: {
+    name: '區集 ANOVA', when: '隨機完全區集設計：處理 + 區集（例如溫室、日期、窩）',
+    fields: [{ k: 'y', label: '結果變數（數值）', t: 'num' }, { k: 'tr', label: '處理', t: 'cat' }, { k: 'bk', label: '區集', t: 'cat' }],
+    run(ds, s) {
+      if (s.tr === s.bk) throw new Error('處理與區集要選不同的變數。');
+      const yc = colOf(ds, s.y), tc = colOf(ds, s.tr), bc = colOf(ds, s.bk), { idx, dropped } = complete(ds, [s.y, s.tr, s.bk]), Lt = levelsOf(ds, tc, idx), Lb = levelsOf(ds, bc, idx);
+      if (Lt.length < 2 || Lb.length < 2) throw new Error('處理與區集都至少需要兩個水準。');
+      const ti = idx.map(i => Lt.indexOf(lab(tc.values[i]))), bi = idx.map(i => Lb.indexOf(lab(bc.values[i]))), y = idx.map(i => yc.values[i]);
+      let R; try { R = S.blockAnova(y, ti, bi); } catch (e) { catFail(e); }
+      const gv = Lt.map((_, k) => y.filter((v, i) => ti[i] === k)), A1 = S.anova(gv), rowT = (nm, r) => [nm, F.n(r.ss), r.df, F.n(r.ms), F.n(r.F, 2), F.p(r.p)];
+      const box = boxStrip(Lt.map((l, k) => ({ label: l, v: gv[k] })), s.y, (X, Y, { bw }) => Lb.map((_, j) => { const pts = Lt.map((__, k) => { const v = y.filter((vv, i) => ti[i] === k && bi[i] === j); return v.length ? S.mean(v) : null; }); return `<path class="hlx" data-k="blk" d="${pts.map((m, k) => (m === null ? '' : `${k && pts[k - 1] !== null ? 'L' : 'M'}${X(k) + bw / 2 + 14} ${Y(m)}`)).join('')}" style="fill:none;stroke:${col4(j)};stroke-width:2"/>`; }).join(''));
+      return {
+        title: `${esc(s.y)}：${esc(s.tr)}（區集：${esc(s.bk)}）`, meta: meta(idx.length, dropped), facts: [`${Lb.length} 個區集、${Lt.length} 種處理`],
+        charts: [{ svg: box, cap: boxCap + '亮起時：每條彩色線連接同一個區集在各處理的平均。' }, { svg: distChart('F', R.T.F, [R.T.df, R.E.df], `處理的 F（自由度 ${R.T.df}, ${R.E.df}）`), cap: distCap.F + '（處理，已扣除區集）' }],
+        cards: [cd('F', '處理 F（考慮區集）', `${F.n(R.T.F, 2)}（df ${R.T.df}, ${R.E.df}）`, 'F'), cd('p', 'p 值（考慮區集）', F.p(R.T.p), 'p'), cd('blk', '區集 F', `${F.n(R.B.F, 2)}（df ${R.B.df}, ${R.E.df}）`, 'blockDef'), cd('blk', 'p 值（不考慮區集的單因子 ANOVA）', F.p(A1.p), 'blockDef')],
+        tables: [{ head: ['變異來源', 'SS', '自由度', 'MS', 'F', 'p 值'], rows: [rowT(esc(s.tr), R.T), rowT(`區集（${esc(s.bk)}）`, R.B), ['殘差', F.n(R.E.ss), R.E.df, F.n(R.E.ms), '', '']], foot: `不考慮區集時：單因子 ANOVA F(${A1.df1}, ${A1.df2}) = ${F.n(A1.F, 2)}，${F.peq(A1.p)}；殘差均方 ${F.n(A1.msw)}。` }],
+        write: W2(`以隨機完全區集設計的變異數分析（${s.tr} + 區集 ${s.bk}）分析 ${s.y}。`,
+          `${s.tr}：F(${R.T.df}, ${R.E.df}) = ${F.n(R.T.F, 2)}，${F.peq(R.T.p)}；區集：F(${R.B.df}, ${R.E.df}) = ${F.n(R.B.F, 2)}，${F.peq(R.B.p)}。`,
+          `${s.y} was analysed by analysis of variance for a randomized complete block design, with ${s.tr} as the treatment and ${s.bk} as the block.`,
+          `${s.tr}: F(${R.T.df}, ${R.E.df}) = ${F.n(R.T.F, 2)}, ${F.peq(R.T.p)}; block: F(${R.B.df}, ${R.E.df}) = ${F.n(R.B.F, 2)}, ${F.peq(R.B.p)}.`),
       };
     },
   },

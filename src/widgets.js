@@ -539,6 +539,24 @@ Object.assign(W, {
     };
     el.addEventListener('input', up); up();
   },
+  blockw(el) {
+    const zb = std(Array.from({ length: 8 }, normOf(rngOf(91)))), ze = [0, 1, 2].map(k => std(Array.from({ length: 8 }, normOf(rngOf(95 + k)))));
+    el.innerHTML = `<p class="w-cap">3 種肥料、每個溫室各一盆（共 6 個溫室）。溫室之間本來就有差異。比較「考慮區集」與「不考慮區集」兩種分析。</p>
+<div class="w-row">${slider('wb-b', '溫室之間的差異（標準差）', 0, 6, 0.5, 4)}${slider('wb-e', '肥料 B、C 比 A 高', 0, 4, 0.5, 1.5)}${slider('wb-s', '殘差標準差', 0.5, 3, 0.5, 1)}</div>
+<div class="chart-wrap" id="wb-c"></div><div class="kv" id="wb-k"></div>`;
+    const up = () => {
+      const sb = sv('wb-b', v => v.toFixed(1)), e = sv('wb-e', v => v.toFixed(1)), se = sv('wb-s', v => v.toFixed(1)), nb = 6, eff = [0, e, e * 1.5];
+      const y = [], t = [], b = []; for (let k = 0; k < 3; k++) for (let j = 0; j < nb; j++) { y.push(30 + eff[k] + sb * zb[j] + se * ze[k][j]); t.push(k); b.push(j); }
+      const R = S.blockAnova(y, t, b), gv = [0, 1, 2].map(k => y.filter((_, i) => t[i] === k)), A1 = S.anova(gv), [mn, mx] = S.minmax(y);
+      $('#wb-c').innerHTML = chart({ xcats: ['肥料 A', '肥料 B', '肥料 C'], y: [mn, mx], h: 300, ylab: '株高' }, (X, Y) => {
+        let g = ''; for (let j = 0; j < nb; j++) g += `<path data-k="blk" d="${[0, 1, 2].map(k => `${k ? 'L' : 'M'}${X(k)} ${Y(y[k * nb + j])}`).join('')}" style="fill:none;stroke:${['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)', 'var(--muted)', 'var(--ink)'][j]};stroke-width:1.5;stroke-opacity:.6"/>`;
+        for (let k = 0; k < 3; k++) for (let j = 0; j < nb; j++) g += `<circle data-k="blk" cx="${X(k)}" cy="${Y(y[k * nb + j])}" r="4.5" style="fill:${['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)', 'var(--muted)', 'var(--ink)'][j]}"/>`;
+        return g + gv.map((v, k) => `<line data-k="trt" x1="${X(k) - 30}" x2="${X(k) + 30}" y1="${Y(S.mean(v))}" y2="${Y(S.mean(v))}" style="stroke:var(--ink);stroke-width:3.5"/>`).join('');
+      });
+      $('#wb-k').innerHTML = kvs([['殘差均方（不考慮區集）', F.n(A1.msw, 2), 'blk'], ['殘差均方（考慮區集）', F.n(R.E.ms, 2), 'trt'], ['p 值（不考慮區集）', F.p(A1.p), 'blk'], ['p 值（考慮區集）', F.p(R.T.p), 'trt'], ['區集 F', F.n(R.B.F, 2), 'blk']]);
+    };
+    el.addEventListener('input', up); up();
+  },
   expdesign(el) {
     el.innerHTML = `<p class="w-cap">情境：測試新藥能不能讓小鼠體重增加。每隻小鼠本來的健康狀況不同，健康的小鼠本來就長得比較好。下圖是把同一個實驗重做 400 次，每次估計的藥效（給藥組平均 − 對照組平均）。</p>
 <div class="seg wrap" id="wx-a"><button type="button" data-a="rand" aria-selected="true">隨機分派</button><button type="button" data-a="pick" aria-selected="false">研究者挑選（健康的給藥）</button></div>
@@ -574,5 +592,5 @@ Object.assign(W, {
   },
 });
 
-const WMAP = { 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
+const WMAP = { 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
 for (const [id, [w, t]] of Object.entries(WMAP)) { const c = CH.find(x => x.id === id); c.widget = w; c.wtitle = t; }

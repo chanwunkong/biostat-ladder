@@ -69,6 +69,11 @@ near('二因子 F 劑量', tw.B.F, 92.000);
 near('二因子 F 交互作用', tw.AB.F, 4.107);
 near('二因子 p 交互作用', tw.AB.p, 0.021860);
 
+// 兩種處理的區集 ANOVA 必須等於配對 t 檢定：F = t²（sleep 資料，每位受試者是一個區集）
+const bl = S.blockAnova([...g1, ...g2], [...g1.map(() => 0), ...g2.map(() => 1)], [...g1.map((_, i) => i), ...g2.map((_, i) => i)]);
+near('區集 ANOVA F = 配對 t²', bl.T.F, 4.062128 ** 2);
+near('區集 ANOVA p = 配對 t 的 p', bl.T.p, 0.00283289);
+
 const DS = {};
 for (const m of DATASETS) { const d = m.gen(); DS[m.id] = makeDS({ ...m, head: d.head, rows: d.rows }); }
 const runs = [
@@ -82,6 +87,7 @@ const runs = [
   ['lung_surv', 'surv', { time: 'time_months', status: 'status', g: 'treatment', xs: ['treatment', 'stage', 'age'] }],
   ['gene_expr', 'multi', { g: 'tissue', vars: DS.gene_expr.cols.slice(2).map(c => c.name) }],
   ['plant_growth', 'anova', { y: 'height_cm', g: 'fertilizer' }],
+  ['plant_growth', 'block', { y: 'height_cm', tr: 'fertilizer', bk: 'block' }],
   ['diet_geno', 'anova2', { y: 'weight_gain_g', a: 'diet', b: 'genotype' }],
 ];
 for (const [id, an, sel] of runs) {

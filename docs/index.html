@@ -639,6 +639,14 @@ const S = (() => {
     const dfE = N - na * nb, mse = rFull / dfE, row = (ss, df) => ({ ss, df, ms: ss / df, F: ss / df / mse, p: pf(ss / df / mse, df, dfE) });
     return { A: row(rB - rAB, na - 1), B: row(rA - rAB, nb - 1), AB: row(rAB - rFull, (na - 1) * (nb - 1)), E: { ss: rFull, df: dfE, ms: mse }, sst };
   }
+  // 區集 ANOVA（處理 + 區集，不含交互作用）。t、b 為處理與區集的編號（0 起算）
+  function blockAnova(y, t, b) {
+    const nt = Math.max(...t) + 1, nb = Math.max(...b) + 1, N = y.length;
+    const X = (useT, useB) => y.map((_, i) => { const r = [1]; if (useT) for (let l = 1; l < nt; l++) r.push(t[i] === l ? 1 : 0); if (useB) for (let l = 1; l < nb; l++) r.push(b[i] === l ? 1 : 0); return r; });
+    const rss = M => { const XtX = M[0].map((_, p) => M[0].map((__, q) => M.reduce((s, r) => s + r[p] * r[q], 0))), Xty = M[0].map((_, p) => M.reduce((s, r, i) => s + r[p] * y[i], 0)), V = inv(XtX), bb = V.map(r => dot(r, Xty)); return y.reduce((s, v, i) => s + (v - dot(M[i], bb)) ** 2, 0); };
+    const rFull = rss(X(1, 1)), rT = rss(X(1, 0)), rB = rss(X(0, 1)), dfE = N - nt - nb + 1, mse = rFull / dfE, row = (ss, df) => ({ ss, df, ms: ss / df, F: ss / df / mse, p: pf(ss / df / mse, df, dfE) });
+    return { T: row(rB - rFull, nt - 1), B: row(rT - rFull, nb - 1), E: { ss: rFull, df: dfE, ms: mse } };
+  }
   // Welch ANOVA（不假設各組變異數相等；R 的 oneway.test(var.equal = FALSE)）
   function welchAnova(groups) {
     const k = groups.length, n = groups.map(g => g.length), m = groups.map(mean), w = groups.map((g, i) => n[i] / variance(g)), W = sum(w);
@@ -797,7 +805,7 @@ const S = (() => {
   const nProps = (p1, p2, alpha, power) => { const za = qnorm(1 - alpha / 2), zb = qnorm(power), pb = (p1 + p2) / 2; return Math.ceil((za * Math.sqrt(2 * pb * (1 - pb)) + zb * Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))) ** 2 / ((p1 - p2) ** 2)); };
   const powerProps = (p1, p2, n, alpha) => { const za = qnorm(1 - alpha / 2), pb = (p1 + p2) / 2; return pnorm((Math.abs(p1 - p2) * Math.sqrt(n) - za * Math.sqrt(2 * pb * (1 - pb))) / Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))); };
 
-  return { lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, mannWhitney, pairedT, wilcoxonSR, anova, twoway, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
+  return { lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, mannWhitney, pairedT, wilcoxonSR, anova, twoway, blockAnova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
 })();
 
 /* ---------- 格式 ---------- */
@@ -968,6 +976,7 @@ const DEF = {
   welchF: 'Welch ANOVA：各組變異數分別估計、以各組人數 ÷ 變異數為權重的 F 檢定，不要求變異數相等。', levene: 'Levene 檢定：算出每個值與自己那組中位數的距離，再用 ANOVA 比較這些距離；p 值小代表各組變異數不同。Q-Q 圖則用來看殘差是否接近常態。',
   cldDef: 'Tukey–Kramer 事後比較後，平均由大到小排列；彼此沒有顯著差異的組別共用同一個字母。兩組沒有共同字母，代表 Tukey 校正 p < 0.05。',
   mainEff: '主效果：把另一個因子的各水準平均起來後，這個因子各水準之間的差異。圖上的 ◆ 或虛線是邊際平均。', interEff: '交互作用：一個因子的效果是否隨另一個因子的水準而不同。圖上虛線是「沒有交互作用時」第二條線應在的位置，紅色線段是實際偏離的量。',
+  blockDef: '區集 ANOVA 先扣除區集之間的差異，再比較處理；區集解釋掉的變異越多，殘差均方越小。最後一張卡是忽略區集、直接做單因子 ANOVA 的結果，供比較。',
   n: '分析使用的觀察數。', ev: '結果為事件（編碼 1）的人數。',
 };
 const cd = (k, l, v, d) => ({ k, l, v, d });
@@ -1298,6 +1307,29 @@ const AN = {
           `${s.a}：F(${T.A.df}, ${T.E.df}) = ${F.n(T.A.F, 2)}，${F.peq(T.A.p)}；${s.b}：F(${T.B.df}, ${T.E.df}) = ${F.n(T.B.F, 2)}，${F.peq(T.B.p)}；${s.a} × ${s.b} 交互作用：F(${T.AB.df}, ${T.E.df}) = ${F.n(T.AB.F, 2)}，${F.peq(T.AB.p)}。`,
           `${s.y} was analysed by two-way analysis of variance with ${s.a}, ${s.b}, and their interaction (Type II sums of squares).`,
           `${s.a}: F(${T.A.df}, ${T.E.df}) = ${F.n(T.A.F, 2)}, ${F.peq(T.A.p)}; ${s.b}: F(${T.B.df}, ${T.E.df}) = ${F.n(T.B.F, 2)}, ${F.peq(T.B.p)}; ${s.a} × ${s.b} interaction: F(${T.AB.df}, ${T.E.df}) = ${F.n(T.AB.F, 2)}, ${F.peq(T.AB.p)}.`),
+      };
+    },
+  },
+  block: {
+    name: '區集 ANOVA', when: '隨機完全區集設計：處理 + 區集（例如溫室、日期、窩）',
+    fields: [{ k: 'y', label: '結果變數（數值）', t: 'num' }, { k: 'tr', label: '處理', t: 'cat' }, { k: 'bk', label: '區集', t: 'cat' }],
+    run(ds, s) {
+      if (s.tr === s.bk) throw new Error('處理與區集要選不同的變數。');
+      const yc = colOf(ds, s.y), tc = colOf(ds, s.tr), bc = colOf(ds, s.bk), { idx, dropped } = complete(ds, [s.y, s.tr, s.bk]), Lt = levelsOf(ds, tc, idx), Lb = levelsOf(ds, bc, idx);
+      if (Lt.length < 2 || Lb.length < 2) throw new Error('處理與區集都至少需要兩個水準。');
+      const ti = idx.map(i => Lt.indexOf(lab(tc.values[i]))), bi = idx.map(i => Lb.indexOf(lab(bc.values[i]))), y = idx.map(i => yc.values[i]);
+      let R; try { R = S.blockAnova(y, ti, bi); } catch (e) { catFail(e); }
+      const gv = Lt.map((_, k) => y.filter((v, i) => ti[i] === k)), A1 = S.anova(gv), rowT = (nm, r) => [nm, F.n(r.ss), r.df, F.n(r.ms), F.n(r.F, 2), F.p(r.p)];
+      const box = boxStrip(Lt.map((l, k) => ({ label: l, v: gv[k] })), s.y, (X, Y, { bw }) => Lb.map((_, j) => { const pts = Lt.map((__, k) => { const v = y.filter((vv, i) => ti[i] === k && bi[i] === j); return v.length ? S.mean(v) : null; }); return `<path class="hlx" data-k="blk" d="${pts.map((m, k) => (m === null ? '' : `${k && pts[k - 1] !== null ? 'L' : 'M'}${X(k) + bw / 2 + 14} ${Y(m)}`)).join('')}" style="fill:none;stroke:${col4(j)};stroke-width:2"/>`; }).join(''));
+      return {
+        title: `${esc(s.y)}：${esc(s.tr)}（區集：${esc(s.bk)}）`, meta: meta(idx.length, dropped), facts: [`${Lb.length} 個區集、${Lt.length} 種處理`],
+        charts: [{ svg: box, cap: boxCap + '亮起時：每條彩色線連接同一個區集在各處理的平均。' }, { svg: distChart('F', R.T.F, [R.T.df, R.E.df], `處理的 F（自由度 ${R.T.df}, ${R.E.df}）`), cap: distCap.F + '（處理，已扣除區集）' }],
+        cards: [cd('F', '處理 F（考慮區集）', `${F.n(R.T.F, 2)}（df ${R.T.df}, ${R.E.df}）`, 'F'), cd('p', 'p 值（考慮區集）', F.p(R.T.p), 'p'), cd('blk', '區集 F', `${F.n(R.B.F, 2)}（df ${R.B.df}, ${R.E.df}）`, 'blockDef'), cd('blk', 'p 值（不考慮區集的單因子 ANOVA）', F.p(A1.p), 'blockDef')],
+        tables: [{ head: ['變異來源', 'SS', '自由度', 'MS', 'F', 'p 值'], rows: [rowT(esc(s.tr), R.T), rowT(`區集（${esc(s.bk)}）`, R.B), ['殘差', F.n(R.E.ss), R.E.df, F.n(R.E.ms), '', '']], foot: `不考慮區集時：單因子 ANOVA F(${A1.df1}, ${A1.df2}) = ${F.n(A1.F, 2)}，${F.peq(A1.p)}；殘差均方 ${F.n(A1.msw)}。` }],
+        write: W2(`以隨機完全區集設計的變異數分析（${s.tr} + 區集 ${s.bk}）分析 ${s.y}。`,
+          `${s.tr}：F(${R.T.df}, ${R.E.df}) = ${F.n(R.T.F, 2)}，${F.peq(R.T.p)}；區集：F(${R.B.df}, ${R.E.df}) = ${F.n(R.B.F, 2)}，${F.peq(R.B.p)}。`,
+          `${s.y} was analysed by analysis of variance for a randomized complete block design, with ${s.tr} as the treatment and ${s.bk} as the block.`,
+          `${s.tr}: F(${R.T.df}, ${R.E.df}) = ${F.n(R.T.F, 2)}, ${F.peq(R.T.p)}; block: F(${R.B.df}, ${R.E.df}) = ${F.n(R.B.F, 2)}, ${F.peq(R.B.p)}.`),
       };
     },
   },
@@ -2068,6 +2100,26 @@ const CH = [
       { q: '2 × 3 的因子設計，每種組合 5 個實驗單位。交互作用的自由度是多少？', o: ['2', '6', '5', '24'], why: '(2 − 1) × (3 − 1) = 2。殘差自由度是 30 − 6 = 24。' },
     ],
   },
+  {
+    id: 'block', title: '區集設計',
+    body: `<p>實驗中常有一些和處理無關、卻會影響結果的差異：不同溫室的光照、不同天的操作、不同窩的小鼠、不同盤的細胞。這些差異會變成雜訊，讓處理效果更難看清楚。</p>
+<p><b>隨機完全區集設計</b>的做法是：把相似的實驗單位分成一群（一個<b>區集</b>），在<b>每一個區集內</b>，把所有處理隨機分派一次。例如 5 個溫室各放 3 盆植物，每個溫室內隨機決定哪盆用哪種肥料。</p>
+<h3>為什麼有效</h3>
+<p>每個區集裡都有全部的處理，所以可以在區集「內部」比較處理，再把區集之間的差異整個扣掉。殘差變小，F 值變大，同樣的樣本數就有更高的檢定力。</p>
+<div class="formula">總平方和 = 處理平方和 + 區集平方和 + 殘差平方和<br>殘差自由度 =（處理數 − 1）×（區集數 − 1）（每個區集每種處理各一個觀察值時）</div>
+<h3>配對設計是區集設計的特例</h3>
+<p>配對 t 檢定（{{c3-1}} 章）就是「每個區集只有兩種處理」：同一位受試者治療前後、同一窩的兩隻小鼠、同一位病人的左右眼。只有兩種處理時，區集 ANOVA 的 F 剛好等於配對 t 的平方。</p>
+<h3>分析時要注意</h3>
+<ul><li>區集是設計的一部分，<b>分析時一定要放進模型</b>；不能因為區集「不顯著」就拿掉。</li>
+<li>區集本身通常不是研究問題，報告區集的 F 只是為了說明它扣掉了多少變異。</li>
+<li>每個區集每種處理只有一個觀察值時，無法估計處理 × 區集的交互作用，模型假設處理效果在各區集一致。</li></ul>`,
+    labs: [{ label: '肥料 × 溫室區集', ds: 'plant_growth', an: 'block', sel: { y: 'height_cm', tr: 'fertilizer', bk: 'block' } }],
+    quiz: [
+      { q: '在 5 個溫室各放 3 盆植物、每個溫室內隨機分派 3 種肥料。把溫室當區集的主要目的是？', o: ['扣掉溫室之間的差異，讓肥料的比較更精確', '檢定哪個溫室最好', '增加樣本數', '避免需要隨機分派'], why: '區集設計在每個溫室內部比較肥料，溫室之間的差異不會混進殘差。' },
+      { q: '溫室之間差異很大，卻忽略區集、直接做單因子 ANOVA，通常會？', o: ['殘差變大，p 值偏大，較難偵測到肥料的效果', '偽陽性率大增', '結果完全一樣', 'p 值一定變小'], why: '溫室差異被算進殘差，雜訊變大、F 變小。上方互動圖可以直接比較兩種分析的 p 值。' },
+      { q: '配對 t 檢定可以看成哪一種設計？', o: ['每個區集只有兩種處理的區集設計', '二因子 ANOVA', '完全隨機設計', '因子設計'], why: '每位受試者（或每對）就是一個區集，區集內比較兩種處理。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -2115,6 +2167,7 @@ const GLOSS = [
   ['百分位', [], '第 p 百分位：有 p% 的值小於或等於它。', 'c1-4'],
   ['P(X ≤ x)', ['P(X > x)', 'P(X >'], '機率的寫法：P(X ≤ x) 是「X 小於或等於 x 的機率」。', 'c1-4'],
   ['Table 1', [], '論文的第一個表格，列出研究對象的基本特徵。', 'c1-5'],
+  ['隨機完全區集設計', ['區集設計'], '把相似的實驗單位分成區集，在每個區集內把所有處理隨機分派一次的設計。', 'block'],
   ['因子設計', [], '同時操作兩個以上的因子，每種組合都放入實驗單位的設計。', 'twoway'],
   ['主效果', [], '把另一個因子的各水準平均起來後，這個因子的效果。', 'twoway'],
   ['交互作用圖', [], 'x 軸放一個因子、不同線代表另一個因子的圖；線不平行代表有交互作用。', 'twoway'],
@@ -2231,7 +2284,7 @@ const ORDER = [
   ['c2-1'],
   ['c2-2', 'c2-3', 'c2-4', 'c4-5', 'c5-1'],
   ['c3-1', 'c3-3', 'c3-5'],
-  ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway'],
+  ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block'],
   ['c3-4', 'c4-1', 'c4-2'],
   ['c4-3'],
   ['c4-4', 'c4-6'],
@@ -2244,7 +2297,7 @@ const REFS = {
   'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
   'c2-4': 'Whitlock 第 6 章；Rosner 7.1–7.5；Kirkwood 第 8 章', 'c4-5': 'Whitlock 14.6；Rosner 7.6–7.7、8.9；Kirkwood 第 35 章', 'c5-1': 'Rosner 13.2；Kirkwood 第 34 章',
   'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
-  'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
+  'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
   'c4-2': 'Rosner 13.7–13.8；Kirkwood 第 19–20 章', 'c4-3': 'Whitlock 第 21 章；Rosner 14.8–14.11；Kirkwood 第 26–27 章', 'c4-4': 'Benjamini & Hochberg (1995), J R Stat Soc B 57:289–300',
   'c4-6': 'Rosner 12.10、13.13–13.14；Kirkwood 第 31 章', 'c5-2': 'Kirkwood 第 38 章；EQUATOR Network', 'c5-3': 'Kirkwood 第 38 章', 'c5-4': 'Kirkwood 第 34、38 章',
 };
@@ -2454,7 +2507,7 @@ function runAnalysis(scroll) {
   }
   if (res.tables && res.tables.length) h += `<details class="more"><summary>完整統計表</summary>${res.tables.map(t => tableHTML(t)).join('')}</details>`;
   const defs = [...new Set((res.cards || []).map(c => c.d).filter(Boolean))];
-  if (defs.length) h += `<details class="more"><summary>每個數字怎麼算</summary><dl class="defs">${defs.map(d => `<div><dt>${{ mean: '平均', sd: '標準差', median: '中位數', iqr: '四分位距', diff: '平均差', ci: '95% 信賴區間', t: 't', p: 'p 值', d: "Cohen's d", U: 'Mann–Whitney', V: 'Wilcoxon 符號等級', F: 'F', eta2: 'η²', H: 'Kruskal–Wallis', welchF: 'Welch ANOVA', levene: 'Levene 檢定與 Q-Q 圖', cldDef: 'Tukey 字母標記', mainEff: '主效果', interEff: '交互作用', chi2: 'χ²', minexp: '期望次數', cv: "Cramér's V", or: '勝算比', rr: '風險比', prop: '比例', fisher: 'Fisher 精確檢定', r: 'Pearson r', rho: 'Spearman ρ', r2: 'R²', slope: '斜率', sigma: '殘差標準誤', beta: '迴歸係數 β', OR: '勝算比（模型）', auc: 'AUC', lr: '概似比 χ²', hr: '危險比', medsurv: '中位存活時間', surv: '存活率', logrank: 'Log-rank χ²', sig: '未校正', q: 'BH q 值', bonf: 'Bonferroni' }[d] || d}</dt><dd>${DEF[d]}</dd></div>`).join('')}</dl></details>`;
+  if (defs.length) h += `<details class="more"><summary>每個數字怎麼算</summary><dl class="defs">${defs.map(d => `<div><dt>${{ mean: '平均', sd: '標準差', median: '中位數', iqr: '四分位距', diff: '平均差', ci: '95% 信賴區間', t: 't', p: 'p 值', d: "Cohen's d", U: 'Mann–Whitney', V: 'Wilcoxon 符號等級', F: 'F', eta2: 'η²', H: 'Kruskal–Wallis', welchF: 'Welch ANOVA', levene: 'Levene 檢定與 Q-Q 圖', cldDef: 'Tukey 字母標記', mainEff: '主效果', interEff: '交互作用', blockDef: '區集 ANOVA', chi2: 'χ²', minexp: '期望次數', cv: "Cramér's V", or: '勝算比', rr: '風險比', prop: '比例', fisher: 'Fisher 精確檢定', r: 'Pearson r', rho: 'Spearman ρ', r2: 'R²', slope: '斜率', sigma: '殘差標準誤', beta: '迴歸係數 β', OR: '勝算比（模型）', auc: 'AUC', lr: '概似比 χ²', hr: '危險比', medsurv: '中位存活時間', surv: '存活率', logrank: 'Log-rank χ²', sig: '未校正', q: 'BH q 值', bonf: 'Bonferroni' }[d] || d}</dt><dd>${DEF[d]}</dd></div>`).join('')}</dl></details>`;
   out.innerHTML = h + '</div>';
   const root = $('#res-root'); linkify(root, res.table1 && res.picks.length ? res.picks[0].k : null);
   if (scroll === true && innerWidth < 960) out.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -3047,6 +3100,24 @@ Object.assign(W, {
     };
     el.addEventListener('input', up); up();
   },
+  blockw(el) {
+    const zb = std(Array.from({ length: 8 }, normOf(rngOf(91)))), ze = [0, 1, 2].map(k => std(Array.from({ length: 8 }, normOf(rngOf(95 + k)))));
+    el.innerHTML = `<p class="w-cap">3 種肥料、每個溫室各一盆（共 6 個溫室）。溫室之間本來就有差異。比較「考慮區集」與「不考慮區集」兩種分析。</p>
+<div class="w-row">${slider('wb-b', '溫室之間的差異（標準差）', 0, 6, 0.5, 4)}${slider('wb-e', '肥料 B、C 比 A 高', 0, 4, 0.5, 1.5)}${slider('wb-s', '殘差標準差', 0.5, 3, 0.5, 1)}</div>
+<div class="chart-wrap" id="wb-c"></div><div class="kv" id="wb-k"></div>`;
+    const up = () => {
+      const sb = sv('wb-b', v => v.toFixed(1)), e = sv('wb-e', v => v.toFixed(1)), se = sv('wb-s', v => v.toFixed(1)), nb = 6, eff = [0, e, e * 1.5];
+      const y = [], t = [], b = []; for (let k = 0; k < 3; k++) for (let j = 0; j < nb; j++) { y.push(30 + eff[k] + sb * zb[j] + se * ze[k][j]); t.push(k); b.push(j); }
+      const R = S.blockAnova(y, t, b), gv = [0, 1, 2].map(k => y.filter((_, i) => t[i] === k)), A1 = S.anova(gv), [mn, mx] = S.minmax(y);
+      $('#wb-c').innerHTML = chart({ xcats: ['肥料 A', '肥料 B', '肥料 C'], y: [mn, mx], h: 300, ylab: '株高' }, (X, Y) => {
+        let g = ''; for (let j = 0; j < nb; j++) g += `<path data-k="blk" d="${[0, 1, 2].map(k => `${k ? 'L' : 'M'}${X(k)} ${Y(y[k * nb + j])}`).join('')}" style="fill:none;stroke:${['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)', 'var(--muted)', 'var(--ink)'][j]};stroke-width:1.5;stroke-opacity:.6"/>`;
+        for (let k = 0; k < 3; k++) for (let j = 0; j < nb; j++) g += `<circle data-k="blk" cx="${X(k)}" cy="${Y(y[k * nb + j])}" r="4.5" style="fill:${['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)', 'var(--muted)', 'var(--ink)'][j]}"/>`;
+        return g + gv.map((v, k) => `<line data-k="trt" x1="${X(k) - 30}" x2="${X(k) + 30}" y1="${Y(S.mean(v))}" y2="${Y(S.mean(v))}" style="stroke:var(--ink);stroke-width:3.5"/>`).join('');
+      });
+      $('#wb-k').innerHTML = kvs([['殘差均方（不考慮區集）', F.n(A1.msw, 2), 'blk'], ['殘差均方（考慮區集）', F.n(R.E.ms, 2), 'trt'], ['p 值（不考慮區集）', F.p(A1.p), 'blk'], ['p 值（考慮區集）', F.p(R.T.p), 'trt'], ['區集 F', F.n(R.B.F, 2), 'blk']]);
+    };
+    el.addEventListener('input', up); up();
+  },
   expdesign(el) {
     el.innerHTML = `<p class="w-cap">情境：測試新藥能不能讓小鼠體重增加。每隻小鼠本來的健康狀況不同，健康的小鼠本來就長得比較好。下圖是把同一個實驗重做 400 次，每次估計的藥效（給藥組平均 − 對照組平均）。</p>
 <div class="seg wrap" id="wx-a"><button type="button" data-a="rand" aria-selected="true">隨機分派</button><button type="button" data-a="pick" aria-selected="false">研究者挑選（健康的給藥）</button></div>
@@ -3082,13 +3153,18 @@ Object.assign(W, {
   },
 });
 
-const WMAP = { 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
+const WMAP = { 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
 for (const [id, [w, t]] of Object.entries(WMAP)) { const c = CH.find(x => x.id === id); c.widget = w; c.wtitle = t; }
 
 /* ---------- 練習題示範：把題目情境帶入同一章的互動圖 ----------
    每題的 demo：set = 設定輸入元件（id → 值）；click = 依序點擊的按鈕；custom = 交給互動圖自己的 _demo()；look = 示範時的觀察提示。
    有 q 的項目會整題替換（原題無法在圖上示範時）。 */
 const QD = {
+  'block': [
+    { demo: { set: { 'wb-b': 4, 'wb-e': 1.5, 'wb-s': 1 }, look: '每條彩色線是一個溫室：線的高低差是溫室之間的差異。比較兩種分析的殘差均方。' } },
+    { demo: { set: { 'wb-b': 6, 'wb-e': 1.5, 'wb-s': 1 }, look: '溫室差異很大：不考慮區集時殘差均方大、p 值大；考慮區集後殘差均方小得多。' } },
+    { demo: { set: { 'wb-b': 4, 'wb-e': 1, 'wb-s': 1 }, look: '如果只有兩種肥料，每個溫室就是一對資料，這正是配對 t 檢定的情況。' } },
+  ],
   'twoway': [
     { demo: { set: { 'wt2-a': 6, 'wt2-b': 2, 'wt2-i': 0, 'wt2-s': 1.5, 'wt2-n': 8 }, look: '交互作用設為 0：兩條線平行。點「交互作用 F」，虛線（沒有交互作用時的位置）和實線幾乎重疊。' } },
     { demo: { set: { 'wt2-a': 6, 'wt2-b': 0, 'wt2-i': -4, 'wt2-s': 1.5, 'wt2-n': 8 }, look: '兩條線不平行。點兩張「簡單效果」數字卡，比較 WT 與 KO 吃高脂飼料各增加多少；飼料主效果則是兩者的平均。' } },
