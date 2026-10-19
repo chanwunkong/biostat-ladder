@@ -578,6 +578,28 @@ const CH = [
       { q: '配對 t 檢定可以看成哪一種設計？', o: ['每個區集只有兩種處理的區集設計', '二因子 ANOVA', '完全隨機設計', '因子設計'], why: '每位受試者（或每對）就是一個區集，區集內比較兩種處理。' },
     ],
   },
+  {
+    id: 'repeated', title: '重複測量',
+    body: `<p>同一個個體在不同時間點（或不同條件下）被測量好幾次，叫做<b>重複測量</b>。例如 12 隻小鼠在第 0、3、7、14 天量同一個傷口的面積。同一隻小鼠的幾次測量彼此相關，不是獨立的觀察值。</p>
+<h3>兩種常見的錯誤做法</h3>
+<ul><li><b>當作獨立的組別做單因子 ANOVA</b>：違反獨立性，而且個體之間的差異全部變成雜訊。</li>
+<li><b>在每個時間點分別做 t 檢定</b>：比較次數多、偽陽性累積，也沒有利用「同一個體」的資訊。</li></ul>
+<h3>重複測量 ANOVA</h3>
+<p>把每個個體當成一個<b>區集</b>（{{block}} 章），在個體內部比較時間點。計算方式和區集 ANOVA 相同：總平方和拆成「時間」、「個體」和「殘差」。個體之間的差異被扣掉，所以比忽略重複結構的分析更有檢定力。</p>
+<h3>球形假設與 Greenhouse–Geisser 校正</h3>
+<p>重複測量 ANOVA 有一個額外的前提，叫做<b>球形假設</b>：任兩個時間點之間的差值，變異數都要差不多。實際資料常常不成立，因為相鄰時間點通常比相隔很久的時間點更相似。違反時 F 會偏大、偽陽性增加。</p>
+<p>標準做法是 <b>Greenhouse–Geisser 校正</b>：從資料估計一個 ε（介於 1/(時間點數 − 1) 和 1 之間），把兩個自由度都乘上 ε 再算 p 值。ε 越接近 1，越符合球形假設。論文通常直接報告校正後的結果。</p>
+<h3>其他情況</h3>
+<ul><li><b>Friedman 檢定</b>：重複測量的無母數版本，在每個個體內排名後比較各時間點。</li>
+<li><b>有人缺少某次測量</b>：重複測量 ANOVA 需要每個個體都有完整資料，缺一次就整個人被刪除。混合模型（{{c4-6}} 章）可以使用不完整的資料。</li>
+<li><b>兩組 × 時間</b>（例如治療組與對照組都在多個時間點測量）稱為<b>混合設計</b>，關鍵問題是「組別 × 時間」的交互作用：兩組隨時間變化的軌跡是否不同。這種設計建議用混合模型分析。</li></ul>`,
+    labs: [{ label: '傷口面積的重複測量 ANOVA', ds: 'wound', an: 'rm', sel: { vars: ['day0', 'day3', 'day7', 'day14'] } }],
+    quiz: [
+      { q: '12 隻小鼠在 4 個時間點量傷口面積。如果把 4 個時間點當作 4 個獨立的組別做單因子 ANOVA，會？', o: ['忽略個體差異，殘差變大，也違反獨立性', '結果和重複測量 ANOVA 完全一樣', '偽陽性一定變少，所以比較保守', '可以，因為每個時間點都有 12 個值'], why: '同一隻小鼠的測量彼此相關。重複測量 ANOVA 會先扣掉個體之間的差異。' },
+      { q: 'Greenhouse–Geisser ε = 0.6 代表什麼？', o: ['球形假設不太成立；自由度要乘上 0.6 再計算 p 值', '有 60% 的個體符合假設', 'p 值等於 0.6', '交互作用是 0.6'], why: 'ε = 1 代表完全符合球形假設；越小代表違反越多，校正後 p 值會變大。' },
+      { q: '重複測量的資料嚴重偏態、樣本又小，常用的無母數方法是？', o: ['Friedman 檢定', 'Mann–Whitney', '卡方檢定', 'Kruskal–Wallis'], why: 'Kruskal–Wallis 用於獨立的組別；同一個體重複測量要用 Friedman，在個體內排名。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -625,6 +647,11 @@ const GLOSS = [
   ['百分位', [], '第 p 百分位：有 p% 的值小於或等於它。', 'c1-4'],
   ['P(X ≤ x)', ['P(X > x)', 'P(X >'], '機率的寫法：P(X ≤ x) 是「X 小於或等於 x 的機率」。', 'c1-4'],
   ['Table 1', [], '論文的第一個表格，列出研究對象的基本特徵。', 'c1-5'],
+  ['重複測量', [], '同一個個體在不同時間點或條件下被測量好幾次。', 'repeated'],
+  ['球形假設', [], '重複測量 ANOVA 的前提：任兩個時間點之間差值的變異數都差不多。', 'repeated'],
+  ['Greenhouse–Geisser 校正', ['Greenhouse–Geisser', 'ε'], '從資料估計 ε，把自由度乘上 ε 以校正違反球形假設的影響。', 'repeated'],
+  ['Friedman 檢定', ['Friedman'], '重複測量的無母數版本：在每個個體內排名後比較各時間點。', 'repeated'],
+  ['混合設計', [], '同時有組間因子（例如治療組與對照組）和組內因子（例如時間）的設計。', 'repeated'],
   ['隨機完全區集設計', ['區集設計'], '把相似的實驗單位分成區集，在每個區集內把所有處理隨機分派一次的設計。', 'block'],
   ['因子設計', [], '同時操作兩個以上的因子，每種組合都放入實驗單位的設計。', 'twoway'],
   ['主效果', [], '把另一個因子的各水準平均起來後，這個因子的效果。', 'twoway'],
@@ -742,7 +769,7 @@ const ORDER = [
   ['c2-1'],
   ['c2-2', 'c2-3', 'c2-4', 'c4-5', 'c5-1'],
   ['c3-1', 'c3-3', 'c3-5'],
-  ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block'],
+  ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated'],
   ['c3-4', 'c4-1', 'c4-2'],
   ['c4-3'],
   ['c4-4', 'c4-6'],
@@ -755,7 +782,7 @@ const REFS = {
   'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
   'c2-4': 'Whitlock 第 6 章；Rosner 7.1–7.5；Kirkwood 第 8 章', 'c4-5': 'Whitlock 14.6；Rosner 7.6–7.7、8.9；Kirkwood 第 35 章', 'c5-1': 'Rosner 13.2；Kirkwood 第 34 章',
   'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
-  'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
+  'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
   'c4-2': 'Rosner 13.7–13.8；Kirkwood 第 19–20 章', 'c4-3': 'Whitlock 第 21 章；Rosner 14.8–14.11；Kirkwood 第 26–27 章', 'c4-4': 'Benjamini & Hochberg (1995), J R Stat Soc B 57:289–300',
   'c4-6': 'Rosner 12.10、13.13–13.14；Kirkwood 第 31 章', 'c5-2': 'Kirkwood 第 38 章；EQUATOR Network', 'c5-3': 'Kirkwood 第 38 章', 'c5-4': 'Kirkwood 第 34、38 章',
 };

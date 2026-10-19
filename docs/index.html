@@ -647,6 +647,23 @@ const S = (() => {
     const rFull = rss(X(1, 1)), rT = rss(X(1, 0)), rB = rss(X(0, 1)), dfE = N - nt - nb + 1, mse = rFull / dfE, row = (ss, df) => ({ ss, df, ms: ss / df, F: ss / df / mse, p: pf(ss / df / mse, df, dfE) });
     return { T: row(rB - rFull, nt - 1), B: row(rT - rFull, nb - 1), E: { ss: rFull, df: dfE, ms: mse } };
   }
+  // 重複測量 ANOVA（單因子）。M 為 n 個個體 × k 個時間點的矩陣。計算上等於把個體當區集；另算 Greenhouse–Geisser ε
+  function rmAnova(M) {
+    const n = M.length, k = M[0].length, gm = mean(M.flat()), rm = M.map(mean), cm = M[0].map((_, j) => mean(M.map(r => r[j])));
+    const ssT = n * sum(cm.map(v => (v - gm) ** 2)), ssS = k * sum(rm.map(v => (v - gm) ** 2)), ssTot = sum(M.flat().map(v => (v - gm) ** 2)), ssE = ssTot - ssT - ssS;
+    const df1 = k - 1, df2 = (k - 1) * (n - 1), F = (ssT / df1) / (ssE / df2);
+    const cov = cm.map((_, a) => cm.map((__, b) => sum(M.map(r => (r[a] - cm[a]) * (r[b] - cm[b]))) / (n - 1)));
+    const rmn = cov.map(mean), tm = mean(rmn), D = cov.map((r, a) => r.map((v, b) => v - rmn[a] - rmn[b] + tm));
+    const tr = sum(D.map((r, a) => r[a])), tr2 = sum(D.map(r => sum(r.map(v => v * v)))), eps = Math.min(1, Math.max(1 / df1, tr * tr / (df1 * tr2)));
+    return { F, df1, df2, p: pf(F, df1, df2), eps, pGG: pf(F, df1 * eps, df2 * eps), ssT, ssS, ssE, msE: ssE / df2 };
+  }
+  // Friedman 檢定（重複測量的無母數版本）：每個個體內排名
+  function friedman(M) {
+    const n = M.length, k = M[0].length, R = new Array(k).fill(0); let tie = 0;
+    M.forEach(row => { const { r, ties } = rank(row); r.forEach((v, j) => { R[j] += v; }); tie += tieSum(ties); });
+    const Q = (12 / (n * k * (k + 1)) * sum(R.map(v => v * v)) - 3 * n * (k + 1)) / (1 - tie / (n * k * (k * k - 1)));
+    return { Q, df: k - 1, p: pchisq(Q, k - 1), R };
+  }
   // Welch ANOVA（不假設各組變異數相等；R 的 oneway.test(var.equal = FALSE)）
   function welchAnova(groups) {
     const k = groups.length, n = groups.map(g => g.length), m = groups.map(mean), w = groups.map((g, i) => n[i] / variance(g)), W = sum(w);
@@ -805,7 +822,7 @@ const S = (() => {
   const nProps = (p1, p2, alpha, power) => { const za = qnorm(1 - alpha / 2), zb = qnorm(power), pb = (p1 + p2) / 2; return Math.ceil((za * Math.sqrt(2 * pb * (1 - pb)) + zb * Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))) ** 2 / ((p1 - p2) ** 2)); };
   const powerProps = (p1, p2, n, alpha) => { const za = qnorm(1 - alpha / 2), pb = (p1 + p2) / 2; return pnorm((Math.abs(p1 - p2) * Math.sqrt(n) - za * Math.sqrt(2 * pb * (1 - pb))) / Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))); };
 
-  return { lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, mannWhitney, pairedT, wilcoxonSR, anova, twoway, blockAnova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
+  return { lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, mannWhitney, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
 })();
 
 /* ---------- 格式 ---------- */
@@ -977,6 +994,7 @@ const DEF = {
   cldDef: 'Tukey–Kramer 事後比較後，平均由大到小排列；彼此沒有顯著差異的組別共用同一個字母。兩組沒有共同字母，代表 Tukey 校正 p < 0.05。',
   mainEff: '主效果：把另一個因子的各水準平均起來後，這個因子各水準之間的差異。圖上的 ◆ 或虛線是邊際平均。', interEff: '交互作用：一個因子的效果是否隨另一個因子的水準而不同。圖上虛線是「沒有交互作用時」第二條線應在的位置，紅色線段是實際偏離的量。',
   blockDef: '區集 ANOVA 先扣除區集之間的差異，再比較處理；區集解釋掉的變異越多，殘差均方越小。最後一張卡是忽略區集、直接做單因子 ANOVA 的結果，供比較。',
+  rmDef: '重複測量 ANOVA：把每個個體當成區集，扣除個體之間的差異後，比較各時間點的平均。', ggDef: 'Greenhouse–Geisser ε：用各時間點的共變異數矩陣估計違反球形假設的程度，介於 1/(時間點數 − 1) 與 1；自由度乘上 ε 後重新計算 p 值。', friedDef: 'Friedman 檢定：在每個個體內把各時間點的值排名，再比較各時間點的名次總和。',
   n: '分析使用的觀察數。', ev: '結果為事件（編碼 1）的人數。',
 };
 const cd = (k, l, v, d) => ({ k, l, v, d });
@@ -1077,6 +1095,18 @@ const DATASETS = [
       const r = rngOf(808), N = normOf(r), rows = [], mu = { 'WT|chow': 3, 'WT|HFD': 9, 'KO|chow': 3.2, 'KO|HFD': 5.2 }, lf = { 'WT|chow': 4, 'WT|HFD': 9, 'KO|chow': 3, 'KO|HFD': 8 };
       let k = 0; for (const g of ['WT', 'KO']) for (const d of ['chow', 'HFD']) for (let i = 0; i < 12; i++) { k++; rows.push(['M' + pad(k, 2), g, d, i % 2 ? 'M' : 'F', +(mu[g + '|' + d] + (i % 2 ? 0.6 : 0) + N(0, 1.6)).toFixed(1), +Math.max(0.5, lf[g + '|' + d] + N(0, 1.5)).toFixed(1)]); }
       return { head: ['id', 'genotype', 'diet', 'sex', 'weight_gain_g', 'liver_fat_pct'], rows };
+    },
+  },
+  {
+    id: 'wound', name: '小鼠傷口癒合', tag: '重複測量', track: '生態／實驗',
+    desc: '12 隻小鼠背部製造相同大小的傷口，在第 0、3、7、14 天測量同一個傷口的面積。每隻小鼠一列、每個時間點一欄（寬格式）。',
+    order: {},
+    codebook: { id: '小鼠編號', day0: '第 0 天傷口面積（mm²）', day3: '第 3 天傷口面積（mm²）', day7: '第 7 天傷口面積（mm²）', day14: '第 14 天傷口面積（mm²）' },
+    uses: ['重複測量 ANOVA', 'Friedman 檢定'],
+    gen() {
+      const r = rngOf(1414), N = normOf(r), rows = [], mu = [50, 41, 28, 12];
+      for (let i = 0; i < 12; i++) { const u = N(0, 5); let e = N(0, 3); rows.push(['W' + pad(i + 1, 2), ...mu.map((m, j) => { if (j) e = 0.6 * e + 0.8 * N(0, 3); return +Math.max(1, m + u * (1 - j * 0.15) + e).toFixed(1); })]); }
+      return { head: ['id', 'day0', 'day3', 'day7', 'day14'], rows };
     },
   },
 ];
@@ -1330,6 +1360,27 @@ const AN = {
           `${s.tr}：F(${R.T.df}, ${R.E.df}) = ${F.n(R.T.F, 2)}，${F.peq(R.T.p)}；區集：F(${R.B.df}, ${R.E.df}) = ${F.n(R.B.F, 2)}，${F.peq(R.B.p)}。`,
           `${s.y} was analysed by analysis of variance for a randomized complete block design, with ${s.tr} as the treatment and ${s.bk} as the block.`,
           `${s.tr}: F(${R.T.df}, ${R.E.df}) = ${F.n(R.T.F, 2)}, ${F.peq(R.T.p)}; block: F(${R.B.df}, ${R.E.df}) = ${F.n(R.B.F, 2)}, ${F.peq(R.B.p)}.`),
+      };
+    },
+  },
+  rm: {
+    name: '重複測量 ANOVA', when: '同一個體在三個以上時間點（或條件）的測量；每個時間點一欄',
+    fields: [{ k: 'vars', label: '依時間順序勾選各時間點的欄位（至少 3 欄）', t: 'num', multi: true }],
+    run(ds, s) {
+      const vars = s.vars || []; if (vars.length < 3) throw new Error('請依時間順序勾選至少 3 個時間點的欄位；只有兩個時間點請用「配對比較」。');
+      const cs = vars.map(v => colOf(ds, v)), { idx, dropped } = complete(ds, vars); if (idx.length < 3) throw new Error('至少需要 3 個個體的完整資料。');
+      const M = idx.map(i => cs.map(c => c.values[i])), R = S.rmAnova(M), Fr = S.friedman(M), k = vars.length, cm = vars.map((_, j) => S.mean(M.map(r => r[j]))), [mn, mx] = S.minmax(M.flat());
+      const ch = chart({ xcats: vars, y: [mn, mx], ylab: '測量值', h: 320 }, (X, Y) => M.map(r => `<path data-k="subj" d="${r.map((v, j) => `${j ? 'L' : 'M'}${X(j)} ${Y(v).toFixed(1)}`).join('')}" style="fill:none;stroke:var(--c1);stroke-opacity:.3;stroke-width:1.5"/>`).join('') + `<path data-k="time F" d="${cm.map((v, j) => `${j ? 'L' : 'M'}${X(j)} ${Y(v)}`).join('')}" style="fill:none;stroke:var(--c2);stroke-width:3.5"/>` + cm.map((v, j) => `<circle data-k="time F" cx="${X(j)}" cy="${Y(v)}" r="5.5" style="fill:var(--c2)"/>`).join(''));
+      return {
+        title: `重複測量：${vars.map(esc).join(' → ')}`, meta: meta(idx.length, dropped) + `（個體數）`, facts: dropped ? [`有任何一個時間點缺值的個體（${dropped} 個）整個被排除；混合模型可以保留這些個體`] : [],
+        charts: [{ svg: ch, legend: legend([['var(--c1)', '每個個體'], ['var(--c2)', '各時間點平均']]), cap: '每條淺藍線是一個個體在各時間點的測量值。' }, { svg: distChart('F', R.F, [R.df1, R.df2], `時間的 F（自由度 ${R.df1}, ${R.df2}）`), cap: distCap.F + '（未校正自由度）' }],
+        cards: [cd('time', '時間 F', `${F.n(R.F, 2)}（df ${R.df1}, ${R.df2}）`, 'rmDef'), cd('p', 'p 值（未校正）', F.p(R.p), 'p'), cd('F', 'Greenhouse–Geisser ε', F.n(R.eps, 3), 'ggDef'), cd('time', 'p 值（Greenhouse–Geisser 校正）', F.p(R.pGG), 'ggDef'), cd('subj', 'p 值（Friedman）', F.p(Fr.p), 'friedDef')],
+        tables: [{ head: ['時間點', 'n', '平均 ± SD'], rows: vars.map((v, j) => [esc(v), M.length, `${F.n(cm[j])} ± ${F.n(S.sd(M.map(r => r[j])))}`]) },
+          { head: ['變異來源', 'SS', '自由度', 'MS', 'F', 'p 值'], rows: [['時間', F.n(R.ssT), R.df1, F.n(R.ssT / R.df1), F.n(R.F, 2), F.p(R.p)], ['個體', F.n(R.ssS), M.length - 1, F.n(R.ssS / (M.length - 1)), '', ''], ['殘差', F.n(R.ssE), R.df2, F.n(R.msE), '', '']], foot: `Greenhouse–Geisser ε = ${F.n(R.eps, 3)}；校正後自由度 ${F.n(R.df1 * R.eps, 2)}, ${F.n(R.df2 * R.eps, 2)}，${F.peq(R.pGG)}。Friedman χ²(${Fr.df}) = ${F.n(Fr.Q, 2)}，${F.peq(Fr.p)}。` }],
+        write: W2(`${vars.join('、')} 的變化以單因子重複測量變異數分析檢定，並以 Greenhouse–Geisser 法校正球形假設；另以 Friedman 檢定計算。`,
+          `時間：F(${R.df1}, ${R.df2}) = ${F.n(R.F, 2)}，Greenhouse–Geisser ε = ${F.n(R.eps, 2)}，校正後 ${F.peq(R.pGG)}；Friedman χ²(${Fr.df}) = ${F.n(Fr.Q, 2)}，${F.peq(Fr.p)}；n = ${M.length}。`,
+          `Changes across ${vars.join(', ')} were tested by one-way repeated-measures analysis of variance with the Greenhouse–Geisser correction for sphericity, and by the Friedman test.`,
+          `Time: F(${R.df1}, ${R.df2}) = ${F.n(R.F, 2)}, Greenhouse–Geisser ε = ${F.n(R.eps, 2)}, corrected ${F.peq(R.pGG)}; Friedman χ²(${Fr.df}) = ${F.n(Fr.Q, 2)}, ${F.peq(Fr.p)}; n = ${M.length}.`),
       };
     },
   },
@@ -2120,6 +2171,28 @@ const CH = [
       { q: '配對 t 檢定可以看成哪一種設計？', o: ['每個區集只有兩種處理的區集設計', '二因子 ANOVA', '完全隨機設計', '因子設計'], why: '每位受試者（或每對）就是一個區集，區集內比較兩種處理。' },
     ],
   },
+  {
+    id: 'repeated', title: '重複測量',
+    body: `<p>同一個個體在不同時間點（或不同條件下）被測量好幾次，叫做<b>重複測量</b>。例如 12 隻小鼠在第 0、3、7、14 天量同一個傷口的面積。同一隻小鼠的幾次測量彼此相關，不是獨立的觀察值。</p>
+<h3>兩種常見的錯誤做法</h3>
+<ul><li><b>當作獨立的組別做單因子 ANOVA</b>：違反獨立性，而且個體之間的差異全部變成雜訊。</li>
+<li><b>在每個時間點分別做 t 檢定</b>：比較次數多、偽陽性累積，也沒有利用「同一個體」的資訊。</li></ul>
+<h3>重複測量 ANOVA</h3>
+<p>把每個個體當成一個<b>區集</b>（{{block}} 章），在個體內部比較時間點。計算方式和區集 ANOVA 相同：總平方和拆成「時間」、「個體」和「殘差」。個體之間的差異被扣掉，所以比忽略重複結構的分析更有檢定力。</p>
+<h3>球形假設與 Greenhouse–Geisser 校正</h3>
+<p>重複測量 ANOVA 有一個額外的前提，叫做<b>球形假設</b>：任兩個時間點之間的差值，變異數都要差不多。實際資料常常不成立，因為相鄰時間點通常比相隔很久的時間點更相似。違反時 F 會偏大、偽陽性增加。</p>
+<p>標準做法是 <b>Greenhouse–Geisser 校正</b>：從資料估計一個 ε（介於 1/(時間點數 − 1) 和 1 之間），把兩個自由度都乘上 ε 再算 p 值。ε 越接近 1，越符合球形假設。論文通常直接報告校正後的結果。</p>
+<h3>其他情況</h3>
+<ul><li><b>Friedman 檢定</b>：重複測量的無母數版本，在每個個體內排名後比較各時間點。</li>
+<li><b>有人缺少某次測量</b>：重複測量 ANOVA 需要每個個體都有完整資料，缺一次就整個人被刪除。混合模型（{{c4-6}} 章）可以使用不完整的資料。</li>
+<li><b>兩組 × 時間</b>（例如治療組與對照組都在多個時間點測量）稱為<b>混合設計</b>，關鍵問題是「組別 × 時間」的交互作用：兩組隨時間變化的軌跡是否不同。這種設計建議用混合模型分析。</li></ul>`,
+    labs: [{ label: '傷口面積的重複測量 ANOVA', ds: 'wound', an: 'rm', sel: { vars: ['day0', 'day3', 'day7', 'day14'] } }],
+    quiz: [
+      { q: '12 隻小鼠在 4 個時間點量傷口面積。如果把 4 個時間點當作 4 個獨立的組別做單因子 ANOVA，會？', o: ['忽略個體差異，殘差變大，也違反獨立性', '結果和重複測量 ANOVA 完全一樣', '偽陽性一定變少，所以比較保守', '可以，因為每個時間點都有 12 個值'], why: '同一隻小鼠的測量彼此相關。重複測量 ANOVA 會先扣掉個體之間的差異。' },
+      { q: 'Greenhouse–Geisser ε = 0.6 代表什麼？', o: ['球形假設不太成立；自由度要乘上 0.6 再計算 p 值', '有 60% 的個體符合假設', 'p 值等於 0.6', '交互作用是 0.6'], why: 'ε = 1 代表完全符合球形假設；越小代表違反越多，校正後 p 值會變大。' },
+      { q: '重複測量的資料嚴重偏態、樣本又小，常用的無母數方法是？', o: ['Friedman 檢定', 'Mann–Whitney', '卡方檢定', 'Kruskal–Wallis'], why: 'Kruskal–Wallis 用於獨立的組別；同一個體重複測量要用 Friedman，在個體內排名。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -2167,6 +2240,11 @@ const GLOSS = [
   ['百分位', [], '第 p 百分位：有 p% 的值小於或等於它。', 'c1-4'],
   ['P(X ≤ x)', ['P(X > x)', 'P(X >'], '機率的寫法：P(X ≤ x) 是「X 小於或等於 x 的機率」。', 'c1-4'],
   ['Table 1', [], '論文的第一個表格，列出研究對象的基本特徵。', 'c1-5'],
+  ['重複測量', [], '同一個個體在不同時間點或條件下被測量好幾次。', 'repeated'],
+  ['球形假設', [], '重複測量 ANOVA 的前提：任兩個時間點之間差值的變異數都差不多。', 'repeated'],
+  ['Greenhouse–Geisser 校正', ['Greenhouse–Geisser', 'ε'], '從資料估計 ε，把自由度乘上 ε 以校正違反球形假設的影響。', 'repeated'],
+  ['Friedman 檢定', ['Friedman'], '重複測量的無母數版本：在每個個體內排名後比較各時間點。', 'repeated'],
+  ['混合設計', [], '同時有組間因子（例如治療組與對照組）和組內因子（例如時間）的設計。', 'repeated'],
   ['隨機完全區集設計', ['區集設計'], '把相似的實驗單位分成區集，在每個區集內把所有處理隨機分派一次的設計。', 'block'],
   ['因子設計', [], '同時操作兩個以上的因子，每種組合都放入實驗單位的設計。', 'twoway'],
   ['主效果', [], '把另一個因子的各水準平均起來後，這個因子的效果。', 'twoway'],
@@ -2284,7 +2362,7 @@ const ORDER = [
   ['c2-1'],
   ['c2-2', 'c2-3', 'c2-4', 'c4-5', 'c5-1'],
   ['c3-1', 'c3-3', 'c3-5'],
-  ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block'],
+  ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated'],
   ['c3-4', 'c4-1', 'c4-2'],
   ['c4-3'],
   ['c4-4', 'c4-6'],
@@ -2297,7 +2375,7 @@ const REFS = {
   'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
   'c2-4': 'Whitlock 第 6 章；Rosner 7.1–7.5；Kirkwood 第 8 章', 'c4-5': 'Whitlock 14.6；Rosner 7.6–7.7、8.9；Kirkwood 第 35 章', 'c5-1': 'Rosner 13.2；Kirkwood 第 34 章',
   'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
-  'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
+  'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
   'c4-2': 'Rosner 13.7–13.8；Kirkwood 第 19–20 章', 'c4-3': 'Whitlock 第 21 章；Rosner 14.8–14.11；Kirkwood 第 26–27 章', 'c4-4': 'Benjamini & Hochberg (1995), J R Stat Soc B 57:289–300',
   'c4-6': 'Rosner 12.10、13.13–13.14；Kirkwood 第 31 章', 'c5-2': 'Kirkwood 第 38 章；EQUATOR Network', 'c5-3': 'Kirkwood 第 38 章', 'c5-4': 'Kirkwood 第 34、38 章',
 };
@@ -2507,7 +2585,7 @@ function runAnalysis(scroll) {
   }
   if (res.tables && res.tables.length) h += `<details class="more"><summary>完整統計表</summary>${res.tables.map(t => tableHTML(t)).join('')}</details>`;
   const defs = [...new Set((res.cards || []).map(c => c.d).filter(Boolean))];
-  if (defs.length) h += `<details class="more"><summary>每個數字怎麼算</summary><dl class="defs">${defs.map(d => `<div><dt>${{ mean: '平均', sd: '標準差', median: '中位數', iqr: '四分位距', diff: '平均差', ci: '95% 信賴區間', t: 't', p: 'p 值', d: "Cohen's d", U: 'Mann–Whitney', V: 'Wilcoxon 符號等級', F: 'F', eta2: 'η²', H: 'Kruskal–Wallis', welchF: 'Welch ANOVA', levene: 'Levene 檢定與 Q-Q 圖', cldDef: 'Tukey 字母標記', mainEff: '主效果', interEff: '交互作用', blockDef: '區集 ANOVA', chi2: 'χ²', minexp: '期望次數', cv: "Cramér's V", or: '勝算比', rr: '風險比', prop: '比例', fisher: 'Fisher 精確檢定', r: 'Pearson r', rho: 'Spearman ρ', r2: 'R²', slope: '斜率', sigma: '殘差標準誤', beta: '迴歸係數 β', OR: '勝算比（模型）', auc: 'AUC', lr: '概似比 χ²', hr: '危險比', medsurv: '中位存活時間', surv: '存活率', logrank: 'Log-rank χ²', sig: '未校正', q: 'BH q 值', bonf: 'Bonferroni' }[d] || d}</dt><dd>${DEF[d]}</dd></div>`).join('')}</dl></details>`;
+  if (defs.length) h += `<details class="more"><summary>每個數字怎麼算</summary><dl class="defs">${defs.map(d => `<div><dt>${{ mean: '平均', sd: '標準差', median: '中位數', iqr: '四分位距', diff: '平均差', ci: '95% 信賴區間', t: 't', p: 'p 值', d: "Cohen's d", U: 'Mann–Whitney', V: 'Wilcoxon 符號等級', F: 'F', eta2: 'η²', H: 'Kruskal–Wallis', welchF: 'Welch ANOVA', levene: 'Levene 檢定與 Q-Q 圖', cldDef: 'Tukey 字母標記', mainEff: '主效果', interEff: '交互作用', blockDef: '區集 ANOVA', rmDef: '重複測量 ANOVA', ggDef: 'Greenhouse–Geisser 校正', friedDef: 'Friedman 檢定', chi2: 'χ²', minexp: '期望次數', cv: "Cramér's V", or: '勝算比', rr: '風險比', prop: '比例', fisher: 'Fisher 精確檢定', r: 'Pearson r', rho: 'Spearman ρ', r2: 'R²', slope: '斜率', sigma: '殘差標準誤', beta: '迴歸係數 β', OR: '勝算比（模型）', auc: 'AUC', lr: '概似比 χ²', hr: '危險比', medsurv: '中位存活時間', surv: '存活率', logrank: 'Log-rank χ²', sig: '未校正', q: 'BH q 值', bonf: 'Bonferroni' }[d] || d}</dt><dd>${DEF[d]}</dd></div>`).join('')}</dl></details>`;
   out.innerHTML = h + '</div>';
   const root = $('#res-root'); linkify(root, res.table1 && res.picks.length ? res.picks[0].k : null);
   if (scroll === true && innerWidth < 960) out.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -3118,6 +3196,20 @@ Object.assign(W, {
     };
     el.addEventListener('input', up); up();
   },
+  rmw(el) {
+    const zs = std(Array.from({ length: 10 }, normOf(rngOf(131)))), ze = Array.from({ length: 10 }, (_, i) => Array.from({ length: 4 }, normOf(rngOf(140 + i))));
+    el.innerHTML = `<p class="w-cap">10 隻小鼠在 4 個時間點測量。調整個體差異和「相鄰時間點更相似」的程度，比較兩種分析。</p>
+<div class="w-row">${slider('wr2-s', '個體之間的差異', 0, 8, 0.5, 5)}${slider('wr2-t', '每個時間點減少', 0, 6, 0.5, 2)}${slider('wr2-r', '相鄰時間點的相關（違反球形）', 0, 0.9, 0.1, 0)}</div>
+<div class="chart-wrap" id="wr2-c"></div><div class="kv" id="wr2-k"></div>`;
+    const up = () => {
+      const ss = sv('wr2-s', v => v.toFixed(1)), td = sv('wr2-t', v => v.toFixed(1)), rho = sv('wr2-r', v => v.toFixed(1));
+      const M = zs.map((u, i) => { let e = ze[i][0] * 2; return [0, 1, 2, 3].map(j => { if (j) e = rho * e + Math.sqrt(1 - rho * rho) * ze[i][j] * 2; return 50 - td * j + ss * u + e + (rho ? zs[i] * rho * j * 1.5 : 0); }); });
+      const R = S.rmAnova(M), A1 = S.anova([0, 1, 2, 3].map(j => M.map(r => r[j]))), cm = [0, 1, 2, 3].map(j => S.mean(M.map(r => r[j]))), [mn, mx] = S.minmax(M.flat());
+      $('#wr2-c').innerHTML = chart({ xcats: ['第 0 天', '第 3 天', '第 7 天', '第 14 天'], y: [mn, mx], h: 300, ylab: '傷口面積' }, (X, Y) => M.map(r => `<path data-k="subj" d="${r.map((v, j) => `${j ? 'L' : 'M'}${X(j)} ${Y(v).toFixed(1)}`).join('')}" style="fill:none;stroke:var(--c1);stroke-opacity:.45;stroke-width:1.5"/>`).join('') + `<path data-k="time" d="${cm.map((v, j) => `${j ? 'L' : 'M'}${X(j)} ${Y(v)}`).join('')}" style="fill:none;stroke:var(--c2);stroke-width:3.5"/>`);
+      $('#wr2-k').innerHTML = kvs([['p 值（當作獨立組的 ANOVA）', F.p(A1.p), 'subj'], ['p 值（重複測量，未校正）', F.p(R.p), 'time'], ['Greenhouse–Geisser ε', F.n(R.eps, 3), 'subj'], ['p 值（Greenhouse–Geisser 校正）', F.p(R.pGG), 'time']]);
+    };
+    el.addEventListener('input', up); up();
+  },
   expdesign(el) {
     el.innerHTML = `<p class="w-cap">情境：測試新藥能不能讓小鼠體重增加。每隻小鼠本來的健康狀況不同，健康的小鼠本來就長得比較好。下圖是把同一個實驗重做 400 次，每次估計的藥效（給藥組平均 − 對照組平均）。</p>
 <div class="seg wrap" id="wx-a"><button type="button" data-a="rand" aria-selected="true">隨機分派</button><button type="button" data-a="pick" aria-selected="false">研究者挑選（健康的給藥）</button></div>
@@ -3153,13 +3245,18 @@ Object.assign(W, {
   },
 });
 
-const WMAP = { 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
+const WMAP = { 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
 for (const [id, [w, t]] of Object.entries(WMAP)) { const c = CH.find(x => x.id === id); c.widget = w; c.wtitle = t; }
 
 /* ---------- 練習題示範：把題目情境帶入同一章的互動圖 ----------
    每題的 demo：set = 設定輸入元件（id → 值）；click = 依序點擊的按鈕；custom = 交給互動圖自己的 _demo()；look = 示範時的觀察提示。
    有 q 的項目會整題替換（原題無法在圖上示範時）。 */
 const QD = {
+  'repeated': [
+    { demo: { set: { 'wr2-s': 7, 'wr2-t': 1.5, 'wr2-r': 0 }, look: '個體差異很大時，「當作獨立組」的 p 值明顯比重複測量的大：個體差異都變成了雜訊。' } },
+    { demo: { set: { 'wr2-s': 5, 'wr2-t': 1.5, 'wr2-r': 0.9 }, look: '相鄰時間點高度相關時，ε 變小，校正後的 p 值比未校正的大。' } },
+    { demo: { set: { 'wr2-s': 5, 'wr2-t': 2, 'wr2-r': 0 }, look: '每條藍線是一隻小鼠。Friedman 檢定在每條線內把 4 個時間點排名，再比較各時間點的名次。' } },
+  ],
   'block': [
     { demo: { set: { 'wb-b': 4, 'wb-e': 1.5, 'wb-s': 1 }, look: '每條彩色線是一個溫室：線的高低差是溫室之間的差異。比較兩種分析的殘差均方。' } },
     { demo: { set: { 'wb-b': 6, 'wb-e': 1.5, 'wb-s': 1 }, look: '溫室差異很大：不考慮區集時殘差均方大、p 值大；考慮區集後殘差均方小得多。' } },

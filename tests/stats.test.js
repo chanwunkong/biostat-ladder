@@ -74,6 +74,15 @@ const bl = S.blockAnova([...g1, ...g2], [...g1.map(() => 0), ...g2.map(() => 1)]
 near('區集 ANOVA F = 配對 t²', bl.T.F, 4.062128 ** 2);
 near('區集 ANOVA p = 配對 t 的 p', bl.T.p, 0.00283289);
 
+// R: friedman.test(RoundingTimes)（R 說明文件範例）
+const RT = [[5.40, 5.50, 5.55], [5.85, 5.70, 5.75], [5.20, 5.60, 5.50], [5.55, 5.50, 5.40], [5.90, 5.85, 5.70], [5.45, 5.55, 5.60], [5.40, 5.40, 5.35], [5.45, 5.50, 5.35], [5.25, 5.15, 5.00], [5.85, 5.80, 5.70], [5.25, 5.20, 5.10], [5.65, 5.55, 5.45], [5.60, 5.35, 5.45], [5.05, 5.00, 4.95], [5.50, 5.50, 5.40], [5.45, 5.55, 5.50], [5.55, 5.55, 5.35], [5.45, 5.50, 5.55], [5.50, 5.45, 5.25], [5.65, 5.60, 5.40], [5.70, 5.65, 5.55], [6.30, 6.30, 6.25]];
+near('Friedman χ² (RoundingTimes)', S.friedman(RT).Q, 11.143);
+near('Friedman p', S.friedman(RT).p, 0.003805);
+// 重複測量 ANOVA 的 F 必須等於「個體當區集」的區集 ANOVA；ε 介於 1/(k−1) 與 1
+const rmA = S.rmAnova(RT), rmB = S.blockAnova(RT.flat(), RT.flatMap(r => r.map((_, j) => j)), RT.flatMap((r, i) => r.map(() => i)));
+near('重複測量 F = 區集 ANOVA F', rmA.F, rmB.T.F);
+if (!(rmA.eps >= 0.5 && rmA.eps <= 1)) { fail++; console.log('FAIL Greenhouse–Geisser ε 超出範圍', rmA.eps); } else console.log('ok   Greenhouse–Geisser ε 在 [1/(k−1), 1] 內：' + rmA.eps.toFixed(4));
+
 const DS = {};
 for (const m of DATASETS) { const d = m.gen(); DS[m.id] = makeDS({ ...m, head: d.head, rows: d.rows }); }
 const runs = [
@@ -88,6 +97,7 @@ const runs = [
   ['gene_expr', 'multi', { g: 'tissue', vars: DS.gene_expr.cols.slice(2).map(c => c.name) }],
   ['plant_growth', 'anova', { y: 'height_cm', g: 'fertilizer' }],
   ['plant_growth', 'block', { y: 'height_cm', tr: 'fertilizer', bk: 'block' }],
+  ['wound', 'rm', { vars: ['day0', 'day3', 'day7', 'day14'] }],
   ['diet_geno', 'anova2', { y: 'weight_gain_g', a: 'diet', b: 'genotype' }],
 ];
 for (const [id, an, sel] of runs) {
