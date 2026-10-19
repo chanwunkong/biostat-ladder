@@ -704,6 +704,8 @@ const S = (() => {
     return { chi2: x2, df, p: df > 0 ? pchisq(x2, df) : NaN, minExp, V: df > 0 ? Math.sqrt(x2 / (N * Math.min(T.length - 1, C.length - 1))) : NaN, E };
   }
   const lchoose = (n, k) => lgamma(n + 1) - lgamma(k + 1) - lgamma(n - k + 1);
+  const dbinom = (k, n, p) => (k < 0 || k > n ? 0 : p === 0 ? (k === 0 ? 1 : 0) : p === 1 ? (k === n ? 1 : 0) : Math.exp(lchoose(n, k) + k * Math.log(p) + (n - k) * Math.log(1 - p)));
+  const pbinom = (k, n, p) => { let s = 0; for (let i = 0; i <= Math.min(k, n); i++) s += dbinom(i, n, p); return Math.min(1, s); };
   function fisher(a, b, c, d) {
     const r1 = a + b, r2 = c + d, c1 = a + c, n = r1 + r2; const lp = x => lchoose(r1, x) + lchoose(r2, c1 - x) - lchoose(n, c1);
     const lo = Math.max(0, c1 - r2), hi = Math.min(r1, c1), p0 = lp(a); let p = 0;
@@ -837,7 +839,7 @@ const S = (() => {
   const nProps = (p1, p2, alpha, power) => { const za = qnorm(1 - alpha / 2), zb = qnorm(power), pb = (p1 + p2) / 2; return Math.ceil((za * Math.sqrt(2 * pb * (1 - pb)) + zb * Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))) ** 2 / ((p1 - p2) ** 2)); };
   const powerProps = (p1, p2, n, alpha) => { const za = qnorm(1 - alpha / 2), pb = (p1 + p2) / 2; return pnorm((Math.abs(p1 - p2) * Math.sqrt(n) - za * Math.sqrt(2 * pb * (1 - pb))) / Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))); };
 
-  return { lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, mannWhitney, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
+  return { dbinom, pbinom, lgamma, ibeta, pnorm, pz2, qnorm, pt, pt2, qt, pf, pchisq, sum, mean, variance, sd, quantile, median, skew, minmax, rank, welch, mannWhitney, pairedT, wilcoxonSR, anova, twoway, blockAnova, rmAnova, friedman, icc, ancova, welchAnova, levene, ptukey, qtukey, tukey, kruskal, chisq, fisher, pearson, spearman, inv, ols, logistic, auc, cox, km, logrank, bh, holm, nMeans, powerMeans, nProps, powerProps };
 })();
 
 /* ---------- 格式 ---------- */
@@ -2343,6 +2345,25 @@ const CH = [
       { q: '同一個分佈中，P(X ≤ 1) 是多少？', o: ['0.4', '0.3', '0.7', '0.1'], why: 'P(X = 0) + P(X = 1) = 0.1 + 0.3 = 0.4。' },
     ],
   },
+  {
+    id: 'binom', title: '二項分佈',
+    body: `<p>只有兩種結果的試驗（有反應／沒反應、帶有某基因型／沒有），叫做<b>白努利試驗</b>。把同樣的試驗重複 n 次、數「成功」幾次，這個次數就服從<b>二項分佈</b>。例如：治療 20 位病人，有反應的人數；兩個帶因者生 4 個孩子，其中是隱性表現型（aa）的人數。</p>
+<h3>二項分佈的四個前提</h3>
+<ol><li>試驗次數 n 事先固定。</li><li>每次只有兩種結果。</li><li>每次成功的機率 p 都相同。</li><li>每次試驗彼此獨立。</li></ol>
+<h3>機率公式</h3>
+<div class="formula">P(X = k) = C(n, k) × p<sup>k</sup> × (1 − p)<sup>n − k</sup><br>C(n, k) = n! ÷ (k! × (n − k)!)　　（n 次中挑 k 次成功的方法數）</div>
+<p>例：兩個帶因者生 4 個孩子，每個孩子是 aa 的機率 p = 1/4。恰好 1 個 aa 的機率 = C(4, 1) × (1/4)¹ × (3/4)³ = 4 × 0.25 × 0.422 ≈ 0.42。C(n, k) 叫做<b>組合數</b>：4 個孩子中哪一個是 aa，有 4 種可能。</p>
+<h3>期望值與變異數</h3>
+<div class="formula">E(X) = n × p　　Var(X) = n × p × (1 − p)　　標準差 = √(n × p × (1 − p))</div>
+<p>反應率 30% 的藥治療 20 人，平均預期 6 人有反應，標準差 √(20 × 0.3 × 0.7) ≈ 2.05。</p>
+<h3>常態近似</h3>
+<p>n 夠大時，二項分佈的形狀接近常態分佈（中央極限定理的一個例子），可以用平均 np、標準差 √(np(1 − p)) 的常態分佈近似計算。Rosner 建議的經驗法則是 <b>n × p × (1 − p) ≥ 5</b> 時才使用。用常態近似計算 P(X ≤ k) 時，通常把 k 加 0.5，稱為<b>連續性校正</b>。p 很接近 0 或 1、n 又小的時候，分佈很偏，常態近似不準確。</p>`,
+    quiz: [
+      { q: '兩個帶因者（Aa × Aa）生 4 個孩子，恰好 1 個孩子是 aa 的機率約是多少？', o: ['0.42', '0.25', '0.75', '0.11'], why: 'C(4, 1) × 0.25 × 0.75³ = 4 × 0.25 × 0.422 ≈ 0.42。' },
+      { q: '某藥反應率 30%，治療 20 位病人。反應人數的期望值和標準差是？', o: ['6 人；約 2.05 人', '6 人；4.2 人', '3 人；約 1.4 人', '30 人；約 5.5 人'], why: 'E = 20 × 0.3 = 6；SD = √(20 × 0.3 × 0.7) = √4.2 ≈ 2.05。4.2 是變異數，不是標準差。' },
+      { q: '下列哪一項「不是」二項分佈的前提？', o: ['每次試驗的結果必須是常態分佈', '試驗次數事先固定', '每次成功的機率相同', '每次試驗彼此獨立'], why: '二項分佈的每次試驗只有兩種結果，和常態無關。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -2461,6 +2482,11 @@ const GLOSS = [
   ['期望值', ['E(X)'], '以機率加權的平均：重複很多次之後的長期平均。', 'rv'],
   ['累積機率', ['P(X ≤'], '小於或等於某個值的機率。', 'rv'],
   ['大數法則', [], '重複次數越多，結果的平均越接近期望值。', 'rv'],
+  ['白努利試驗', [], '只有兩種結果（成功／失敗）的單次試驗。', 'binom'],
+  ['二項分佈', [], 'n 次獨立、成功機率相同的白努利試驗中，成功次數的分佈。', 'binom'],
+  ['組合數', ['C(n, k)'], '從 n 個中挑出 k 個的方法數：n! ÷ (k! × (n − k)!)。', 'binom'],
+  ['常態近似', [], 'n 夠大時，用平均與標準差相同的常態分佈近似其他分佈。', 'binom'],
+  ['連續性校正', [], '用連續的常態分佈近似離散分佈時，把邊界加減 0.5。', 'binom'],
   ['閾值', ['cutoff'], '把連續數值的檢驗結果分成陽性與陰性的分界值。', 'roc'],
   ['ROC 曲線', ['ROC'], '把所有閾值下的敏感度對「1 − 特異度」畫出的曲線。', 'roc'],
   ['AUC', [], 'ROC 曲線下的面積：隨機挑一位有病、一位沒病的人，有病者檢驗值較高的機率。', 'roc'],
@@ -2539,7 +2565,7 @@ const GLOSS = [
 const ORDER = [
   ['c0-1', 'c0-2', 'c0-3', 'c0-4'],
   ['c1-1', 'c1-2', 'c1-3', 'c1-4', 'c1-5'],
-  ['prob-rules', 'c2-1', 'roc', 'rv'],
+  ['prob-rules', 'c2-1', 'roc', 'rv', 'binom'],
   ['c2-2', 'c2-3', 'c2-4', 'c4-5', 'c5-1'],
   ['c3-1', 'c3-3', 'c3-5'],
   ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff', 'ancova'],
@@ -2552,7 +2578,7 @@ const ORDER = [
 const REFS = {
   'c0-1': 'Rosner 3.10', 'c1-1': 'Whitlock 第 1 章；Kirkwood 第 2 章', 'c1-2': 'Whitlock 第 3 章；Rosner 2.2–2.3；Kirkwood 第 4 章',
   'c1-3': 'Whitlock 第 3 章；Rosner 2.4–2.5；Kirkwood 第 4 章', 'c1-4': 'Whitlock 第 10 章；Rosner 第 5 章；Kirkwood 第 5 章', 'c1-5': 'Kirkwood 第 34 章',
-  'prob-rules': 'Whitlock 第 5 章；Rosner 3.2–3.6', 'roc': 'Rosner 3.9；UTHealth GSBS 課綱第 10 週', 'rv': 'Rosner 4.2–4.6', 'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
+  'prob-rules': 'Whitlock 第 5 章；Rosner 3.2–3.6', 'roc': 'Rosner 3.9；UTHealth GSBS 課綱第 10 週', 'rv': 'Rosner 4.2–4.6', 'binom': 'Whitlock 7.1；Rosner 4.7–4.9、5.7；Kirkwood 第 15 章', 'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
   'c2-4': 'Whitlock 第 6 章；Rosner 7.1–7.5；Kirkwood 第 8 章', 'c4-5': 'Whitlock 14.6；Rosner 7.6–7.7、8.9；Kirkwood 第 35 章', 'c5-1': 'Rosner 13.2；Kirkwood 第 34 章',
   'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
   'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
@@ -3507,6 +3533,23 @@ Object.assign(W, {
     el.addEventListener('input', e => { if (e.target.type === 'range') up(e.target.id !== 'wv2-k'); });
     $('#wv2-go', el).onclick = () => up(true); up(true);
   },
+  binomw(el) {
+    el.innerHTML = `<div class="w-row">${slider('wbn-n', '試驗次數 n', 1, 60, 1, 4)}${slider('wbn-p', '成功機率 p', 0, 1, 0.05, 0.25)}${slider('wbn-k', 'k', 0, 60, 1, 1)}</div>
+<label class="tog"><input type="checkbox" id="wbn-c"> 畫出常態近似</label><div class="chart-wrap" id="wbn-g"></div><div class="kv" id="wbn-o"></div>`;
+    const up = () => {
+      const n = sv('wbn-n'), p = sv('wbn-p', v => v.toFixed(2)), kk = $('#wbn-k'); kk.max = n; const k = Math.min(n, sv('wbn-k')), mu = n * p, sd = Math.sqrt(n * p * (1 - p)), pm = Array.from({ length: n + 1 }, (_, i) => S.dbinom(i, n, p)), top = Math.max(...pm), norm = $('#wbn-c').checked;
+      const approx = sd > 0 ? S.pnorm((k + 0.5 - mu) / sd) : NaN;
+      $('#wbn-g').innerHTML = chart({ x: [-0.5, n + 0.5], y: [0, top * 1.15], h: 260, xlab: '成功次數 X', ylab: 'P(X = x)' }, (X, Y) => {
+        const bw = Math.max(1, (X(1) - X(0)) * 0.7);
+        let g = pm.map((v, i) => `<rect data-k="${[i === k ? 'pk' : '', i <= k ? 'cdf' : ''].join(' ').trim()}" x="${X(i) - bw / 2}" y="${Y(v)}" width="${bw}" height="${Y(0) - Y(v)}" style="fill:var(--c1);fill-opacity:.8"/>`).join('');
+        g += `<line data-k="ex sd" x1="${X(mu)}" x2="${X(mu)}" y1="${Y(0)}" y2="${Y(top * 1.1)}" style="stroke:var(--c2);stroke-width:2.5"/><g class="hlx" data-k="sd"><line x1="${X(mu - sd)}" x2="${X(mu + sd)}" y1="${Y(top * 1.05)}" y2="${Y(top * 1.05)}" style="stroke:var(--c4);stroke-width:4"/></g>`;
+        if (norm && sd > 0) { let c = ''; for (let i = 0; i <= 160; i++) { const x = -0.5 + (n + 1) * i / 160; c += `${i ? 'L' : 'M'}${X(x).toFixed(1)} ${Y(Math.min(top * 1.15, Math.exp(-0.5 * ((x - mu) / sd) ** 2) / (sd * Math.sqrt(2 * Math.PI)))).toFixed(1)}`; } g += `<path data-k="napp" d="${c}" style="fill:none;stroke:var(--c3);stroke-width:2.5"/>`; }
+        return g;
+      });
+      $('#wbn-o').innerHTML = kvs([['期望值 n × p', F.n(mu, 2), 'ex'], ['標準差 √(np(1 − p))', F.n(sd, 2), 'sd'], [`P(X = ${k})`, F.n(pm[k], 4), 'pk'], [`P(X ≤ ${k})`, F.n(S.pbinom(k, n, p), 4), 'cdf'], ['常態近似的 P(X ≤ k)（含連續性校正）', norm ? F.n(approx, 4) : '勾選上方選項', 'napp'], ['n × p × (1 − p)', F.n(n * p * (1 - p), 2)]]);
+    };
+    el.addEventListener('input', up); el.addEventListener('change', up); up();
+  },
   mosaic(el) {
     el.innerHTML = `<p class="w-cap">正方形代表全部的人（面積 = 1）。左右寬度是吸菸與不吸菸的比例；每一欄內，紅色的高度是該群中有高血壓的比例。</p>
 <div class="w-row">${slider('wm2-a', 'P(吸菸)', 5, 95, 5, 30, '%')}${slider('wm2-ba', 'P(高血壓 | 吸菸)', 0, 100, 5, 30, '%')}${slider('wm2-bn', 'P(高血壓 | 不吸菸)', 0, 100, 5, 15, '%')}</div>
@@ -3524,13 +3567,18 @@ Object.assign(W, {
   },
 });
 
-const WMAP = { 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
+const WMAP = { 'binom': ['binomw', '二項分佈'], 'rv': ['rvw', '自己設計一個機率分佈'], 'roc': ['rocw', '閾值與 ROC 曲線'], 'prob-rules': ['mosaic', '馬賽克圖'], 'ancova': ['ancovaw', '校正起始體重'], 'random-eff': ['iccw', 'ICC 與有效樣本數'], 'repeated': ['rmw', '同一個體測多次'], 'block': ['blockw', '考慮區集與否'], 'twoway': ['twowayw', '交互作用圖'], 'posthoc': ['posthoc', '事後比較與字母標記'], 'exp-design': ['expdesign', '400 次小鼠實驗'], 'anova-assume': ['anovaassume', '前提不成立會怎樣'], 'c0-1': ['rate', '100 人中有幾人'], 'c0-2': ['sigma', '動手算 Σ'], 'c0-3': ['log', '倍數與對數尺度'], 'c1-1': ['types', '變數分類挑戰'], 'c1-3': ['spread', '同樣的平均，不同的分散'], 'c1-5': ['table1w', '動手排一份 Table 1'], 'c3-1': ['tvis', '訊號與雜訊'], 'c3-2': ['anovavis', '組間 vs 組內變異'], 'c3-3': ['twobytwo', '自己填 2×2 表'], 'c3-4': ['corrvis', '相關係數的陷阱'], 'c3-5': ['chooser', '選擇統計方法'], 'c4-1': ['confound', '校正干擾因子'], 'c4-2': ['logit', '用 S 形曲線擬合資料'], 'c4-3': ['kmbuild', '自己畫存活曲線'], 'c4-4': ['mtest', '大量檢定的陷阱'], 'c4-6': ['pseudo', '偽重複模擬'], 'c5-1': ['dag', '因果圖與干擾'], 'c5-2': ['phack', 'p-hacking 模擬器'], 'c5-3': ['figgood', '同一份資料，四種圖'], 'c5-4': ['checklist', '投稿前檢查表'], 'c5-5': ['tracks', '你的下一步路線圖'] };
 for (const [id, [w, t]] of Object.entries(WMAP)) { const c = CH.find(x => x.id === id); c.widget = w; c.wtitle = t; }
 
 /* ---------- 練習題示範：把題目情境帶入同一章的互動圖 ----------
    每題的 demo：set = 設定輸入元件（id → 值）；click = 依序點擊的按鈕；custom = 交給互動圖自己的 _demo()；look = 示範時的觀察提示。
    有 q 的項目會整題替換（原題無法在圖上示範時）。 */
 const QD = {
+  'binom': [
+    { demo: { set: { 'wbn-n': 4, 'wbn-p': 0.25, 'wbn-k': 1 }, look: '4 個孩子、每個 aa 的機率 1/4：點「P(X = 1)」，看那一根長條的高度約 0.42。' } },
+    { demo: { set: { 'wbn-n': 20, 'wbn-p': 0.3, 'wbn-k': 6 }, look: '紅線是期望值 6；點「標準差」看 6 ± 2.05 的範圍。' } },
+    { demo: { set: { 'wbn-n': 40, 'wbn-p': 0.5, 'wbn-k': 20, 'wbn-c': true }, look: 'n 大、p 接近 0.5 時，二項分佈和綠色的常態曲線幾乎重疊。把 p 拉到 0.05 看看會怎樣。' } },
+  ],
   'rv': [
     { demo: { set: { 'wv2-0': 1, 'wv2-1': 3, 'wv2-2': 4, 'wv2-3': 2, 'wv2-4': 0, 'wv2-5': 0, 'wv2-k': 1 }, look: '這就是題目的分佈。紅線是期望值，位於 1 和 2 之間。' } },
     { demo: { set: { 'wv2-0': 1, 'wv2-1': 3, 'wv2-2': 4, 'wv2-3': 2, 'wv2-4': 0, 'wv2-5': 0 }, then: ['#wv2-go'], look: '右圖：模擬次數越多，平均越貼近紅色虛線（期望值 1.7），但任何一次的結果都是整數。' } },

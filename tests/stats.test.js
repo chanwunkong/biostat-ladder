@@ -96,6 +96,9 @@ near('lm 斜率', lmc.b[1], 3.9324);
 near('lm 斜率標準誤', lmc.se[1], 0.4155);
 near('lm R²', lmc.r2, 0.6511);
 
+near('dbinom(3, 10, 0.2)', S.dbinom(3, 10, 0.2), 0.2013266);
+near('pbinom(3, 10, 0.2)', S.pbinom(3, 10, 0.2), 0.8791261);
+
 const DS = {};
 for (const m of DATASETS) { const d = m.gen(); DS[m.id] = makeDS({ ...m, head: d.head, rows: d.rows }); }
 const runs = [

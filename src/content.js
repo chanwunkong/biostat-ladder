@@ -709,6 +709,25 @@ const CH = [
       { q: '同一個分佈中，P(X ≤ 1) 是多少？', o: ['0.4', '0.3', '0.7', '0.1'], why: 'P(X = 0) + P(X = 1) = 0.1 + 0.3 = 0.4。' },
     ],
   },
+  {
+    id: 'binom', title: '二項分佈',
+    body: `<p>只有兩種結果的試驗（有反應／沒反應、帶有某基因型／沒有），叫做<b>白努利試驗</b>。把同樣的試驗重複 n 次、數「成功」幾次，這個次數就服從<b>二項分佈</b>。例如：治療 20 位病人，有反應的人數；兩個帶因者生 4 個孩子，其中是隱性表現型（aa）的人數。</p>
+<h3>二項分佈的四個前提</h3>
+<ol><li>試驗次數 n 事先固定。</li><li>每次只有兩種結果。</li><li>每次成功的機率 p 都相同。</li><li>每次試驗彼此獨立。</li></ol>
+<h3>機率公式</h3>
+<div class="formula">P(X = k) = C(n, k) × p<sup>k</sup> × (1 − p)<sup>n − k</sup><br>C(n, k) = n! ÷ (k! × (n − k)!)　　（n 次中挑 k 次成功的方法數）</div>
+<p>例：兩個帶因者生 4 個孩子，每個孩子是 aa 的機率 p = 1/4。恰好 1 個 aa 的機率 = C(4, 1) × (1/4)¹ × (3/4)³ = 4 × 0.25 × 0.422 ≈ 0.42。C(n, k) 叫做<b>組合數</b>：4 個孩子中哪一個是 aa，有 4 種可能。</p>
+<h3>期望值與變異數</h3>
+<div class="formula">E(X) = n × p　　Var(X) = n × p × (1 − p)　　標準差 = √(n × p × (1 − p))</div>
+<p>反應率 30% 的藥治療 20 人，平均預期 6 人有反應，標準差 √(20 × 0.3 × 0.7) ≈ 2.05。</p>
+<h3>常態近似</h3>
+<p>n 夠大時，二項分佈的形狀接近常態分佈（中央極限定理的一個例子），可以用平均 np、標準差 √(np(1 − p)) 的常態分佈近似計算。Rosner 建議的經驗法則是 <b>n × p × (1 − p) ≥ 5</b> 時才使用。用常態近似計算 P(X ≤ k) 時，通常把 k 加 0.5，稱為<b>連續性校正</b>。p 很接近 0 或 1、n 又小的時候，分佈很偏，常態近似不準確。</p>`,
+    quiz: [
+      { q: '兩個帶因者（Aa × Aa）生 4 個孩子，恰好 1 個孩子是 aa 的機率約是多少？', o: ['0.42', '0.25', '0.75', '0.11'], why: 'C(4, 1) × 0.25 × 0.75³ = 4 × 0.25 × 0.422 ≈ 0.42。' },
+      { q: '某藥反應率 30%，治療 20 位病人。反應人數的期望值和標準差是？', o: ['6 人；約 2.05 人', '6 人；4.2 人', '3 人；約 1.4 人', '30 人；約 5.5 人'], why: 'E = 20 × 0.3 = 6；SD = √(20 × 0.3 × 0.7) = √4.2 ≈ 2.05。4.2 是變異數，不是標準差。' },
+      { q: '下列哪一項「不是」二項分佈的前提？', o: ['每次試驗的結果必須是常態分佈', '試驗次數事先固定', '每次成功的機率相同', '每次試驗彼此獨立'], why: '二項分佈的每次試驗只有兩種結果，和常態無關。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -827,6 +846,11 @@ const GLOSS = [
   ['期望值', ['E(X)'], '以機率加權的平均：重複很多次之後的長期平均。', 'rv'],
   ['累積機率', ['P(X ≤'], '小於或等於某個值的機率。', 'rv'],
   ['大數法則', [], '重複次數越多，結果的平均越接近期望值。', 'rv'],
+  ['白努利試驗', [], '只有兩種結果（成功／失敗）的單次試驗。', 'binom'],
+  ['二項分佈', [], 'n 次獨立、成功機率相同的白努利試驗中，成功次數的分佈。', 'binom'],
+  ['組合數', ['C(n, k)'], '從 n 個中挑出 k 個的方法數：n! ÷ (k! × (n − k)!)。', 'binom'],
+  ['常態近似', [], 'n 夠大時，用平均與標準差相同的常態分佈近似其他分佈。', 'binom'],
+  ['連續性校正', [], '用連續的常態分佈近似離散分佈時，把邊界加減 0.5。', 'binom'],
   ['閾值', ['cutoff'], '把連續數值的檢驗結果分成陽性與陰性的分界值。', 'roc'],
   ['ROC 曲線', ['ROC'], '把所有閾值下的敏感度對「1 − 特異度」畫出的曲線。', 'roc'],
   ['AUC', [], 'ROC 曲線下的面積：隨機挑一位有病、一位沒病的人，有病者檢驗值較高的機率。', 'roc'],
@@ -905,7 +929,7 @@ const GLOSS = [
 const ORDER = [
   ['c0-1', 'c0-2', 'c0-3', 'c0-4'],
   ['c1-1', 'c1-2', 'c1-3', 'c1-4', 'c1-5'],
-  ['prob-rules', 'c2-1', 'roc', 'rv'],
+  ['prob-rules', 'c2-1', 'roc', 'rv', 'binom'],
   ['c2-2', 'c2-3', 'c2-4', 'c4-5', 'c5-1'],
   ['c3-1', 'c3-3', 'c3-5'],
   ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff', 'ancova'],
@@ -918,7 +942,7 @@ const ORDER = [
 const REFS = {
   'c0-1': 'Rosner 3.10', 'c1-1': 'Whitlock 第 1 章；Kirkwood 第 2 章', 'c1-2': 'Whitlock 第 3 章；Rosner 2.2–2.3；Kirkwood 第 4 章',
   'c1-3': 'Whitlock 第 3 章；Rosner 2.4–2.5；Kirkwood 第 4 章', 'c1-4': 'Whitlock 第 10 章；Rosner 第 5 章；Kirkwood 第 5 章', 'c1-5': 'Kirkwood 第 34 章',
-  'prob-rules': 'Whitlock 第 5 章；Rosner 3.2–3.6', 'roc': 'Rosner 3.9；UTHealth GSBS 課綱第 10 週', 'rv': 'Rosner 4.2–4.6', 'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
+  'prob-rules': 'Whitlock 第 5 章；Rosner 3.2–3.6', 'roc': 'Rosner 3.9；UTHealth GSBS 課綱第 10 週', 'rv': 'Rosner 4.2–4.6', 'binom': 'Whitlock 7.1；Rosner 4.7–4.9、5.7；Kirkwood 第 15 章', 'c2-1': 'Whitlock 第 5 章；Rosner 3.6–3.7', 'c2-2': 'Whitlock 第 4 章', 'c2-3': 'Whitlock 第 4 章；Rosner 6.5；Kirkwood 第 6 章',
   'c2-4': 'Whitlock 第 6 章；Rosner 7.1–7.5；Kirkwood 第 8 章', 'c4-5': 'Whitlock 14.6；Rosner 7.6–7.7、8.9；Kirkwood 第 35 章', 'c5-1': 'Rosner 13.2；Kirkwood 第 34 章',
   'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
   'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
