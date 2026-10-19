@@ -1174,6 +1174,32 @@ const CH = [
       { q: '漏斗圖中，精確度低的小研究幾乎都落在效果有利的一側，另一側空蕩蕩。最可能的解讀？', o: ['可能有發表偏差：效果不明顯的小研究沒被發表', '小研究比較準確', '應該只用小研究', '異質性為 0'], demo: { set: { 'wma-x': '' }, look: '看右圖：越下面的點（越不精確）分散越廣。對稱的漏斗代表兩側都有研究；如果一側缺很多小研究，就要懷疑發表偏差。' }, why: '漏斗圖不對稱是發表偏差的線索之一，但異質性也可能造成不對稱。' },
     ],
   },
+  {
+    id: 'equiv', title: '等效與不劣性試驗、交叉設計',
+    body: `<p>大部分試驗想證明新療法<b>比較好</b>（<b>優越性試驗</b>）。但很多時候新療法的優點在別處：比較便宜、副作用少、口服取代注射。這時只需要證明它<b>不比標準療法差太多</b>。</p>
+<h3>界限 Δ</h3>
+<p>研究開始前，依臨床判斷訂出「差多少以內可以接受」的<b>不劣性界限</b> Δ（例如治癒率差 10 個百分點）。Δ 要有臨床與過去試驗的依據，不能在看到結果後才決定。</p>
+<h3>三種試驗看同一個信賴區間</h3>
+<p>令差異 = 新療法 − 標準療法（越大越好），看差異的信賴區間落在哪裡：</p>
+<div class="tbl-wrap"><table class="st"><thead><tr><th>試驗類型</th><th>想證明的事</th><th>信賴區間的條件</th></tr></thead><tbody>
+<tr><td><b>優越性試驗</b></td><td>新療法較好</td><td>95% CI 下限 &gt; 0</td></tr>
+<tr><td><b>不劣性試驗</b></td><td>新療法不會差超過 Δ</td><td>95% CI 下限 &gt; −Δ</td></tr>
+<tr><td><b>等效性試驗</b></td><td>兩者差異在 ±Δ 之內</td><td>90% CI 整個落在 −Δ 到 +Δ 之間</td></tr></tbody></table></div>
+<p>等效性用 90% CI，是因為它等於做兩次單尾 5% 的檢定（「不比 −Δ 差」和「不比 +Δ 好」），稱為<b>雙單尾檢定</b>（TOST）。</p>
+<p class="note">「優越性檢定 p &gt; 0.05」<b>不能</b>當成「兩者一樣」的證據：樣本小時信賴區間很寬，可能同時包含很大的好處和很大的壞處。要宣稱等效或不劣，必須事先設計並看信賴區間是否落在界限內。</p>
+<h3>交叉設計</h3>
+<p><b>平行設計</b>是每位受試者只接受一種療法。<b>交叉設計</b>（crossover）讓每位受試者依隨機分派的順序先後接受兩種療法（AB 或 BA），中間隔一段<b>洗除期</b>，讓前一種療法的作用消失。</p>
+<ul><li>優點：每個人都是自己的對照，比較的是同一人身上的差異（像 {{c3-1}} 章的配對 t 檢定），人與人之間的變異被去除，所需人數少很多。兩次測量的相關越高，省得越多。</li>
+<li><b>時期效應</b>：第二期的病情本來就可能和第一期不同（例如季節、自然好轉）；AB 與 BA 兩種順序各占一半，可以把它抵消並估計出來。</li>
+<li><b>延滯效應</b>（carryover）：第一期療法的作用延續到第二期。洗除期不夠時會使估計偏差，而且很難用資料檢查出來。</li>
+<li>只適合穩定的慢性病況（例如高血壓、氣喘）與作用可逆的療法；不適合會治癒或改變病程的療法，也不適合死亡等結局。</li></ul>
+<p class="note">CONSORT 有不劣性與等效性試驗、交叉試驗的延伸版本，規定要報告界限 Δ 的依據、所用的信賴區間與分析族群。</p>`,
+    quiz: [
+      { q: '不劣性界限 Δ = 10 個百分點。新療法 − 標準療法的治癒率差為 −2，95% CI −6 至 2。這個結果的意思是？', o: ['達到不劣性（下限 −6 > −10），但沒有證明優越性（區間包含 0）', '新療法比較差', '證明了優越性', '證明了兩者完全相同'], demo: { set: { 'weq-d': -2, 'weq-n': 770, 'weq-m': 10 }, look: '95% CI 的下限在 −Δ 的右邊（不劣性的條件），但區間跨過 0（沒達到優越性的條件）。' }, why: '不劣性只看下限是否大於 −Δ。' },
+      { q: '一個每組 60 人的小試驗，優越性檢定 p = 0.70。可以說兩種療法等效嗎？', o: ['不行：信賴區間很寬，可能同時包含明顯的好處與壞處', '可以，p 值很大代表一樣', '可以，因為差異很小', '不行，因為 p 值應該小於 0.05 才算等效'], demo: { set: { 'weq-d': 0, 'weq-n': 60, 'weq-m': 10 }, look: '差異的點估計是 0，但 90% CI 遠遠超出 ±Δ 的範圍：資料不足以排除重要的差異。把每組人數拉大看看區間怎麼變。' }, why: '沒有證據顯示有差異，不等於有證據顯示沒有差異。' },
+      { q: '交叉設計所需人數比平行設計少，主要原因是？', o: ['每個人當自己的對照，比較的是同一人身上的差異，去除了人與人之間的變異', '交叉設計不需要隨機分派', '交叉設計的 p 值比較小', '交叉設計不會有延滯效應'], demo: { set: { 'weq-r': 0.7 }, look: '兩期測量的相關係數 ρ 越高，交叉設計需要的總人數越少（是平行設計的 (1 − ρ) ÷ 2 倍）。' }, why: '同一人兩次測量的差異，變異數是 2σ²(1 − ρ)，比兩組不同人的比較小。' },
+    ],
+  },
 ];
 
 /* ---------- 名詞表：練習題下方「這題的名詞」用 ----------
@@ -1435,6 +1461,16 @@ const GLOSS = [
   ['單尾檢定', [], '只檢定一個方向（例如只看「變大」）的檢定。', 'c4-5'],
   ['群集', [], '彼此相關的一群觀察，例如同一隻小鼠的細胞、同一間醫院的病人。', 'c4-6'],
   ['偽重複', [], '把同一個實驗單位內的重複測量，誤當成獨立樣本。', 'c4-6'],
+  ['優越性試驗', [], '想證明新療法比標準療法好的試驗。', 'equiv'],
+  ['不劣性試驗', [], '想證明新療法不會比標準療法差超過事先訂定界限 Δ 的試驗。', 'equiv'],
+  ['等效性試驗', [], '想證明兩種療法的差異落在 ±Δ 之內的試驗。', 'equiv'],
+  ['不劣性界限', [], '事先依臨床判斷訂出的可接受差異 Δ。', 'equiv'],
+  ['雙單尾檢定', ['TOST'], '等效性的檢定：兩次單尾 5% 檢定，等同看 90% CI 是否落在 ±Δ 內。', 'equiv'],
+  ['平行設計', [], '每位受試者只接受一種療法的試驗設計。', 'equiv'],
+  ['交叉設計', ['crossover'], '每位受試者依隨機順序先後接受兩種療法，中間隔洗除期。', 'equiv'],
+  ['洗除期', [], '交叉設計中兩期之間的間隔，讓前一種療法的作用消失。', 'equiv'],
+  ['時期效應', [], '交叉設計中，第二期與第一期本身的差異（與療法無關）。', 'equiv'],
+  ['延滯效應', ['carryover'], '交叉設計中，第一期療法的作用延續到第二期。', 'equiv'],
   ['統合分析', ['meta-analysis'], '把多篇研究的效果量以反變異數加權合併，並描述研究間的差異。', 'meta'],
   ['系統性回顧', [], '依事先寫好的方法完整搜尋、篩選並評估所有相關研究的文獻回顧。', 'meta'],
   ['固定效果模型', [], '統合分析中假設所有研究估計同一個真實效果的模型。', 'meta'],
@@ -1473,7 +1509,7 @@ const ORDER = [
   ['exp-design', 'c3-2', 'anova-assume', 'posthoc', 'twoway', 'block', 'repeated', 'random-eff', 'ancova'],
   ['c3-4', 'simple-reg', 'c4-1', 'reg-diag', 'c4-2', 'poisson-reg', 'bland-altman'],
   ['mh', 'standardize', 'c4-3', 'ph-check'],
-  ['c4-4', 'c4-6', 'missing', 'meta'],
+  ['c4-4', 'c4-6', 'missing', 'meta', 'equiv'],
   ['c5-2', 'c5-3', 'c5-4', 'c5-5'],
 ];
 // 對照教科書：W = Whitlock & Schluter 3e、R = Rosner 8e、K = Kirkwood & Sterne 2e（見 CURRICULUM.md）
@@ -1485,7 +1521,7 @@ const REFS = {
   'nonpar': 'Whitlock 13.4–13.7；Rosner 9.2–9.4', 'two-prop': 'Rosner 10.2、10.5；Kirkwood 第 16 章', 'kappa': 'Rosner 10.8；Landis & Koch (1977) Biometrics 33:159', 'mcnemar': 'Rosner 10.4；Kirkwood 第 21 章；Agresti, Categorical Data Analysis', 'two-assume': 'Whitlock 13.1–13.3；Rosner 8.6、8.10；Kirkwood 第 13 章', 'c3-1': 'Whitlock 第 12 章；Rosner 第 8 章；Kirkwood 第 7 章', 'c3-3': 'Whitlock 第 9 章；Rosner 10.2–10.6；Kirkwood 第 16–17 章', 'c3-5': 'Whitlock 第 13 章；Rosner 第 9 章',
   'exp-design': 'Whitlock 第 14 章；Rosner 6.4', 'anova-assume': 'Whitlock 13.1–13.3、15.2；Rosner 8.6；Kirkwood 第 13 章', 'posthoc': 'Whitlock 15.3–15.4；Rosner 12.4', 'twoway': 'Whitlock 14.4、18.3；Rosner 12.6', 'block': 'Whitlock 14.3、18.2', 'repeated': 'Rosner 13.14；Kirkwood 第 31 章；UTHealth GSBS 課綱第 6 週', 'ancova': 'Whitlock 18.1、18.4', 'random-eff': 'Whitlock 15.5–15.6；Rosner 12.8–12.9；Shrout & Fleiss (1979) Psychol Bull 86:420', 'c3-2': 'Whitlock 第 15 章；Rosner 12.1–12.4；Kirkwood 第 9 章', 'bland-altman': 'Kirkwood 第 36 章；Bland & Altman (1986) Lancet 327:307', 'poisson-reg': 'Kirkwood 第 22–24 章；Rosner 14.1–14.3', 'reg-diag': 'Kirkwood 第 12–13 章；Rosner 11.6；Whitlock 17.5–17.6', 'simple-reg': 'Whitlock 第 17 章；Rosner 11.2–11.6；Kirkwood 第 10 章', 'c3-4': 'Whitlock 第 16 章；Rosner 11.7–11.12；Kirkwood 第 10 章', 'c4-1': 'Whitlock 第 17–18 章；Rosner 11.9；Kirkwood 第 11–12 章',
   'c4-2': 'Rosner 13.7–13.8；Kirkwood 第 19–20 章', 'ph-check': 'Rosner 14.11；Kirkwood 第 27 章', 'standardize': 'Rosner 13.4–13.5；Kirkwood 第 25、37 章', 'mh': 'Rosner 13.5–13.6；Kirkwood 第 18 章；Bickel 等 (1975) Science 187:398', 'c4-3': 'Whitlock 第 21 章；Rosner 14.8–14.11；Kirkwood 第 26–27 章', 'c4-4': 'Benjamini & Hochberg (1995), J R Stat Soc B 57:289–300',
-  'meta': 'Rosner 13.10；Kirkwood & Sterne 第 32 章', 'missing': 'Rosner 13.16；Little & Rubin, Statistical Analysis with Missing Data', 'c4-6': 'Rosner 12.10、13.13–13.14；Kirkwood 第 31 章', 'c5-2': 'Kirkwood 第 38 章；EQUATOR Network', 'c5-3': 'Kirkwood 第 38 章', 'c5-4': 'Kirkwood 第 34、38 章',
+  'equiv': 'Rosner 13.11–13.12；CONSORT 不劣性與等效性試驗延伸版（Piaggio 等，2012）', 'meta': 'Rosner 13.10；Kirkwood & Sterne 第 32 章', 'missing': 'Rosner 13.16；Little & Rubin, Statistical Analysis with Missing Data', 'c4-6': 'Rosner 12.10、13.13–13.14；Kirkwood 第 31 章', 'c5-2': 'Kirkwood 第 38 章；EQUATOR Network', 'c5-3': 'Kirkwood 第 38 章', 'c5-4': 'Kirkwood 第 34、38 章',
 };
 (() => {
   const by = Object.fromEntries(CH.map(c => [c.id, c])), out = [];
