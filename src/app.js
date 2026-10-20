@@ -37,10 +37,10 @@ function updateProgress() {
   const k = CH.filter(c => state.done[c.id]).length;
   $('#progTxt').textContent = `${k} / ${CH.length} 章`; $('#progBar').style.width = (100 * k / CH.length) + '%';
 }
-function setDone(id, v) { if (v) state.done[id] = 1; else delete state.done[id]; store.set('done', state.done); updateProgress(); renderTOC(id); }
+function setDone(id, v) { if (v) state.done[id] = 1; else delete state.done[id]; store.set('done', state.done); updateProgress(); renderTOC(id); if (typeof CLOUD !== 'undefined') CLOUD.push(); }
 
 function renderTOC(cur) {
-  $('#toc-list').innerHTML = LEVELS.map(L => `<div class="lv"><p class="lv-h"><span class="glyph">${L.glyph}</span><span>Level ${L.n}　${L.name}</span></p><ol>${CH.filter(c => c.lv === L.n).map(c => `<li><a href="#${c.id}" class="${c.id === cur ? 'cur' : ''} ${state.done[c.id] ? 'done' : ''}"${c.id === cur ? ' aria-current="page"' : ''}><span class="num">${c.num}</span><span>${c.title}</span></a></li>`).join('')}</ol></div>`).join('');
+  $('#toc-list').innerHTML = LEVELS.map(L => `<div class="lv"><p class="lv-h"><span class="glyph">${L.glyph}</span><span>Level ${L.n}　<span>${L.name}</span></span></p><ol>${CH.filter(c => c.lv === L.n).map(c => `<li><a href="#${c.id}" class="${c.id === cur ? 'cur' : ''} ${state.done[c.id] ? 'done' : ''}"${c.id === cur ? ' aria-current="page"' : ''}><span class="num">${c.num}</span><span>${c.title}</span></a></li>`).join('')}</ol></div>`).join('');
 }
 function renderHome() {
   const prog = L => { const cs = CH.filter(c => c.lv === L.n); return [cs.filter(c => state.done[c.id]).length, cs.length, cs[0].id]; };
@@ -49,16 +49,18 @@ function renderHome() {
 <p class="eyebrow">生物統計自學課程 · 國中數學 → 論文</p>
 <h1 class="hero">從平均數到 Cox 模型，<br>一階一階走上去。</h1>
 <p class="lede">六個階段、${CH.length} 章。每章有重點說明、可以動手調整的互動圖和小測驗。進階章節直接連到分析實驗室：用內建資料集或你自己的 CSV 實際跑一次分析，點一下結果中的數字，就能在圖上看到它代表的部分。</p>
-<div class="cta"><button class="btn pri" type="button" data-go="${next ? next.id : 'c0-1'}">${next && next.id !== 'c0-1' ? `繼續：${next.num} ${next.title}` : '從第一章開始'}</button><button class="btn" type="button" data-go="lab">打開分析實驗室</button></div>
+<div class="cta"><button class="btn pri" type="button" data-go="${next ? next.id : 'c0-1'}">${next && next.id !== 'c0-1' ? `繼續：${next.num} <span>${next.title}</span>` : '從第一章開始'}</button><button class="btn" type="button" data-go="lab">打開分析實驗室</button></div>
 <ol class="ladder">${LEVELS.map(L => { const [d, n, first] = prog(L); return `<li><button type="button" data-go="${first}"><span class="glyph">${L.glyph}</span><span class="lv-t"><span class="lv-n">Level ${L.n}</span><b>${L.name}</b><span class="lv-d">${L.desc}</span></span><span class="lv-p mono">${d}/${n}</span></button></li>`; }).join('')}</ol>
 <h2>怎麼使用</h2>
 <ul class="how"><li><b>沒有程式基礎也可以。</b>所有計算都在瀏覽器裡完成，不需要安裝軟體，也不用寫程式。</li><li><b>照順序讀。</b>每一階都只用到前面學過的東西。已經會的章節可以直接做小測驗確認。</li><li><b>在實驗室動手做。</b>有「到實驗室動手做」按鈕的章節，會自動載入對應的資料與設定。</li><li><b>用自己的資料。</b>Excel 存成 CSV 後上傳（UTF-8 或 Big5 編碼都可以），資料不會離開你的電腦。</li></ul>
 </div>`;
 }
 /* ---------- 練習題的名詞（定義來自 content.js 的 GLOSS） ---------- */
+// 名詞的比對樣式：英文等字母名詞前後要是字的邊界，避免「SD」比對到其他單字裡
+function termRe(f, flags = '') { const s = f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), b1 = /^\w/.test(f) ? '\\b' : '', b2 = /\w$/.test(f) ? '\\b' : ''; return new RegExp(b1 + s + b2, flags); }
 function termsOf(q) {
-  const text = [q.q, ...q.o, q.why, q.demo && q.demo.look].filter(Boolean).join(' '), hits = [];
-  GLOSS.forEach((g, gi) => { const pos = [g[0], ...g[1]].map(f => text.indexOf(f)).filter(i => i >= 0); if (pos.length) hits.push([Math.min(...pos), gi]); });
+  const ci = typeof isZh === 'function' && !isZh(), text = [q.q, ...q.o, q.why, q.demo && q.demo.look].filter(Boolean).join(' '), hits = [];
+  GLOSS.forEach((g, gi) => { const pos = [g[0], ...g[1]].filter(f => f && (f.length > 1 || /[^\x00-\x7F]/.test(f))).map(f => (ci ? text.search(termRe(f, 'i')) : text.indexOf(f))).filter(i => i >= 0); if (pos.length) hits.push([Math.min(...pos), gi]); });
   return hits.sort((x, y) => x[0] - y[0]).map(h => h[1]);
 }
 // 本章名詞：本章教的名詞＋練習題用到的名詞
@@ -72,8 +74,8 @@ const wtermsHTML = c => { const t = chapterTerms(c); return t.length ? `<div cla
 function linkTerms(text, q) {
   const forms = termsOf(q).flatMap(gi => [GLOSS[gi][0], ...GLOSS[gi][1]].map(f => [f, gi])).filter(([f]) => f.length > 1 || /[^\x00-\x7F]/.test(f)).sort((x, y) => y[0].length - x[0].length);
   if (!forms.length) return esc(text);
-  const re = new RegExp(forms.map(([f]) => esc(f).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'g'), gi = Object.fromEntries(forms.map(([f, g]) => [esc(f), g]));
-  return esc(text).replace(re, m => `<span class="tlink" role="button" tabindex="0" data-g="${gi[m]}">${m}</span>`);
+  const ci = typeof isZh === 'function' && !isZh(), re = new RegExp(forms.map(([f]) => termRe(esc(f)).source).join('|'), ci ? 'gi' : 'g'), gi = Object.fromEntries(forms.map(([f, g]) => [ci ? esc(f).toLowerCase() : esc(f), g]));
+  return esc(text).replace(re, m => `<span class="tlink" role="button" tabindex="0" data-g="${gi[ci ? m.toLowerCase() : m]}">${m}</span>`);
 }
 function bindTerms(c) {
   const box = $('#wterms'); if (!box) return;
@@ -82,14 +84,14 @@ function bindTerms(c) {
     $$('.tchip', box).forEach(x => x.setAttribute('aria-pressed', String(x === b && on)));
     d.hidden = !on; if (wg) { wg._k = null; applyFocus(wg); }
     if (!on) return;
-    const [term, , def, ch] = GLOSS[+b.dataset.g], t = CH.find(x => x.id === ch), keys = map[term], src = `<span class="tsrc">${ch === c.id ? '本章內容有說明' : `<a href="#${ch}">${t.num} 章「${esc(t.title)}」</a>${CH.indexOf(t) > CH.indexOf(c) ? '會詳細說明' : '學過'}`}</span>`;
+    const [term, , def, ch] = GLOSS[+b.dataset.g], zt = (typeof GLOSS_ZH !== 'undefined' ? GLOSS_ZH : GLOSS)[+b.dataset.g][0], t = CH.find(x => x.id === ch), keys = map[zt], src = `<span class="tsrc">${ch === c.id ? '本章內容有說明' : `<a href="#${ch}">${t.num} 章「<span>${esc(t.title)}</span>」</a>${CH.indexOf(t) > CH.indexOf(c) ? '會詳細說明' : '學過'}`}</span>`;
     const hit = wg && keys && keys.split(' ').some(k => wg.querySelector(`[data-k~="${k}"], [data-card="${k}"]`));
     if (hit) {
       wg._k = keys; applyFocus(wg);
       const vals = $$('[data-card]', wg).filter(x => keys.split(' ').includes(x.dataset.card)).map(x => `${esc((x.querySelector('span') || x).textContent.trim())}：<b>${esc((x.querySelector('b') || x).textContent.trim())}</b>`);
       d.innerHTML = `<p class="tline"><b>${esc(term)}</b>　${esc(def)}</p>${vals.length ? `<p class="tvals">圖上亮起的部分　${vals.join('　')}</p>` : '<p class="tvals">圖上亮起的部分就是它。</p>'}${src}`;
     } else {
-      d.innerHTML = (typeof TFIG !== 'undefined' ? TFIG.html(term, box.clientWidth - 24) : '') + `<p class="tline"><b>${esc(term)}</b>　${esc(def)}</p>${src}`;
+      d.innerHTML = (typeof TFIG !== 'undefined' ? TFIG.html(zt, box.clientWidth - 24) : '') + `<p class="tline"><b>${esc(term)}</b>　${esc(def)}</p>${src}`;
       if (typeof TFIG !== 'undefined') TFIG.mark(d);
     }
   };
@@ -102,12 +104,12 @@ function bindTerms(c) {
 function renderChapter(id) {
   const i = CH.findIndex(c => c.id === id), c = CH[i], L = LEVELS[c.lv], prev = CH[i - 1], next = CH[i + 1];
   const quiz = c.quiz.map((q, qi) => { const ord = q.o.map((_, k) => k).sort(() => Math.random() - 0.5); return `<div class="q" data-q="${qi}"><p class="q-t"><span class="mono">Q${qi + 1}</span>${linkTerms(q.q, q)}</p>${q.demo && c.widget ? `<button type="button" class="demo-btn" data-demo="${qi}"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 15V5M5 9l5-5 5 5" style="fill:none;stroke:currentColor;stroke-width:2"/></svg>在上方圖表示範這題</button>` : ''}<div class="opts">${ord.map(k => `<button type="button" class="opt" data-k="${k}">${esc(q.o[k])}</button>`).join('')}</div><p class="why" hidden></p></div>`; }).join('');
-  $('#article').innerHTML = `<div class="ch-top"><p class="eyebrow">Level ${L.n} · ${L.name} · 第 ${c.num} 章</p><button class="toc-btn" type="button" data-toc>☰ 目錄</button></div><h1>${c.title}</h1>
+  $('#article').innerHTML = `<div class="ch-top"><p class="eyebrow">Level ${L.n} · <span>${L.name}</span> · <span>第 ${c.num} 章</span></p><button class="toc-btn" type="button" data-toc>☰ 目錄</button></div><h1>${c.title}</h1>
 ${c.widget ? `<section class="widget-box"><p class="lbl">動手玩 · ${c.wtitle}</p><div class="demo-note" id="demoNote" hidden></div><div class="widget" id="widget"></div>${wtermsHTML(c)}</section>` : `<section class="widget-box">${wtermsHTML(c)}</section>`}
 <div class="prose">${chRef(c.body)}</div>${c.refs ? `<p class="refs"><span class="lbl">對照教科書</span>${esc(c.refs)}</p>` : ''}
 ${c.labs ? `<section class="labs"><p class="lbl">到實驗室用真的資料做</p><div class="lab-btns">${c.labs.map((l, k) => `<button class="btn" type="button" data-lab="${k}">${l.label}<span aria-hidden="true">→</span></button>`).join('')}</div></section>` : ''}
 ${c.quiz.length ? `<section class="quiz"><h2>小測驗</h2>${quiz}</section>` : ''}
-<div class="ch-foot"><button class="btn ${state.done[id] ? 'done' : ''}" type="button" id="doneBtn">${state.done[id] ? '已完成 ✓' : '標記為完成'}</button><nav class="pn">${prev ? `<a href="#${prev.id}"><small>上一章</small>${prev.num} ${prev.title}</a>` : '<span></span>'}${next ? `<a href="#${next.id}" class="nx"><small>下一章</small>${next.num} ${next.title}</a>` : ''}</nav></div>`;
+<div class="ch-foot"><button class="btn ${state.done[id] ? 'done' : ''}" type="button" id="doneBtn">${state.done[id] ? '已完成 ✓' : '標記為完成'}</button><nav class="pn">${prev ? `<a href="#${prev.id}"><small>上一章</small>${prev.num} <span>${prev.title}</span></a>` : '<span></span>'}${next ? `<a href="#${next.id}" class="nx"><small>下一章</small>${next.num} <span>${next.title}</span></a>` : ''}</nav></div>`;
   if (c.widget) fitTo($('#widget'));
   if (c.widget) { W[c.widget]($('#widget')); linkify($('#widget')); }
   $$('[data-lab]').forEach(b => { b.onclick = () => openLab(c.labs[+b.dataset.lab]); });
@@ -215,7 +217,7 @@ function runAnalysis(scroll) {
   let res;
   try { res = spec.run(ds, ensureSel()); }
   catch (e) { out.innerHTML = `<div class="res"><p class="callout err"><b>無法執行：</b>${esc(e.message)}</p></div>`; return; }
-  let h = `<div class="res" id="res-root"><header class="res-h"><p class="eyebrow">${spec.name}${spec.nodata ? '' : ' · ' + esc(ds.name)}</p><h2>${res.title}</h2><p class="mono small mut">${res.meta}</p>${res.facts && res.facts.length ? `<ul class="facts">${res.facts.map(f => `<li>${f}</li>`).join('')}</ul>` : ''}</header>`;
+  let h = `<div class="res" id="res-root"><header class="res-h"><p class="eyebrow"><span>${spec.name}</span>${spec.nodata ? '' : ' · <span>' + esc(ds.name) + '</span>'}</p><h2>${res.title}</h2><p class="mono small mut">${res.meta}</p>${res.facts && res.facts.length ? `<ul class="facts">${res.facts.map(f => `<li>${f}</li>`).join('')}</ul>` : ''}</header>`;
   if (res.table1) {
     h += `<p class="hint">點表格中的一個變數，下方會畫出它的分佈。</p>${tableHTML(res.table1)}<div class="picks">${res.picks.map(p => `<div class="pick" data-k="${p.k}">${figHTML(p)}</div>`).join('')}</div>`;
   }
@@ -224,7 +226,8 @@ function runAnalysis(scroll) {
   if (res.html) h += res.html;
   if (res.write) {
     const blk = (lang, w) => `<div class="wr" data-lang="${lang}" ${lang === 'en' ? 'hidden' : ''}>${[['m', lang === 'zh' ? '統計方法' : 'Statistical analysis'], ['r', lang === 'zh' ? '結果' : 'Results']].map(([k, t]) => `<div class="wr-p"><div class="wr-h"><span class="lbl">${t}</span><button type="button" class="copy" data-copy="wr-${lang}-${k}">複製</button></div><p id="wr-${lang}-${k}">${esc(w[k])}</p></div>`).join('')}</div>`;
-    h += `<section class="write"><div class="write-h"><h3>數字的標準寫法</h3><div class="seg" role="tablist"><button type="button" data-lang="zh" aria-selected="true">中文</button><button type="button" data-lang="en" aria-selected="false">English</button></div></div>${blk('zh', res.write.zh)}${blk('en', res.write.en)}</section>`;
+    if (typeof isZh === 'function' && !isZh()) h += `<section class="write"><div class="write-h"><h3>數字的標準寫法</h3></div>${blk('en', res.write.en).replace(' hidden>', '>')}</section>`;
+    else h += `<section class="write"><div class="write-h"><h3>數字的標準寫法</h3><div class="seg" role="tablist"><button type="button" data-lang="zh" aria-selected="true">中文</button><button type="button" data-lang="en" aria-selected="false">English</button></div></div>${blk('zh', res.write.zh)}${blk('en', res.write.en)}</section>`;
   }
   if (res.tables && res.tables.length) h += `<details class="more"><summary>完整統計表</summary>${res.tables.map(t => tableHTML(t)).join('')}</details>`;
   const defs = [...new Set((res.cards || []).map(c => c.d).filter(Boolean))];
@@ -264,7 +267,7 @@ function setupLab() {
 /* ---------- 資料集頁 ---------- */
 function renderDataPage() {
   if ($('#dataGrid').dataset.ready) return; $('#dataGrid').dataset.ready = 1;
-  $('#dataGrid').innerHTML = DATASETS.map(m => { const g = m.gen(); return `<article class="dcard"><p class="eyebrow">${m.tag} · ${m.track}</p><h3>${m.name}</h3><p>${m.desc}</p><p class="mono small">${g.rows.length} 列 × ${g.head.length} 欄</p><p class="small"><b>適合練習：</b>${m.uses.join('、')}</p><details class="cb"><summary>編碼簿</summary><dl>${Object.entries(m.codebook).map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl></details><button type="button" class="btn" data-open="${m.id}">在實驗室開啟 →</button></article>`; }).join('');
+  $('#dataGrid').innerHTML = DATASETS.map(m => { const g = m.gen(); return `<article class="dcard"><p class="eyebrow"><span>${m.tag}</span> · <span>${m.track}</span></p><h3>${m.name}</h3><p>${m.desc}</p><p class="mono small">${g.rows.length} 列 × ${g.head.length} 欄</p><p class="small"><b>適合練習：</b>${m.uses.join('、')}</p><details class="cb"><summary>編碼簿</summary><dl>${Object.entries(m.codebook).map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl></details><button type="button" class="btn" data-open="${m.id}">在實驗室開啟 →</button></article>`; }).join('');
   $$('[data-open]').forEach(b => { b.onclick = () => openLab({ ds: b.dataset.open, an: 'table1', sel: {} }); });
 }
 
