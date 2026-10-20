@@ -37,7 +37,7 @@ function updateProgress() {
   const k = CH.filter(c => state.done[c.id]).length;
   $('#progTxt').textContent = `${k} / ${CH.length} 章`; $('#progBar').style.width = (100 * k / CH.length) + '%';
 }
-function setDone(id, v) { if (v) state.done[id] = 1; else delete state.done[id]; store.set('done', state.done); updateProgress(); renderTOC(id); if (typeof CLOUD !== 'undefined') CLOUD.push(); }
+function setDone(id, v) { if (v) state.done[id] = 1; else delete state.done[id]; store.set('done', state.done); updateProgress(); renderTOC(id); if (typeof CLOUD !== 'undefined') { CLOUD.push(); CLOUD.render(); } }
 
 function renderTOC(cur) {
   $('#toc-list').innerHTML = LEVELS.map(L => `<div class="lv"><p class="lv-h"><span class="glyph">${L.glyph}</span><span>Level ${L.n}　<span>${L.name}</span></span></p><ol>${CH.filter(c => c.lv === L.n).map(c => `<li><a href="#${c.id}" class="${c.id === cur ? 'cur' : ''} ${state.done[c.id] ? 'done' : ''}"${c.id === cur ? ' aria-current="page"' : ''}><span class="num">${c.num}</span><span>${c.title}</span></a></li>`).join('')}</ol></div>`).join('');
@@ -49,7 +49,7 @@ function renderHome() {
 <p class="eyebrow">生物統計自學課程 · 國中數學 → 論文</p>
 <h1 class="hero">從平均數到 Cox 模型，<br>一階一階走上去。</h1>
 <p class="lede">六個階段、${CH.length} 章。每章有重點說明、可以動手調整的互動圖和小測驗。進階章節直接連到分析實驗室：用內建資料集或你自己的 CSV 實際跑一次分析，點一下結果中的數字，就能在圖上看到它代表的部分。</p>
-<div class="cta"><button class="btn pri" type="button" data-go="${next ? next.id : 'c0-1'}">${next && next.id !== 'c0-1' ? `繼續：${next.num} <span>${next.title}</span>` : '從第一章開始'}</button><button class="btn" type="button" data-go="lab">打開分析實驗室</button></div>
+<div class="cta"><button class="btn pri" type="button" data-go="${next ? next.id : 'c0-1'}">${next && next.id !== 'c0-1' ? `繼續：${next.num} <span>${next.title}</span>` : '從第一章開始'}</button><button class="btn" type="button" data-go="lab">打開分析實驗室</button></div>${typeof CLOUD !== 'undefined' ? CLOUD.hint() : ''}
 <ol class="ladder">${LEVELS.map(L => { const [d, n, first] = prog(L); return `<li><button type="button" data-go="${first}"><span class="glyph">${L.glyph}</span><span class="lv-t"><span class="lv-n">Level ${L.n}</span><b>${L.name}</b><span class="lv-d">${L.desc}</span></span><span class="lv-p mono">${d}/${n}</span></button></li>`; }).join('')}</ol>
 <h2>怎麼使用</h2>
 <ul class="how"><li><b>沒有程式基礎也可以。</b>所有計算都在瀏覽器裡完成，不需要安裝軟體，也不用寫程式。</li><li><b>照順序讀。</b>每一階都只用到前面學過的東西。已經會的章節可以直接做小測驗確認。</li><li><b>在實驗室動手做。</b>有「到實驗室動手做」按鈕的章節，會自動載入對應的資料與設定。</li><li><b>用自己的資料。</b>Excel 存成 CSV 後上傳（UTF-8 或 Big5 編碼都可以），資料不會離開你的電腦。</li></ul>

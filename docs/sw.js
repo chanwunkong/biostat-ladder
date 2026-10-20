@@ -1,5 +1,5 @@
 /* 生統階梯 service worker：網路優先、離線時用快取；版本號由 build.py 依頁面內容產生 */
-const CACHE = 'biostat-ladder-a2ed151d39';
+const CACHE = 'biostat-ladder-7b52262dbe';
 const LOCAL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(LOCAL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith('biostat-ladder-') && k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });

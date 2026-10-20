@@ -16,7 +16,8 @@ const isZh = () => I18N.lang === 'zh-TW';
 const pack = () => I18N.packs[I18N.lang] || null;
 function setLang(l) {
   try { localStorage.setItem('biostat-ladder:lang', l); } catch (e) { /* 私密模式 */ }
-  const u = new URL(location.href); u.searchParams.delete('lang'); location.href = u.toString();
+  // 只改 # 之後的網址不會重新載入，所以先清掉 ?lang 再明確 reload
+  const u = new URL(location.href); u.searchParams.delete('lang'); history.replaceState(null, '', u.toString()); location.reload();
 }
 
 // 原始（中文）名詞表：名詞對應（WTERM）與名詞圖解（TFIG）用中文名詞當鍵
