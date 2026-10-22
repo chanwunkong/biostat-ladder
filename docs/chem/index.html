@@ -298,6 +298,7 @@ svg.ch, svg.mol, svg.en, svg.bk, svg.ions { width: 100%; height: auto; display: 
 .rung span { font-family: var(--mono); font-size: 12.5px; } .rung small { color: var(--muted); }
 .rung.from { border-color: var(--acid); background: color-mix(in srgb, var(--acid) 10%, var(--bg)); }
 .rung.to { border-color: var(--arrow); background: color-mix(in srgb, var(--arrow) 10%, var(--bg)); }
+.nmpk { stroke: var(--acid); stroke-width: 2; } .nmon { stroke: var(--arrow); stroke-width: 2.6; }
 /* 練習題 */
 .q { border-top: 1px solid var(--line); padding: 14px 0; }
 .qt { font-weight: 500; margin: 0 0 8px; }
@@ -1372,6 +1373,51 @@ CH.push({
         why: 'OH⁻ 的共軛酸 H₂O 的 pKa 是 15.7，OH⁻ 很不穩定，不願離開；質子化後離開的是 H₂O，其共軛酸 H₃O⁺ 的 pKa 是 −1.7，H₂O 是好離去基。', show: { w: 'leaving', set: { x: 'OH2' } } },
     ],
   });
+
+/* ---------- 後中化學：光譜分析 ---------- */
+CH.push({
+  id: 'spectro', unit: 'o11', title: '光譜分析：IR、NMR、MS',
+  lede: '怎麼知道瓶子裡是什麼分子？紅外光譜告訴你有哪些官能基，核磁共振告訴你氫和碳的環境與相鄰關係，質譜告訴你分子量與特殊原子。三者合起來就能拼出結構。',
+  sections: [
+    { h: '紅外光譜（IR）：找官能基', w: 'ir', body: `
+<p>分子中的鍵會振動，吸收和振動頻率相同的紅外光。鍵越強、原子越輕，振動越快，吸收的波數越高：</p>
+<ul><li>X–H 鍵（O–H、N–H、C–H）在高波數區（2800–3600 cm⁻¹）；</li><li>參鍵（C≡C、C≡N）在 2100–2260；</li><li>雙鍵（C=O、C=C）在 1600–1750；</li><li>1500 以下是「指紋區」，用來比對整個分子，不逐根判讀。</li></ul>
+<p>考試最常考的兩件事：<b>1700 附近有沒有又強又尖的 C=O</b>，以及 <b>3300 附近有沒有寬的 O–H</b>。羧酸的 O–H 特別寬，因為它形成雙分子氫鍵。</p>` },
+    { h: '¹H NMR：氫的環境與鄰居', w: 'nmr', body: `
+<p>在強磁場中，氫原子核吸收無線電波的頻率取決於周圍的電子密度。三個資訊：</p>
+<ol><li><b>化學位移 δ</b>（ppm）：周圍電子被拉走（去遮蔽）時，訊號往左（δ 大）。烷基 H 約 0.9–1.5，接羰基約 2–2.5，接 O 或鹵素約 3.3–4.5，烯 H 約 4.5–6.5，芳香 H 約 6.5–8，醛 H 約 9–10，羧酸 H 約 10–12。</li>
+<li><b>積分</b>：峰面積正比於 H 的數目。</li>
+<li><b>分裂</b>：相鄰碳上有 n 個等價的 H，訊號分成 <b>n + 1</b> 根，強度比依巴斯卡三角形（1:1、1:2:1、1:3:3:1…）。乙基（–CH₂CH₃）的招牌是「四重峰 2H + 三重峰 3H」，異丙基是「七重峰 1H + 雙重峰 6H」。</li></ol>
+<p>化學環境相同的 H 只出現一組訊號，所以訊號數 = 不等價 H 的種類數。O–H、N–H 的 H 常是寬峰，加 D₂O 後會消失。</p>` },
+    { h: '¹³C NMR 與質譜（MS）', w: 'ms', body: `
+<p><b>¹³C NMR</b>：每一種不等價的碳一根訊號（通常不分裂），範圍 0–220 ppm。羰基碳最明顯，在 160–220；芳香與烯碳 100–150；接 O 的碳 50–90；烷基碳 0–50。數訊號就能知道分子的對稱性。</p>
+<p><b>質譜</b>：分子被電子撞擊失去一個電子，形成分子離子 M⁺，最右邊（m/z 最大）的主峰通常就是分子量。實用規則：</p>
+<ul><li><b>M+2 峰</b>：M : M+2 ≈ 3 : 1 → 有一個 Cl；≈ 1 : 1 → 有一個 Br。</li><li><b>M+1 峰</b>：約為碳數 × 1.1%，可估算碳數。</li><li><b>氮規則</b>：分子量為奇數 → 含奇數個 N。</li></ul>` },
+    { h: '綜合解題：從光譜拼出結構', body: `
+<p>拿到分子式與光譜時，依序做：</p>
+<ol><li><b>不飽和度</b>：(2C + 2 + N − H − X) ÷ 2。每個環或雙鍵算 1，參鍵算 2，苯環算 4。</li>
+<li><b>IR</b>：有沒有 C=O、O–H、N–H、C≡C／C≡N。</li>
+<li><b>¹H NMR</b>：數訊號組數、看積分比、用分裂找鄰居（例如乙基、異丙基、單峰的甲基）。</li>
+<li><b>拼起來</b>，最後用 δ 檢查每個片段的位置是否合理。</li></ol>
+<p>例：C₄H₈O₂，不飽和度 1；IR 1740（酯 C=O）、無 O–H；氫譜 4.1 (q, 2H)、2.0 (s, 3H)、1.3 (t, 3H) → 乙基接在 O 上、甲基接在羰基上 → 乙酸乙酯。</p>` },
+  ],
+  quiz: [
+    { q: 'IR 光譜在 1715 cm⁻¹ 有強而尖的吸收，在 3200–3550 cm⁻¹ 沒有吸收，最可能是？', o: ['酮', '醇', '羧酸', '烷'], a: 0,
+      why: '1715 是 C=O；沒有 O–H 排除醇與羧酸。', show: { w: 'ir', set: { c: 'butanone' } } },
+    { q: '下列哪一個 IR 特徵最能區分羧酸與醇？', o: ['羧酸有 1710 的 C=O 和極寬的 2500–3300 O–H', '醇有 C=O', '羧酸沒有 O–H', '兩者無法區分'], a: 0,
+      why: '羧酸同時有 C=O 與非常寬的 O–H；醇只有 3200–3550 的 O–H，沒有 C=O。', show: { w: 'ir', set: { c: 'acid' } } },
+    { q: '乙酸乙酯的 ¹H NMR 中，δ 4.1 的訊號分裂成幾根峰？', o: ['4（四重峰）', '3（三重峰）', '1（單峰）', '2（雙重峰）'], a: 0,
+      why: 'O–CH₂ 的鄰碳是 CH₃，有 3 個 H，依 n + 1 規則分成 4 根。', show: { w: 'nmr', set: { m: 'ea', i: 0 } } },
+    { q: '某化合物的 ¹H NMR 有一個七重峰（1H）與一個雙重峰（6H），可能含有什麼基團？', o: ['異丙基 (CH₃)₂CH–', '乙基 CH₃CH₂–', '第三丁基 (CH₃)₃C–', '苯基'], a: 0,
+      why: 'CH 有 6 個鄰近 H → 七重峰；兩個等價 CH₃ 共 6 H，鄰近 1 個 H → 雙重峰。', show: { w: 'nmr', set: { m: 'ipcl', i: 0 } } },
+    { q: '¹H NMR 在 δ 9.8 出現一個單峰（1H），最可能是？', o: ['醛基氫', '芳香氫', '甲基氫', '烯氫'], a: 0,
+      why: '醛 H 被羰基強烈去遮蔽，δ 9–10，非常有辨識度。羧酸 H 則更左（10–12）且通常較寬。', show: { w: 'nmr', set: { m: 'benz', i: 0 } } },
+    { q: '質譜中 M 與 M+2 峰高度約相等，分子最可能含有？', o: ['一個 Br', '一個 Cl', '一個 N', '一個 S'], a: 0,
+      why: '⁷⁹Br 與 ⁸¹Br 天然豐度約 1:1；Cl 則約 3:1。', show: { w: 'ms', set: { c: 'br' } } },
+    { q: 'C₄H₈O 的不飽和度為？', o: ['1', '0', '2', '4'], a: 0,
+      why: '(2 × 4 + 2 − 8) ÷ 2 = 1，代表一個雙鍵（例如 C=O）或一個環。' },
+  ],
+});
 
 /* ---------- 後中化學：構形與立體化學 ---------- */
 CH.push({
@@ -3172,6 +3218,87 @@ W.decay = el => {
   $('#dyN', el).oninput = e => { st.n = +e.target.value; draw(); };
   draw();
   return { set(s) { Object.assign(st, s); draw(); } };
+};
+
+/* ---------- 後中化學：光譜分析的互動圖 ----------
+   譜圖為依典型吸收位置合成的示意圖（位置與相對強弱依教科書數值），不是實測原始資料。 */
+
+/* ===== 1. 紅外光譜 ===== */
+W.ir = el => {
+  // [中心 cm⁻¹, 深度 0–1, 寬度, 標籤]
+  const C = {
+    hexane: { n: '己烷', p: [[2930, 0.85, 40, 'C–H（sp³）'], [1465, 0.4, 15, ''], [1378, 0.3, 10, '']] },
+    butanol: { n: '1-丁醇', p: [[3330, 0.8, 140, 'O–H（寬，氫鍵）'], [2930, 0.8, 40, 'C–H'], [1060, 0.6, 25, 'C–O']] },
+    butanone: { n: '2-丁酮', p: [[2970, 0.5, 30, 'C–H'], [1715, 0.95, 18, 'C=O 酮'], [1170, 0.4, 20, '']] },
+    butanal: { n: '丁醛', p: [[2960, 0.6, 30, 'C–H'], [2820, 0.35, 10, ''], [2720, 0.35, 10, '醛 C–H（兩根）'], [1730, 0.95, 18, 'C=O 醛']] },
+    acid: { n: '丁酸', p: [[2950, 0.75, 330, 'O–H（極寬 2500–3300）'], [1710, 0.95, 20, 'C=O 酸'], [1280, 0.5, 25, 'C–O']] },
+    ester: { n: '乙酸乙酯', p: [[2980, 0.45, 30, 'C–H'], [1740, 0.95, 18, 'C=O 酯'], [1240, 0.85, 25, 'C–O（強）']] },
+    alkyne: { n: '1-己炔', p: [[3310, 0.8, 15, '≡C–H（尖）'], [2930, 0.75, 40, 'C–H'], [2120, 0.35, 12, 'C≡C']] },
+    amine: { n: '丁胺', p: [[3370, 0.45, 25, ''], [3290, 0.45, 25, 'N–H（一級胺兩根）'], [2930, 0.8, 40, 'C–H'], [1600, 0.4, 25, '']] },
+  };
+  let cur = 'butanone';
+  el.innerHTML = `${seg('irS', Object.entries(C).map(([k, v]) => [k, v.n]), cur)}<div id="irG"></div><table class="tbl"><thead><tr><th>波數（cm⁻¹）</th><th>鍵</th><th>辨認重點</th></tr></thead><tbody><tr><td>3200–3550</td><td>O–H（醇）</td><td>寬而圓</td></tr><tr><td>2500–3300</td><td>O–H（羧酸）</td><td>非常寬，蓋住 C–H</td></tr><tr><td>3300–3500</td><td>N–H</td><td>一級胺兩根、二級胺一根</td></tr><tr><td>約 3300</td><td>≡C–H</td><td>尖</td></tr><tr><td>3000–3100／2850–3000</td><td>C–H（sp²／sp³）</td><td>以 3000 為界</td></tr><tr><td>2100–2260</td><td>C≡C、C≡N</td><td>這一區很少有其他吸收</td></tr><tr><td>1680–1750</td><td>C=O</td><td>最強、最尖，最重要</td></tr><tr><td>1600–1680</td><td>C=C</td><td>較弱</td></tr></tbody></table>`;
+  function draw() {
+    const c = C[cur], T = x => 1 - c.p.reduce((s, [m, d, w]) => s + d * Math.exp(-((x - m) ** 2) / (2 * w * w)), 0);
+    const xs = Array.from({ length: 721 }, (_, i) => 4000 - i * 5);
+    $('#irG', el).innerHTML = chart({ x: [-4000, -500], y: [0, 1.05], xt: [], yt: [0, 0.5, 1], xlab: '波數（cm⁻¹）：左高右低', ylab: '穿透率', h: 220, label: `${c.n} 的紅外光譜` }, (X, Y) => `${[4000, 3000, 2000, 1500, 1000, 500].map(v => `<text class="tk" x="${X(-v)}" y="${Y(0) + 16}" text-anchor="middle">${v}</text>`).join('')}<path class="tline" d="${path(xs.map(x => [X(-x), Y(clamp(T(x), 0, 1))]))}"/>${c.p.filter(p => p[3]).map(([m, d, , l]) => `<text class="tk hl" x="${X(-m)}" y="${Y(clamp(1 - d, 0, 1)) + 14}" text-anchor="middle">${l}</text>`).join('')}`);
+    pressSeg(el, 'irS', cur);
+  }
+  bindSeg(el, 'irS', v => { cur = v; draw(); });
+  draw();
+  return { set(s) { cur = s.c || cur; draw(); } };
+};
+
+/* ===== 2. ¹H NMR：化學位移、積分、分裂 ===== */
+W.nmr = el => {
+  // [δ, 氫數, 分裂（鄰近 H 數 n → n+1 峰）, 名稱, 說明]
+  const M = {
+    ea: { n: '乙酸乙酯 CH₃COOCH₂CH₃', s: [[4.12, 2, 3, 'O–CH₂', '接在酯的 O 上，被拉電子，往低磁場（左）移。鄰近 CH₃ 有 3 個 H → 四重峰。'], [2.04, 3, 0, 'CO–CH₃', '在羰基旁邊，δ 約 2。鄰碳（羰基 C）沒有 H → 單峰。'], [1.26, 3, 2, 'CH₂–CH₃', '一般烷基 H。鄰近 CH₂ 有 2 個 H → 三重峰。']] },
+    mek: { n: '2-丁酮 CH₃COCH₂CH₃', s: [[2.44, 2, 3, 'CO–CH₂', '羰基旁，鄰近 CH₃ → 四重峰。'], [2.14, 3, 0, 'CO–CH₃', '羰基旁、鄰碳無 H → 單峰。'], [1.06, 3, 2, 'CH₂–CH₃', '鄰近 CH₂ → 三重峰。']] },
+    ipcl: { n: '2-氯丙烷 (CH₃)₂CHCl', s: [[4.14, 1, 6, 'CH–Cl', '接在 Cl 上，δ 大。兩邊共 6 個 H → 七重峰。'], [1.52, 6, 1, '2 × CH₃', '兩個甲基等價（6 H）。鄰近 CH 有 1 個 H → 雙重峰。']] },
+    tol: { n: '甲苯 C₆H₅CH₃', s: [[7.2, 5, -1, '芳香 H', '苯環的 π 電子環流使環上 H 去遮蔽，δ 約 7–8。五個 H 化學環境相近，重疊成多重峰。'], [2.35, 3, 0, 'Ar–CH₃', '苯甲基 H，δ 約 2.3；鄰碳（環碳）無 H → 單峰。']] },
+    benz: { n: '苯甲醛 C₆H₅CHO', s: [[10.0, 1, 0, 'CHO', '醛基 H 被羰基強烈去遮蔽，δ 9–10，非常有辨識度。'], [7.7, 5, -1, '芳香 H', '芳香區 7.5–7.9。']] },
+    aa: { n: '乙酸 CH₃COOH', s: [[11.4, 1, 0, 'COOH', '羧酸 H 最去遮蔽，δ 10–12，常是寬峰（會和 D₂O 交換而消失）。'], [2.10, 3, 0, 'CH₃', '羰基旁，單峰。']] },
+  };
+  let cur = 'ea', pick = 0;
+  el.innerHTML = `${seg('nmS', Object.entries(M).map(([k, v]) => [k, v.n]), cur)}<div id="nmG"></div><div class="w-row" id="nmP"></div><p class="note" id="nmN"></p>`;
+  const pascal = n => { let r = [1]; for (let i = 0; i < n; i++) r = r.map((v, j) => v + (r[j - 1] || 0)).concat(1); return r; };
+  function draw() {
+    const m = M[cur], tot = m.s.reduce((s, x) => s + x[1], 0), sp = 0.07;
+    $('#nmG', el).innerHTML = chart({ x: [-12, 0], y: [0, 1.15], xt: [], yt: [], xlab: 'δ（ppm）：左邊去遮蔽（低磁場）', h: 230, label: `${m.n} 的氫譜` }, (X, Y) => {
+      let g = [12, 10, 8, 6, 4, 2, 0].map(v => `<text class="tk" x="${X(-v)}" y="${Y(0) + 16}" text-anchor="middle">${v}</text>`).join('') + `<line class="ax" x1="${X(-12)}" x2="${X(0)}" y1="${Y(0)}" y2="${Y(0)}"/>`;
+      m.s.forEach(([d, h, n, lab], i) => {
+        const pk = n < 0 ? [1, 2, 3, 2, 1] : pascal(n), mx = Math.max(...pk), hgt = 0.25 + 0.6 * h / Math.max(...m.s.map(x => x[1]));
+        pk.forEach((v, j) => { const x = d + (j - (pk.length - 1) / 2) * sp; g += `<line class="${i === pick ? 'nmon' : 'nmpk'}" x1="${X(-x)}" x2="${X(-x)}" y1="${Y(0)}" y2="${Y(hgt * v / mx)}"/>`; });
+        g += `<text class="tk${i === pick ? ' hl' : ''}" x="${X(-d)}" y="${Y(hgt) - 8}" text-anchor="middle">${h}H</text>`;
+      });
+      return g;
+    });
+    $('#nmP', el).innerHTML = m.s.map((x, i) => `<button class="btn sm${i === pick ? ' pri' : ''}" type="button" data-i="${i}">δ ${x[0]}　${x[3]}</button>`).join('');
+    $$('[data-i]', el).forEach(b => { b.onclick = () => { pick = +b.dataset.i; draw(); }; });
+    const [d, h, n, lab, why] = m.s[pick], mult = n < 0 ? '多重峰' : ['單峰（s）', '雙重峰（d）', '三重峰（t）', '四重峰（q）', '五重峰', '六重峰', '七重峰'][n];
+    $('#nmN', el).innerHTML = `<b>δ ${d}，${lab}</b>：積分 ${h} H（佔 ${h}/${tot}），${mult}。${why}<br>讀氫譜的三個資訊：<b>位置 δ</b>（環境：越靠近電負度大的原子、羰基、苯環越往左）、<b>積分</b>（幾個 H）、<b>分裂</b>（鄰近碳上有 n 個等價 H → n + 1 根峰，高度比依巴斯卡三角形）。`;
+    pressSeg(el, 'nmS', cur);
+  }
+  bindSeg(el, 'nmS', v => { cur = v; pick = 0; draw(); });
+  draw();
+  return { set(s) { if (s.m) cur = s.m; pick = s.i ?? 0; draw(); } };
+};
+
+/* ===== 3. 質譜：同位素峰 ===== */
+W.ms = el => {
+  const M = { ch3cl: ['氯乙烷 C₂H₅Cl', [[64, 100], [66, 32]], '³⁵Cl : ³⁷Cl ≈ 3 : 1，所以 M 和 M+2 峰高約 3 : 1：分子中有一個 Cl 的特徵。'], br: ['溴乙烷 C₂H₅Br', [[108, 100], [110, 97]], '⁷⁹Br : ⁸¹Br ≈ 1 : 1，所以 M 和 M+2 幾乎一樣高：分子中有一個 Br 的特徵。'], hex: ['己烷 C₆H₁₄', [[86, 100], [87, 6.6]], '沒有 Cl、Br，M+1 峰來自 ¹³C（每個碳約 1.1%），6 個碳 → M+1 約 6.6%。可以反推碳數。'], pyr: ['吡啶 C₅H₅N', [[79, 100], [80, 5.9]], '分子量為奇數：<b>氮規則</b>，含奇數個 N 的化合物分子量為奇數。'] };
+  let cur = 'ch3cl';
+  el.innerHTML = `${seg('msS', Object.entries(M).map(([k, v]) => [k, v[0]]), cur)}<div id="msG"></div><p class="note" id="msN"></p>`;
+  function draw() {
+    const [n, pk, why] = M[cur], lo = pk[0][0] - 3, hi = pk[pk.length - 1][0] + 3;
+    $('#msG', el).innerHTML = chart({ x: [lo, hi], y: [0, 110], xt: pk.map(p => p[0]), yt: [0, 50, 100], xlab: 'm/z（分子離子區）', ylab: '相對強度', h: 190 }, (X, Y) => pk.map(([m, v], i) => `<line x1="${X(m)}" x2="${X(m)}" y1="${Y(0)}" y2="${Y(v)}" class="nmon"/><text class="tk" x="${X(m)}" y="${Y(v) - 6}" text-anchor="middle">${i === 0 ? 'M' : i === 1 && pk[1][0] - pk[0][0] === 2 ? 'M+2' : 'M+1'}</text>`).join(''));
+    $('#msN', el).innerHTML = `<b>${n}</b>：${why} 質譜先把分子打成帶正電的分子離子（M⁺），由 m/z 得到分子量；碎片峰則顯示分子容易斷裂的位置。`;
+    pressSeg(el, 'msS', cur);
+  }
+  bindSeg(el, 'msS', v => { cur = v; draw(); });
+  draw();
+  return { set(s) { cur = s.c || cur; draw(); } };
 };
 
 /* ---------- 後中化學：立體化學與構形的互動圖 ----------
