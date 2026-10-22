@@ -202,6 +202,10 @@ svg.ch, svg.mol, svg.en, svg.bk, svg.ions { width: 100%; height: auto; display: 
 .netd { stroke: var(--arrow); stroke-width: 3.5; }
 .checks { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 14px; }
 .spin { font-size: 15px; fill: var(--ink); font-weight: 700; }
+.lmrow { display: grid; grid-template-columns: 90px 1fr 50px; gap: 8px; align-items: center; margin: 4px 0; font-size: 13.5px; }
+.lmrow > span:nth-child(2) { display: flex; flex-wrap: wrap; gap: 3px; }
+.lmrow i { width: 16px; height: 16px; border-radius: 3px; display: inline-block; }
+.lmrow i.qa { background: var(--acid); } .lmrow i.qb { background: var(--base); } .lmrow i.qp { background: var(--good); } .lmrow i.used { background: none; border: 1.5px dashed var(--line); }
 /* 練習題 */
 .q { border-top: 1px solid var(--line); padding: 14px 0; }
 .qt { font-weight: 500; margin: 0 0 8px; }

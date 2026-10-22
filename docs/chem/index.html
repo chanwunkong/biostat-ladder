@@ -283,6 +283,10 @@ svg.ch, svg.mol, svg.en, svg.bk, svg.ions { width: 100%; height: auto; display: 
 .netd { stroke: var(--arrow); stroke-width: 3.5; }
 .checks { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 14px; }
 .spin { font-size: 15px; fill: var(--ink); font-weight: 700; }
+.lmrow { display: grid; grid-template-columns: 90px 1fr 50px; gap: 8px; align-items: center; margin: 4px 0; font-size: 13.5px; }
+.lmrow > span:nth-child(2) { display: flex; flex-wrap: wrap; gap: 3px; }
+.lmrow i { width: 16px; height: 16px; border-radius: 3px; display: inline-block; }
+.lmrow i.qa { background: var(--acid); } .lmrow i.qb { background: var(--base); } .lmrow i.qp { background: var(--good); } .lmrow i.used { background: none; border: 1.5px dashed var(--line); }
 /* 練習題 */
 .q { border-top: 1px solid var(--line); padding: 14px 0; }
 .qt { font-weight: 500; margin: 0 0 8px; }
@@ -839,6 +843,52 @@ CH.push({
   ],
 });
 
+/* ---------- 後中化學：電化學 ---------- */
+CH.push({
+  id: 'electro', unit: 'g10', title: '電化學：電池、電位與電解',
+  lede: '氧化還原反應就是電子的轉移。讓電子不直接交手、而是經過導線，就得到電池；反過來用電力推動不自發的反應，就是電解。這一章用標準還原電位預測一切。',
+  sections: [
+    { h: '氧化數與半反應', body: `
+<p><b>氧化</b>是失去電子（氧化數上升），<b>還原</b>是得到電子（氧化數下降）。兩者一定同時發生。口訣：<b>失氧、得還</b>。</p>
+<p>氧化數的規則：元素態為 0；單原子離子等於電荷；O 通常 −2（過氧化物 −1）；H 和非金屬時 +1、和金屬時 −1（金屬氫化物）；所有氧化數總和等於分子或離子的電荷。</p>
+<p>平衡氧化還原方程式用<b>半反應法</b>：分開寫氧化與還原，各自平衡原子（酸性溶液用 H₂O 與 H⁺ 補 O 和 H）、再用電子平衡電荷，最後乘上倍數使兩邊電子數相同後相加。</p>
+<p>有機化學裡的氧化還原也一樣：醇 → 醛 → 羧酸是氧化（C 的氧化數上升，加 O 或去 H）；NaBH₄ 把酮變成醇是還原。</p>` },
+    { h: '賈法尼電池與標準還原電位', w: 'galv', body: `
+<p>把氧化與還原分在兩個杯子，電子只能經過導線流動，就能做功：</p>
+<ul><li><b>陽極</b>：發生氧化，電子從這裡流出（電池的負極）。</li><li><b>陰極</b>：發生還原，電子流入（正極）。</li><li><b>鹽橋</b>：讓離子移動，維持兩杯電中性。</li></ul>
+<p>每個半反應寫成還原式，有一個<b>標準還原電位 E°</b>（以標準氫電極為 0 V）。E° 越大越容易被還原（是越強的氧化劑）；E° 越小越容易被氧化（是越強的還原劑）。</p>
+<p class="eq">E°電池 = E°陰極 − E°陽極　　ΔG° = −nFE°　　E° = (0.0592/n) log K（25 °C）</p>
+<p>E° &gt; 0、ΔG° &lt; 0、K &gt; 1 三件事是同一件事的三種說法。</p>` },
+    { h: '能斯特方程：濃度改變電壓', w: 'nernst', body: `
+<p>非標準狀態（濃度不是 1 M）時的電壓：</p>
+<p class="eq">E = E° − (0.0592 ÷ n) log Q　（25 °C）</p>
+<p>這就是 ΔG = ΔG° + RT ln Q 除以 −nF。電池放電時 Q 變大、電壓下降，直到 E = 0、Q = K 時「沒電」。</p>
+<p>同一種電極、只有濃度不同也能形成電池（<b>濃差電池</b>）。神經細胞的膜電位就是這個原理：細胞內外 K⁺、Na⁺ 濃度不同，產生約 −70 mV 的電位。</p>` },
+    { h: '電解與法拉第定律', w: 'faraday', body: `
+<p>電解時外加電源推動不自發的反應（ΔG &gt; 0），例如電解熔融 NaCl 得到 Na 和 Cl₂、電鍍、精煉銅、電解水。</p>
+<p>通過的電量決定反應了多少物質（<b>法拉第定律</b>）：</p>
+<p class="eq">電子莫耳數 = I × t ÷ F　　F = 96485 C/mol</p>
+<p>再依半反應的電子數換算成物質的莫耳數。例如 Cu²⁺ + 2e⁻ → Cu，每 2 mol 電子析出 1 mol 銅。</p>
+<p>電解水溶液時要比較競爭的反應：陰極可能還原金屬離子或水（生成 H₂），陽極可能氧化陰離子或水（生成 O₂）。活性很大的金屬（Na、K、Al）無法從水溶液電解得到，因為水會先被還原。</p>` },
+  ],
+  quiz: [
+    { q: 'Zn 與 Cu 組成的賈法尼電池（E°：Zn²⁺/Zn −0.76 V，Cu²⁺/Cu +0.34 V），陽極與 E°電池為？', o: ['Zn 為陽極，1.10 V', 'Cu 為陽極，1.10 V', 'Zn 為陽極，0.42 V', 'Cu 為陽極，0.42 V'], a: 0,
+      why: 'E° 較小的 Zn 被氧化，是陽極。E°電池 = 0.34 − (−0.76) = 1.10 V。', show: { w: 'galv', set: { a: 3, c: 8 } } },
+    { q: '賈法尼電池中，電子的流動方向為？', o: ['經外電路由陽極流向陰極', '經外電路由陰極流向陽極', '經鹽橋由陽極流向陰極', '不流動'], a: 0,
+      why: '陽極氧化產生電子，經導線流到陰極被還原反應用掉。鹽橋中移動的是離子，不是電子。', show: { w: 'galv', set: { a: 3, c: 8 } } },
+    { q: '下列何者是最強的還原劑？', o: ['Li', 'Cu', 'Ag', 'Au'], a: 0,
+      why: 'Li⁺/Li 的 E° 最小（−3.04 V），Li 最容易被氧化，也就是最強的還原劑。' },
+    { q: '某電池 E° = 0.30 V，n = 2，其 ΔG° 約為？', o: ['−58 kJ', '+58 kJ', '−29 kJ', '−0.6 kJ'], a: 0,
+      why: 'ΔG° = −nFE° = −2 × 96485 × 0.30 ≈ −57,900 J ≈ −58 kJ。' },
+    { q: 'Zn–Cu 電池放電一段時間後，電壓會？', o: ['下降，因為 Q 變大', '上升', '不變', '先上升再下降'], a: 0,
+      why: 'Zn²⁺ 增加、Cu²⁺ 減少，Q = [Zn²⁺]/[Cu²⁺] 變大，依能斯特方程 E 下降，直到 E = 0（Q = K）。', show: { w: 'nernst', set: { zn: 10, cu: 0.001 } } },
+    { q: '以 2.0 A 電流電解 CuSO₄ 溶液 965 秒，陰極析出多少銅？（Cu = 63.5）', o: ['0.635 g', '1.27 g', '0.318 g', '6.35 g'], a: 0,
+      why: '電子 = 2.0 × 965 ÷ 96485 = 0.020 mol；Cu²⁺ 需要 2 個電子 → 0.010 mol Cu = 0.635 g。', show: { w: 'faraday', set: { m: 'Cu', I: 2, t: 16 } } },
+    { q: '為什麼不能電解 NaCl 水溶液得到金屬鈉？', o: ['水比 Na⁺ 更容易被還原，陰極會產生 H₂', 'Na⁺ 無法導電', 'Cl⁻ 會還原', '需要的電壓太低'], a: 0,
+      why: 'Na⁺/Na 的 E° 極負（−2.71 V），水的還原容易得多，所以陰極生成 H₂ 與 OH⁻。要得到 Na 必須電解熔融 NaCl。' },
+  ],
+});
+
 /* ---------- 後中化學：化學平衡 ---------- */
 CH.push({
   id: 'equilibrium', unit: 'g7', title: '化學平衡：K、Q 與勒沙特列原理',
@@ -895,6 +945,50 @@ CH.push({
       why: '催化劑同時降低正逆反應的活化能，兩個方向等比例加快，所以 K 和平衡組成都不變，只是更快到達平衡。' },
     { q: '某反應在 25 °C 的 ΔG° = −11.4 kJ/mol，其平衡常數 K 約為多少？', o: ['約 100', '約 0.01', '約 1', '約 11.4'], a: 0,
       why: 'K = e^(−ΔG°/RT) = e^(11400 ÷ (8.314 × 298)) = e^4.6 ≈ 100。也可以用「每 5.7 kJ/mol 差 10 倍」心算：11.4 是兩個 5.7，所以 K ≈ 10² 。', show: { w: 'kdg', set: { dG: -11.4, T: 298 } } },
+  ],
+});
+
+/* ---------- 後中化學：氣體 ---------- */
+CH.push({
+  id: 'gas', unit: 'g4', title: '氣體：PV = nRT 與分子運動論',
+  lede: '氣體是最容易用模型描述的物質狀態：把分子想成到處亂撞的小球，就能推出壓力、溫度、體積之間的關係，也能解釋為什麼輕的氣體擴散得快。',
+  sections: [
+    { h: '理想氣體方程式', w: 'pvt', body: `
+<p>四個量：壓力 P、體積 V、莫耳數 n、溫度 T。固定其中兩個，另外兩個的關係就是幾個經典定律：</p>
+<table class="tbl"><thead><tr><th>定律</th><th>固定</th><th>關係</th></tr></thead><tbody>
+<tr><td>波以耳</td><td>n、T</td><td>P₁V₁ = P₂V₂</td></tr><tr><td>查理</td><td>n、P</td><td>V₁/T₁ = V₂/T₂</td></tr>
+<tr><td>給呂薩克</td><td>n、V</td><td>P₁/T₁ = P₂/T₂</td></tr><tr><td>亞佛加厥</td><td>T、P</td><td>V ∝ n</td></tr></tbody></table>
+<p>合起來就是 <b>PV = nRT</b>。解題時最常犯的錯是溫度忘了換成 K（加 273.15），以及 R 的單位和 P、V 的單位不一致。</p>
+<p>由 PV = nRT 還能求<b>密度</b>與<b>分子量</b>：d = PM ÷ RT。同溫同壓下氣體密度和分子量成正比。</p>` },
+    { h: '混合氣體：道耳頓分壓定律', body: `
+<p>混合氣體中，每一種氣體各自產生的壓力（分壓）就像它單獨佔滿整個容器一樣，總壓是分壓的和：</p>
+<p class="eq">P總 = P_A + P_B + …　　P_A = X_A × P總（X_A 為莫耳分率）</p>
+<p>實驗室常用<b>排水集氣法</b>收集氣體，此時瓶內還有水蒸氣：P氣體 = P大氣 − P水蒸氣（25 °C 時約 23.8 torr）。</p>
+<p>潛水時，高壓下吸入的空氣中 N₂ 分壓變大，溶於血液的 N₂ 變多（亨利定律：溶解度 ∝ 分壓），上升太快會在血液中形成氣泡（減壓病）。</p>` },
+    { h: '分子運動論：溫度就是平均動能', w: 'maxwell', body: `
+<p>分子運動論的假設：分子本身不佔體積、分子間沒有吸引力、碰撞完全彈性、<b>平均動能只和絕對溫度成正比</b>。由此推出：</p>
+<p class="eq">u_rms = √(3RT ÷ M)　　（M 用 kg/mol，R = 8.314 J/(mol·K)）</p>
+<p>同溫度下輕的分子跑得快；同一種氣體溫度越高，分布越往右、越平坦。<b>格雷姆定律</b>：擴散或逸散速率 ∝ 1/√M。</p>` },
+    { h: '真實氣體：什麼時候不理想', body: `
+<p>理想氣體的兩個假設在<b>高壓、低溫</b>時失效：分子靠得很近，本身的體積和彼此的吸引力都不能忽略。凡得瓦方程式加了兩個修正：</p>
+<p class="eq">(P + a·n²/V²)(V − n·b) = nRT</p>
+<ul><li><b>a</b>：分子間吸引力的修正。吸引力讓撞牆的力道變小，實測壓力比理想值低，所以要加回去。極性大、分子大的氣體 a 較大。</li>
+<li><b>b</b>：分子本身體積的修正。分子能自由活動的空間比容器小。</li></ul>
+<p>所以最接近理想的條件是<b>高溫、低壓</b>，氣體以 He、H₂ 最接近理想。</p>` },
+  ],
+  quiz: [
+    { q: '定量氣體在定溫下，壓力由 1 atm 增加到 3 atm，體積變為原來的？', o: ['1/3', '3 倍', '不變', '1/9'], a: 0,
+      why: '波以耳定律：P₁V₁ = P₂V₂，壓力變 3 倍，體積變 1/3。', show: { w: 'pvt', set: { law: 'boyle', V: 8.2 } } },
+    { q: '定壓下，27 °C 的氣體加熱到 327 °C，體積變為原來的？', o: ['2 倍', '12 倍', '1/2', '不變'], a: 0,
+      why: '查理定律要用絕對溫度：300 K → 600 K，體積變 2 倍。用攝氏溫度相除（327/27）是常見錯誤。', show: { w: 'pvt', set: { law: 'charles', T: 600 } } },
+    { q: '0 °C、1 atm 下，1 莫耳理想氣體的體積約為？', o: ['22.4 L', '24.5 L', '1 L', '8.31 L'], a: 0,
+      why: 'V = nRT/P = 1 × 0.08206 × 273.15 ÷ 1 ≈ 22.4 L。25 °C 時約 24.5 L。' },
+    { q: '同溫下，H₂（M = 2）與 O₂（M = 32）的擴散速率比為？', o: ['4 : 1', '16 : 1', '1 : 4', '1 : 16'], a: 0,
+      why: '格雷姆定律：速率 ∝ 1/√M，√(32 ÷ 2) = √16 = 4。', show: { w: 'maxwell', set: { a: 'He', b: 'O2' } } },
+    { q: '同溫度下，He 與 CO₂ 分子的平均動能相比？', o: ['相同', 'He 較大', 'CO₂ 較大', '無法比較'], a: 0,
+      why: '平均動能只和絕對溫度有關。He 較輕，所以平均速率較大，但動能相同。', show: { w: 'maxwell', set: { a: 'He', b: 'CO2', T: 300 } } },
+    { q: '在什麼條件下，真實氣體最接近理想氣體？', o: ['高溫、低壓', '低溫、高壓', '高溫、高壓', '低溫、低壓'], a: 0,
+      why: '高溫時分子動能大、吸引力影響小；低壓時分子相距遠、本身體積可忽略。' },
   ],
 });
 
@@ -1102,6 +1196,48 @@ CH.push({
       why: '反式是交錯式，而且兩個甲基離得最遠，沒有扭轉張力也沒有立體擁擠。', show: { w: 'butane', set: { ang: 180 } } },
     { q: '甲基環己烷在室溫下，甲基主要位於？', o: ['平伏鍵（約 95%）', '直立鍵（約 95%）', '兩者各半', '環平面上'], a: 0,
       why: '甲基在直立鍵時有 1,3-雙直立作用，能量高約 7.6 kJ/mol，所以約 95% 的分子處在甲基平伏的構形。', show: { w: 'chair', set: { sub: 'me', axial: true } } },
+  ],
+});
+
+/* ---------- 後中化學：計量化學與溶液 ---------- */
+CH.push({
+  id: 'stoich', unit: 'g3', title: '計量化學與溶液',
+  lede: '化學計算的核心只有一件事：把所有量換成莫耳，用係數比換算，再換回要的單位。這一章練習限量試劑與濃度換算，最後看溶質如何改變溶液的沸點、凝固點與滲透壓。',
+  sections: [
+    { h: '莫耳與限量試劑', w: 'limiting', body: `
+<p>化學方程式的係數是<b>莫耳數的比</b>。計算的固定步驟：</p>
+<ol><li>質量 ÷ 莫耳質量（或 濃度 × 體積、PV/RT）→ 莫耳數；</li><li>依係數比換算成另一物質的莫耳數；</li><li>再換回質量、體積或濃度。</li></ol>
+<p>兩種反應物的量不一定剛好配對。先用完的稱為<b>限量試劑</b>，它決定產物最多能生成多少。判斷方法：各反應物的莫耳數<b>除以自己的係數</b>，數字最小的就是限量試劑。</p>
+<p><b>產率</b> = 實際產量 ÷ 理論產量 × 100%，理論產量由限量試劑算出。</p>` },
+    { h: '濃度的各種表示法', body: `
+<table class="tbl"><thead><tr><th>名稱</th><th>定義</th><th>特點</th></tr></thead><tbody>
+<tr><td>體積莫耳濃度 M</td><td>溶質 mol ÷ 溶液 L</td><td>最常用；會隨溫度微變（體積會膨脹）</td></tr>
+<tr><td>重量莫耳濃度 m</td><td>溶質 mol ÷ 溶劑 kg</td><td>不隨溫度改變，依數性質用它</td></tr>
+<tr><td>莫耳分率 X</td><td>某成分 mol ÷ 總 mol</td><td>拉午耳定律、分壓用它</td></tr>
+<tr><td>重量百分率</td><td>溶質 g ÷ 溶液 g × 100%</td><td>市售溶液標示</td></tr>
+<tr><td>ppm</td><td>溶質 g ÷ 溶液 g × 10⁶</td><td>微量成分（稀水溶液 1 ppm ≈ 1 mg/L）</td></tr></tbody></table>
+<p>換算時需要<b>溶液密度</b>（體積 ↔ 質量）與<b>莫耳質量</b>（質量 ↔ 莫耳）。稀釋公式：M₁V₁ = M₂V₂（溶質莫耳數不變）。</p>` },
+    { h: '依數性質：只看粒子數', w: 'colli', body: `
+<p>溶質加入溶劑後，有四個性質的改變只和<b>溶質粒子的數目</b>有關，稱為依數性質：</p>
+<ul><li><b>蒸氣壓下降</b>（拉午耳定律）：P溶液 = X溶劑 × P°溶劑。溶質分子佔據表面，溶劑較難蒸發。</li>
+<li><b>沸點上升</b>：ΔTb = i·Kb·m。蒸氣壓變低，要更高溫才能達到 1 atm。</li>
+<li><b>凝固點下降</b>：ΔTf = i·Kf·m。溶質干擾晶體形成（冬天撒鹽融雪）。</li>
+<li><b>滲透壓</b>：π = i·M·R·T。水分子會穿過半透膜往濃度高的一側移動，要施加的壓力就是滲透壓。</li></ul>
+<p><b>凡特何夫因子 i</b> 是每個溶質解離出的粒子數：葡萄糖 1、NaCl 2、CaCl₂ 3（理想值）。比較依數性質時，比的是 <b>i × 濃度</b>。</p>` },
+  ],
+  quiz: [
+    { q: '3 mol N₂ 與 6 mol H₂ 反應生成 NH₃（N₂ + 3H₂ → 2NH₃），限量試劑與最多生成的 NH₃ 為？', o: ['H₂；4 mol NH₃', 'N₂；6 mol NH₃', 'H₂；6 mol NH₃', 'N₂；3 mol NH₃'], a: 0,
+      why: 'N₂：3 ÷ 1 = 3；H₂：6 ÷ 3 = 2。H₂ 的數字較小，是限量試劑。生成 NH₃ = 2 × 2 = 4 mol，N₂ 剩 1 mol。', show: { w: 'limiting', set: { rx: 'nh3', a: 3, b: 6 } } },
+    { q: '將 50.0 mL 的 6.0 M HCl 稀釋成 1.5 M，最後體積應為？', o: ['200 mL', '12.5 mL', '300 mL', '150 mL'], a: 0,
+      why: 'M₁V₁ = M₂V₂：6.0 × 50.0 = 1.5 × V₂，V₂ = 200 mL。' },
+    { q: '下列水溶液何者凝固點最低？', o: ['0.1 m CaCl₂', '0.1 m NaCl', '0.1 m 葡萄糖', '0.15 m 葡萄糖'], a: 0,
+      why: '比較 i × m：CaCl₂ 0.3、NaCl 0.2、葡萄糖 0.1 和 0.15。粒子最多的凝固點降最多。', show: { w: 'colli', set: { s: 'cacl2', m: 0.1 } } },
+    { q: '依數性質為什麼要用重量莫耳濃度（m）而不是體積莫耳濃度（M）？', o: ['m 不隨溫度改變，而沸點、凝固點的測量涉及溫度變化', 'm 比較好算', 'M 不能用在水溶液', '兩者完全相同'], a: 0,
+      why: '溶液體積隨溫度膨脹，M 會變；m 用的是溶劑質量，與溫度無關。（滲透壓公式則習慣用 M。）' },
+    { q: '把紅血球放進純水中會發生什麼事？', o: ['水滲入細胞，細胞脹破（溶血）', '細胞失水皺縮', '沒有變化', '細胞內的鹽滲出，細胞不變'], a: 0,
+      why: '純水的滲透壓比細胞內低，水往濃度高的細胞內移動，細胞脹破。0.9% 生理食鹽水和血液等張。', show: { w: 'colli', set: { s: 'nacl', m: 0.15 } } },
+    { q: '25 °C 純水蒸氣壓為 23.8 torr，在 0.90 mol 水中溶入 0.10 mol 葡萄糖，溶液蒸氣壓約為？', o: ['21.4 torr', '23.8 torr', '2.38 torr', '26.2 torr'], a: 0,
+      why: '拉午耳定律：P = X水 × P° = 0.90 × 23.8 ≈ 21.4 torr。' },
   ],
 });
 
@@ -1963,6 +2099,70 @@ W.alphaH = el => {
   return { set(s) { cur = s.i ?? cur; draw(); } };
 };
 
+/* ---------- 後中化學：電化學的互動圖 ---------- */
+// 標準還原電位（V，25 °C）：[符號, 半反應, E°, 轉移電子數, 金屬（可當電極）]
+const E0 = [['Li', 'Li⁺ + e⁻ → Li', -3.04, 1], ['Mg', 'Mg²⁺ + 2e⁻ → Mg', -2.37, 2], ['Al', 'Al³⁺ + 3e⁻ → Al', -1.66, 3], ['Zn', 'Zn²⁺ + 2e⁻ → Zn', -0.76, 2], ['Fe', 'Fe²⁺ + 2e⁻ → Fe', -0.44, 2],
+  ['Ni', 'Ni²⁺ + 2e⁻ → Ni', -0.25, 2], ['Pb', 'Pb²⁺ + 2e⁻ → Pb', -0.13, 2], ['H₂', '2H⁺ + 2e⁻ → H₂', 0.00, 2], ['Cu', 'Cu²⁺ + 2e⁻ → Cu', 0.34, 2], ['Ag', 'Ag⁺ + e⁻ → Ag', 0.80, 1], ['Au', 'Au³⁺ + 3e⁻ → Au', 1.50, 3]];
+const gcd = (a, b) => (b ? gcd(b, a % b) : a), lcm = (a, b) => a * b / gcd(a, b);
+
+/* ===== 1. 賈法尼電池 ===== */
+W.galv = el => {
+  let a = 3, c = 8;
+  el.innerHTML = `<div class="w-row"><label class="sel">左邊電極 <select id="gvA">${E0.map((e, i) => `<option value="${i}">${e[1]}（${e[2]} V）</option>`).join('')}</select></label><label class="sel">右邊電極 <select id="gvC">${E0.map((e, i) => `<option value="${i}">${e[1]}（${e[2]} V）</option>`).join('')}</select></label></div><div id="gvD"></div><div class="cards" id="gvK"></div><p class="note" id="gvN"></p>`;
+  function draw() {
+    const L = E0[a], R = E0[c], an = L[2] < R[2] ? L : R, ca = an === L ? R : L, Ec = ca[2] - an[2], n = lcm(an[3], ca[3]), dG = -n * 96485 * Ec / 1000, K = Math.exp(n * 96485 * Ec / (8.314 * 298));
+    const leftIsAnode = an === L, flow = leftIsAnode ? 1 : -1;
+    $('#gvD', el).innerHTML = `<svg viewBox="0 0 520 230" class="bk" role="img" aria-label="賈法尼電池"><defs><marker id="em" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--arrow)"/></marker></defs>
+<path d="M40 110L40 210L200 210L200 110" class="glass"/><path d="M320 110L320 210L480 210L480 110" class="glass"/><rect x="42" y="130" width="156" height="78" fill="var(--water)"/><rect x="322" y="130" width="156" height="78" fill="var(--water)"/>
+<rect x="110" y="80" width="20" height="110" fill="var(--muted)"/><rect x="390" y="80" width="20" height="110" fill="var(--muted)"/>
+<path d="M170 140L170 60L350 60L350 140" fill="none" stroke="var(--line)" stroke-width="16"/><text class="tk" x="260" y="52" text-anchor="middle">鹽橋</text>
+<path d="M120 80L120 24L400 24L400 80" fill="none" stroke="var(--ink)" stroke-width="2"/><circle cx="260" cy="24" r="16" fill="var(--surface)" stroke="var(--ink)"/><text class="tk" x="260" y="28" text-anchor="middle">${fx(Ec, 2)} V</text>
+<line x1="${flow > 0 ? 160 : 360}" x2="${flow > 0 ? 220 : 300}" y1="14" y2="14" stroke="var(--arrow)" stroke-width="2.5" marker-end="url(#em)"/><text class="tk" x="${flow > 0 ? 190 : 330}" y="10" text-anchor="middle">e⁻</text>
+<text class="tk hl" x="120" y="226" text-anchor="middle">${L[0]}｜${leftIsAnode ? '陽極（氧化）' : '陰極（還原）'}</text><text class="tk hl" x="400" y="226" text-anchor="middle">${R[0]}｜${leftIsAnode ? '陰極（還原）' : '陽極（氧化）'}</text></svg>`;
+    $('#gvK', el).innerHTML = card('e', 'E°電池 = E°陰極 − E°陽極', `${fx(Ec, 2)} V`) + card('n', '轉移電子 n', n) + card('g', 'ΔG° = −nFE°', `${fx(dG, 0)} kJ`) + card('k', 'K', Ec > 0.6 ? sci(K, 1) : sci(K, 2));
+    $('#gvN', el).innerHTML = a === c ? '兩邊相同，電壓為 0。' : `E° 較小的 <b>${an[0]}</b> 比較容易失去電子，當<b>陽極</b>（氧化）；E° 較大的 <b>${ca[0]}</b> 當<b>陰極</b>（還原）。電子經外電路從陽極流向陰極；鹽橋中的離子移動以維持兩杯電中性（陰離子移向陽極）。E°電池 = ${ca[2]} − (${an[2]}) = ${fx(Ec, 2)} V。<b>注意</b>：半反應係數乘幾倍，E° 都<b>不變</b>（它是強度性質），但 ΔG° 要用總電子數 n = ${n}。E° > 0 ⇔ ΔG° < 0 ⇔ K > 1：反應自發。`;
+    $('#gvA', el).value = a; $('#gvC', el).value = c;
+  }
+  $('#gvA', el).onchange = e => { a = +e.target.value; draw(); };
+  $('#gvC', el).onchange = e => { c = +e.target.value; draw(); };
+  draw();
+  return { set(s) { a = s.a ?? a; c = s.c ?? c; draw(); } };
+};
+
+/* ===== 2. 能斯特方程：濃度改變電壓 ===== */
+W.nernst = el => {
+  const st = { zn: 1, cu: 1 };
+  el.innerHTML = `<p class="eq">Zn(s) + Cu²⁺ → Zn²⁺ + Cu(s)　E° = 1.10 V，n = 2</p><div class="w-row"><label class="rng">[Zn²⁺]（M）<input type="range" id="nsZ" min="-4" max="1" step="0.1"><output class="mono" id="nsZo"></output></label><label class="rng">[Cu²⁺]（M）<input type="range" id="nsC" min="-4" max="1" step="0.1"><output class="mono" id="nsCo"></output></label></div><div id="nsG"></div><div class="cards" id="nsK"></div><p class="note" id="nsN"></p>`;
+  function draw() {
+    const Q = st.zn / st.cu, E = 1.10 - 0.0592 / 2 * Math.log10(Q), lq = Math.log10(Q);
+    $('#nsG', el).innerHTML = chart({ x: [-6, 40], y: [-0.1, 1.3], xt: [-5, 0, 10, 20, 30, 37.2], yt: [0, 0.5, 1.1], xlab: 'log Q', ylab: 'E（V）', h: 210, label: '電壓與 Q' }, (X, Y) => `<line class="mk" x1="${X(-6)}" x2="${X(40)}" y1="${Y(0)}" y2="${Y(0)}"/><line class="tline" x1="${X(-6)}" y1="${Y(1.10 + 0.0296 * 6)}" x2="${X(40)}" y2="${Y(1.10 - 0.0296 * 40)}"/><circle class="dot" cx="${X(lq)}" cy="${Y(E)}" r="7"/><text class="tk" x="${X(37.2)}" y="${Y(0) - 8}" text-anchor="end">E = 0：Q = K ≈ 10³⁷</text>`);
+    $('#nsK', el).innerHTML = card('q', 'Q = [Zn²⁺] ÷ [Cu²⁺]', sci(Q, 2)) + card('e', 'E = E° − (0.0592/n) log Q', `${fx(E, 3)} V`);
+    $('#nsN', el).innerHTML = `電池放電時，Zn²⁺ 變多、Cu²⁺ 變少，Q 變大，電壓慢慢下降；直到 <b>E = 0</b> 時 Q = K，達到平衡，電池「沒電」。由 E° = (0.0592/n) log K 得 K = 10^(2 × 1.10 ÷ 0.0592) ≈ 10³⁷：反應幾乎完全進行。${Math.abs(lq) < 0.05 ? '現在兩者濃度相同，Q = 1，E = E°。' : ''}`;
+    $('#nsZ', el).value = Math.log10(st.zn); $('#nsC', el).value = Math.log10(st.cu); $('#nsZo', el).textContent = sci(st.zn, 1); $('#nsCo', el).textContent = sci(st.cu, 1);
+  }
+  $('#nsZ', el).oninput = e => { st.zn = 10 ** +e.target.value; draw(); };
+  $('#nsC', el).oninput = e => { st.cu = 10 ** +e.target.value; draw(); };
+  draw();
+  return { set(s) { Object.assign(st, s); draw(); } };
+};
+
+/* ===== 3. 電解：法拉第定律 ===== */
+W.faraday = el => {
+  const M = { Cu: ['Cu²⁺ → Cu', 63.55, 2], Ag: ['Ag⁺ → Ag', 107.87, 1], Al: ['Al³⁺ → Al', 26.98, 3] };
+  const st = { m: 'Cu', I: 2, t: 30 };
+  el.innerHTML = `${seg('fdS', Object.entries(M).map(([k, v]) => [k, v[0]]), st.m)}<div class="w-row"><label class="rng">電流（A）<input type="range" id="fdI" min="0.5" max="10" step="0.5"><output class="mono" id="fdIo"></output></label><label class="rng">時間（分鐘）<input type="range" id="fdT" min="1" max="120" step="1"><output class="mono" id="fdTo"></output></label></div><ol class="cs" id="fdS2"></ol><p class="note">電解是把賈法尼電池「倒過來」：外加電壓強迫不自發的氧化還原發生。陰極永遠是還原、陽極永遠是氧化（電解時陰極接電源負極）。</p>`;
+  function draw() {
+    const [r, Mw, n] = M[st.m], q = st.I * st.t * 60, mol_e = q / 96485, mol = mol_e / n, g = mol * Mw;
+    $('#fdS2', el).innerHTML = `<li>電量 Q = I × t = ${st.I} A × ${st.t * 60} s = ${fx(q, 0)} C</li><li>電子莫耳數 = Q ÷ F = ${fx(q, 0)} ÷ 96485 = ${fx(mol_e, 4)} mol</li><li>${r} 需要 ${n} 個電子：金屬莫耳數 = ${fx(mol_e, 4)} ÷ ${n} = ${fx(mol, 4)} mol</li><li>質量 = ${fx(mol, 4)} × ${Mw} = <b>${fx(g, 3)} g</b></li>`;
+    $('#fdIo', el).textContent = st.I; $('#fdTo', el).textContent = st.t; $('#fdI', el).value = st.I; $('#fdT', el).value = st.t; pressSeg(el, 'fdS', st.m);
+  }
+  bindSeg(el, 'fdS', v => { st.m = v; draw(); });
+  $('#fdI', el).oninput = e => { st.I = +e.target.value; draw(); };
+  $('#fdT', el).oninput = e => { st.t = +e.target.value; draw(); };
+  draw();
+  return { set(s) { Object.assign(st, s); draw(); } };
+};
+
 /* ---------- 後中化學：化學平衡的互動圖 ----------
    N₂O₄ ⇌ 2 NO₂：25 °C 時 Kc ≈ 4.6 × 10⁻³（濃度以 M 計），ΔH° ≈ +57.2 kJ/mol（正反應吸熱）。K 隨溫度依 van 't Hoff 式變化。 */
 const N2O4 = { K298: 4.6e-3, dH: 57.2e3, R: 8.314 };
@@ -2091,6 +2291,97 @@ W.kdg = el => {
   }
   $('#kgd', el).oninput = e => { st.dG = +e.target.value; draw(); };
   $('#kgt', el).oninput = e => { st.T = +e.target.value; draw(); };
+  draw();
+  return { set(s) { Object.assign(st, s); draw(); } };
+};
+
+/* ---------- 後中化學：氣體、計量與溶液的互動圖 ---------- */
+const RL = 0.08206;   // L·atm/(mol·K)
+
+/* ===== 1. 理想氣體：固定兩個量，看另外兩個 ===== */
+W.pvt = el => {
+  const st = { law: 'boyle', n: 1, T: 300, V: 24.6, P: 1 };
+  const LAW = { boyle: ['波以耳（固定 n、T）', 'V', 'P'], charles: ['查理（固定 n、P）', 'T', 'V'], gay: ['給呂薩克（固定 n、V）', 'T', 'P'], avog: ['亞佛加厥（固定 T、P）', 'n', 'V'] };
+  el.innerHTML = `${seg('pvS', Object.entries(LAW).map(([k, v]) => [k, v[0]]), st.law)}<div class="w-row"><label class="rng" id="pvL"></label></div><div class="bgrid"><div id="pvB"></div><div id="pvC"></div></div><div class="cards" id="pvK"></div><p class="note" id="pvN"></p>`;
+  const RNG = { V: [5, 50, 0.5, 'V（L）'], T: [100, 600, 5, 'T（K）'], n: [0.2, 3, 0.1, 'n（mol）'] };
+  function solve() { const L = st.law; if (L === 'boyle') st.P = st.n * RL * st.T / st.V; if (L === 'charles' || L === 'avog') st.V = st.n * RL * st.T / st.P; if (L === 'gay') st.P = st.n * RL * st.T / st.V; }
+  function draw() {
+    const [nm, xk, yk] = LAW[st.law], r = RNG[xk]; solve();
+    $('#pvL', el).innerHTML = `${r[3]} <input type="range" id="pvX" min="${r[0]}" max="${r[1]}" step="${r[2]}" value="${st[xk]}"><output class="mono">${fx(st[xk], xk === 'n' ? 1 : 0)}</output>`;
+    $('#pvX', el).oninput = e => { st[xk] = +e.target.value; draw(); };
+    // 活塞：高度 ∝ V，粒子數 ∝ n，粒子顏色亮度 ∝ T
+    const h = clamp(st.V / 50, 0.12, 1) * 150, N = Math.round(st.n * 14), heat = clamp((st.T - 100) / 500, 0, 1);
+    const dots = Array.from({ length: N }, (_, i) => `<circle cx="${40 + (i * 47 % 140)}" cy="${170 - ((i * 29) % Math.max(10, h - 10)) - 6}" r="4.5" fill="rgb(${Math.round(60 + 190 * heat)},${Math.round(90 - 40 * heat)},${Math.round(200 - 150 * heat)})"/>`).join('');
+    $('#pvB', el).innerHTML = `<svg viewBox="0 0 220 200" class="bk" role="img" aria-label="活塞中的氣體"><path d="M30 20L30 180L190 180L190 20" class="glass"/><rect x="31" y="${178 - h - 8}" width="158" height="8" fill="var(--muted)"/><line x1="110" x2="110" y1="${178 - h - 8}" y2="10" stroke="var(--muted)" stroke-width="5"/>${dots}<text class="tk" x="110" y="196" text-anchor="middle">P = ${fx(st.P, 2)} atm</text></svg>`;
+    const xs = Array.from({ length: 61 }, (_, i) => r[0] + i * (r[1] - r[0]) / 60);
+    const yv = x => { const s = { ...st, [xk]: x }; return yk === 'P' ? s.n * RL * s.T / s.V : s.n * RL * s.T / s.P; };
+    const ymax = Math.max(...xs.map(yv)) * 1.05;
+    $('#pvC', el).innerHTML = chart({ x: [r[0], r[1]], y: [0, ymax], xt: [r[0], r[1]], yt: [0, +(ymax / 2).toFixed(1), +ymax.toFixed(1)], xlab: r[3], ylab: yk === 'P' ? 'P（atm）' : 'V（L）', h: 220 }, (X, Y) => `<path class="tline" d="${path(xs.map(x => [X(x), Y(yv(x))]))}"/><circle class="dot" cx="${X(st[xk])}" cy="${Y(yv(st[xk]))}" r="7"/>`);
+    $('#pvK', el).innerHTML = card('p', 'P', `${fx(st.P, 2)} atm`) + card('v', 'V', `${fx(st.V, 1)} L`) + card('n', 'n', `${fx(st.n, 1)} mol`) + card('t', 'T', `${fx(st.T, 0)} K`);
+    $('#pvN', el).innerHTML = { boyle: '<b>P ∝ 1/V</b>：體積變小，同樣的分子撞牆更頻繁，壓力變大（曲線是雙曲線）。', charles: '<b>V ∝ T</b>：溫度升高，分子跑得更快，要維持同樣壓力，體積必須變大。延長直線會通過 0 K，這就是絕對溫標的由來。', gay: '<b>P ∝ T</b>：體積固定時加熱，撞擊更用力、更頻繁，壓力上升（密閉容器加熱很危險）。', avog: '<b>V ∝ n</b>：同溫同壓下，同體積的任何氣體含有相同的分子數。0 °C、1 atm 時 1 mol 理想氣體佔 22.4 L。' }[st.law] + ' 全部合起來就是 <b>PV = nRT</b>（R = 0.08206 L·atm/(mol·K) = 8.314 J/(mol·K)）。溫度一定要用 <b>K</b>。';
+    pressSeg(el, 'pvS', st.law);
+  }
+  bindSeg(el, 'pvS', v => { st.law = v; st.n = 1; st.T = 300; st.V = 24.6; st.P = 1; draw(); });
+  draw();
+  return { set(s) { Object.assign(st, s); draw(); } };
+};
+
+/* ===== 2. 分子速率分布與格雷姆定律 ===== */
+W.maxwell = el => {
+  const G = { He: 4.0, N2: 28.0, O2: 32.0, CO2: 44.0, UF6: 352 }, LAB = { He: 'He', N2: 'N₂', O2: 'O₂', CO2: 'CO₂', UF6: 'UF₆' };
+  const st = { a: 'He', b: 'N2', T: 300 };
+  el.innerHTML = `<div class="w-row"><label class="sel">氣體 A <select id="mxA">${Object.keys(G).map(k => `<option value="${k}">${LAB[k]}（${G[k]}）</option>`).join('')}</select></label><label class="sel">氣體 B <select id="mxB">${Object.keys(G).map(k => `<option value="${k}">${LAB[k]}（${G[k]}）</option>`).join('')}</select></label><label class="rng">溫度（K）<input type="range" id="mxT" min="100" max="1000" step="10"><output class="mono" id="mxTo"></output></label></div><div id="mxC"></div><div class="cards" id="mxK"></div><p class="note" id="mxN"></p>`;
+  const f = (v, M, T) => { const m = M / 1000, a = m / (2 * 8.314 * T); return 4 * Math.PI * (a / Math.PI) ** 1.5 * v * v * Math.exp(-a * v * v); };
+  function draw() {
+    const vs = Array.from({ length: 151 }, (_, i) => i * 3000 / 150), ua = Math.sqrt(3 * 8.314 * st.T / (G[st.a] / 1000)), ub = Math.sqrt(3 * 8.314 * st.T / (G[st.b] / 1000));
+    const ymax = Math.max(...vs.map(v => Math.max(f(v, G[st.a], st.T), f(v, G[st.b], st.T)))) * 1.1;
+    $('#mxC', el).innerHTML = chart({ x: [0, 3000], y: [0, ymax], xt: [0, 500, 1000, 1500, 2000, 2500, 3000], yt: [], xlab: '分子速率（m/s）', ylab: '分子比例', h: 220, label: '速率分布' }, (X, Y) => `<path class="sha" d="${path(vs.map(v => [X(v), Y(f(v, G[st.a], st.T))]))}"/><path class="sa" d="${path(vs.map(v => [X(v), Y(f(v, G[st.b], st.T))]))}"/><text class="tk lha" x="${X(Math.min(2900, ua))}" y="${Y(ymax * 0.95)}">${LAB[st.a]}</text><text class="tk la" x="${X(Math.min(2900, ub))}" y="${Y(ymax * 0.85)}">${LAB[st.b]}</text>`);
+    $('#mxK', el).innerHTML = card('a', `${LAB[st.a]} 的 u<sub>rms</sub>`, `${fx(ua, 0)} m/s`) + card('b', `${LAB[st.b]} 的 u<sub>rms</sub>`, `${fx(ub, 0)} m/s`) + card('r', '擴散速率比 A : B', `${fx(Math.sqrt(G[st.b] / G[st.a]), 2)} : 1`);
+    $('#mxN', el).innerHTML = `同一溫度下，所有氣體的<b>平均動能相同</b>（½mu² = 3/2 kT），所以輕的分子跑得快：u<sub>rms</sub> = √(3RT/M)（M 用 kg/mol）。<b>格雷姆定律</b>：逸散或擴散速率 ∝ 1/√M，${LAB[st.a]} 比 ${LAB[st.b]} 快 √(${G[st.b]} ÷ ${G[st.a]}) = ${fx(Math.sqrt(G[st.b] / G[st.a]), 2)} 倍。曼哈頓計畫就是利用 ²³⁵UF₆ 和 ²³⁸UF₆ 微小的速率差來濃縮鈾。`;
+    $('#mxA', el).value = st.a; $('#mxB', el).value = st.b; $('#mxT', el).value = st.T; $('#mxTo', el).textContent = st.T;
+  }
+  $('#mxA', el).onchange = e => { st.a = e.target.value; draw(); };
+  $('#mxB', el).onchange = e => { st.b = e.target.value; draw(); };
+  $('#mxT', el).oninput = e => { st.T = +e.target.value; draw(); };
+  draw();
+  return { set(s) { Object.assign(st, s); draw(); } };
+};
+
+/* ===== 3. 限量試劑 ===== */
+W.limiting = el => {
+  const RX = { nh3: { n: 'N₂ + 3H₂ → 2NH₃', A: 'N₂', B: 'H₂', P: 'NH₃', ca: 1, cb: 3, cp: 2 }, h2o: { n: '2H₂ + O₂ → 2H₂O', A: 'H₂', B: 'O₂', P: 'H₂O', ca: 2, cb: 1, cp: 2 } };
+  const st = { rx: 'nh3', a: 3, b: 6 };
+  el.innerHTML = `${seg('lmS', Object.entries(RX).map(([k, v]) => [k, v.n]), st.rx)}<div class="w-row"><label class="rng" id="lmA"></label><label class="rng" id="lmB"></label></div><div id="lmV"></div><p class="note" id="lmN"></p>`;
+  function draw() {
+    const r = RX[st.rx], ext = Math.min(st.a / r.ca, st.b / r.cb), lim = st.a / r.ca < st.b / r.cb ? r.A : st.a / r.ca > st.b / r.cb ? r.B : '剛好';
+    const la = st.a - r.ca * ext, lb = st.b - r.cb * ext, p = r.cp * ext;
+    $('#lmA', el).innerHTML = `${r.A}（mol） <input type="range" id="lmAi" min="0" max="10" step="1" value="${st.a}"><output class="mono">${st.a}</output>`;
+    $('#lmB', el).innerHTML = `${r.B}（mol） <input type="range" id="lmBi" min="0" max="12" step="1" value="${st.b}"><output class="mono">${st.b}</output>`;
+    $('#lmAi', el).oninput = e => { st.a = +e.target.value; draw(); }; $('#lmBi', el).oninput = e => { st.b = +e.target.value; draw(); };
+    const row = (lab, n, cls, tot) => `<div class="lmrow"><span>${lab}</span><span>${Array.from({ length: Math.round(tot) }, (_, i) => `<i class="${i < n - 1e-9 ? cls : 'used'}"></i>`).join('')}</span><b class="mono">${fx(n, 1)}</b></div>`;
+    $('#lmV', el).innerHTML = `<p class="lbl">反應前 → 反應後（每個方塊 1 mol）</p>${row(r.A + ' 剩下', la, 'qa', st.a)}${row(r.B + ' 剩下', lb, 'qb', st.b)}${row(r.P + ' 生成', p, 'qp', Math.max(1, p))}`;
+    $('#lmN', el).innerHTML = st.a === 0 || st.b === 0 ? '缺少一種反應物，不會反應。' : `用係數換算：${r.A} 夠反應 ${fx(st.a / r.ca, 2)} 次「一份反應」，${r.B} 夠 ${fx(st.b / r.cb, 2)} 次。<b>次數較少的就是限量試劑</b>：${lim === '剛好' ? '兩者剛好用完' : `<b>${lim}</b>，它用完反應就停止`}。生成 ${r.P} = ${r.cp} × ${fx(ext, 2)} = ${fx(p, 2)} mol。注意：不是直接比莫耳數多寡，而是要除以係數。`;
+    pressSeg(el, 'lmS', st.rx);
+  }
+  bindSeg(el, 'lmS', v => { st.rx = v; draw(); });
+  draw();
+  return { set(s) { Object.assign(st, s); draw(); } };
+};
+
+/* ===== 4. 依數性質 ===== */
+W.colli = el => {
+  const SOL = { glu: ['葡萄糖', 1], nacl: ['NaCl', 2], cacl2: ['CaCl₂', 3] };
+  const st = { s: 'nacl', m: 0.5 };
+  el.innerHTML = `${seg('coS', Object.entries(SOL).map(([k, v]) => [k, `${v[0]}（i = ${v[1]}）`]), st.s)}<div class="w-row"><label class="rng">濃度（mol/kg 或 M）<input type="range" id="coM" min="0" max="2" step="0.01"><output class="mono" id="coMo"></output></label></div><div class="bgrid"><div id="coT"></div><div class="cards" id="coK"></div></div><p class="note" id="coN"></p>`;
+  function draw() {
+    const [nm, i] = SOL[st.s], dTb = i * 0.512 * st.m, dTf = i * 1.86 * st.m, pi = i * st.m * RL * 310;
+    $('#coT', el).innerHTML = chart({ x: [0, 1], y: [-12, 106], xt: [], yt: [-10, 0, 100], ylab: '溫度（°C）', h: 230, w: 260 }, (X, Y) => `<rect x="${X(0.15)}" y="${Y(100 + dTb)}" width="${X(0.85) - X(0.15)}" height="${Y(-dTf) - Y(100 + dTb)}" fill="var(--acid)" opacity=".1"/><line class="mk" x1="${X(0)}" x2="${X(1)}" y1="${Y(100)}" y2="${Y(100)}"/><line class="mk" x1="${X(0)}" x2="${X(1)}" y1="${Y(0)}" y2="${Y(0)}"/><line class="cur" x1="${X(0.15)}" x2="${X(0.85)}" y1="${Y(100 + dTb)}" y2="${Y(100 + dTb)}"/><line class="cur" x1="${X(0.15)}" x2="${X(0.85)}" y1="${Y(-dTf)}" y2="${Y(-dTf)}"/><text class="tk" x="${X(0.5)}" y="${Y(100 + dTb) - 6}" text-anchor="middle">沸點 ${fx(100 + dTb, 2)} °C</text><text class="tk" x="${X(0.5)}" y="${Y(-dTf) + 14}" text-anchor="middle">凝固點 ${fx(-dTf, 2)} °C</text><text class="tk" x="${X(0.5)}" y="${Y(50)}" text-anchor="middle">液態範圍變寬</text>`);
+    $('#coK', el).innerHTML = card('b', 'ΔTb = i·Kb·m', `+${fx(dTb, 2)} °C`) + card('f', 'ΔTf = i·Kf·m', `−${fx(dTf, 2)} °C`) + card('p', '滲透壓 π = iMRT（37 °C）', `${fx(pi, 1)} atm`);
+    $('#coN', el).innerHTML = `<b>依數性質</b>只和溶質<b>粒子的數目</b>有關，和是什麼粒子無關。${nm}在水中${i === 1 ? '不解離，i = 1' : `解離成 ${i} 個離子，i = ${i}（理想值；實際因離子配對略小）`}。水的 Kb = 0.512、Kf = 1.86 °C·kg/mol。${st.s === 'nacl' && Math.abs(st.m - 0.15) < 0.02 ? '這接近生理食鹽水（0.9% NaCl ≈ 0.154 M）：滲透壓約 7.8 atm，和血液等張。' : '生理食鹽水 0.9% NaCl ≈ 0.154 M，和紅血球等張；放進純水會吸水脹破（溶血），放進濃鹽水會失水皺縮。'}`;
+    $('#coMo', el).textContent = fx(st.m, 2); $('#coM', el).value = st.m; pressSeg(el, 'coS', st.s);
+  }
+  bindSeg(el, 'coS', v => { st.s = v; draw(); });
+  $('#coM', el).oninput = e => { st.m = +e.target.value; draw(); };
   draw();
   return { set(s) { Object.assign(st, s); draw(); } };
 };
