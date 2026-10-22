@@ -23,6 +23,11 @@ COURSES = {
         "desc": "從國中數學到可投稿論文的互動式生物統計課程，含不需寫程式的分析實驗室。",
         "theme": "#2F3B99",
     },
+    "chem": {
+        "scripts": ["ui.js", "chem.js", "mol.js", "content.js", "widgets.js", "app.js", "@cloud.js", "start.js"],
+        "desc": "學士後中醫入學考的普通化學與有機化學：用互動圖從原理學起，看懂酸鹼平衡與反應機構。",
+        "theme": "#17705F",
+    },
 }
 PORTAL = {"scripts": ["@cloud.js", "portal.js"], "desc": "學習階梯：用互動圖解從原理學起的線上課程。", "theme": "#2F3B99"}
 

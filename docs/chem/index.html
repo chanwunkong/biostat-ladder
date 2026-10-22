@@ -1,0 +1,1225 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="學士後中醫入學考的普通化學與有機化學：用互動圖從原理學起，看懂酸鹼平衡與反應機構。">
+<meta name="app-site" content="pages">
+<meta name="theme-color" content="#17705F">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" type="image/png" href="../icon-192.png">
+<link rel="apple-touch-icon" href="../icon-192.png">
+<style>
+:root { color-scheme: light; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; font: 14px system-ui, sans-serif; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+</style>
+<title>後中化學</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* 學習階梯共用樣式：色票、字型、頁首、按鈕、同步面板（首頁與新課程共用；生統階梯 shell 內有自己的一份） */
+:root {
+  --bg: #F3F4F0; --surface: #FFFFFF; --sunk: #E9EBE5; --ink: #1A211F; --muted: #59635E; --line: #D5D9D1;
+  --accent: #2F3B99; --accent-ink: #FFFFFF; --soft: #E6E8F5; --eosin: #B5326C; --eosin-soft: #F7E4EC;
+  --good: #23704A; --good-soft: #E1F0E6; --warn: #8F5400; --warn-soft: #FAEFD9; --bad: #B0281F; --bad-soft: #FBE6E4;
+  --c1: #3A47AE; --c2: #C0386F; --c3: #1C8270; --c4: #B07418;
+  --display: "LXGW WenKai TC", "Noto Serif TC", "Songti TC", serif;
+  --body: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #101412; --surface: #171C1A; --sunk: #0C0F0E; --ink: #E3E8E5; --muted: #98A39E; --line: #2A322F;
+  --accent: #A2ACF7; --accent-ink: #12163A; --soft: #20254A; --eosin: #F08AB6; --eosin-soft: #3A1B29;
+  --good: #71CB95; --good-soft: #14301F; --warn: #E8AE55; --warn-soft: #33260F; --bad: #F28B82; --bad-soft: #3A1A18;
+  --c1: #8E9BFA; --c2: #F07DB0; --c3: #5CCDB6; --c4: #E2AE5A; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #101412; --surface: #171C1A; --sunk: #0C0F0E; --ink: #E3E8E5; --muted: #98A39E; --line: #2A322F;
+  --accent: #A2ACF7; --accent-ink: #12163A; --soft: #20254A; --eosin: #F08AB6; --eosin-soft: #3A1B29;
+  --good: #71CB95; --good-soft: #14301F; --warn: #E8AE55; --warn-soft: #33260F; --bad: #F28B82; --bad-soft: #3A1A18;
+  --c1: #8E9BFA; --c2: #F07DB0; --c3: #5CCDB6; --c4: #E2AE5A; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15.5px; line-height: 1.75; }
+a { color: var(--accent); text-underline-offset: 3px; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+h1, h2, h3 { text-wrap: balance; line-height: 1.3; }
+.mono { font-family: var(--mono); }
+.small { font-size: 13px; } .mut { color: var(--muted); }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; color: var(--eosin); margin: 0 0 6px; }
+.lbl { font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em; color: var(--muted); margin: 0 0 8px; display: block; }
+
+/* header */
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--bg); border-bottom: 1px solid var(--line); }
+.top-in { max-width: 1240px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 8px 20px; flex-wrap: wrap; }
+.brand { font-family: var(--display); font-size: 23px; font-weight: 700; background: none; border: 0; padding: 0; cursor: pointer; display: flex; align-items: baseline; gap: 10px; color: var(--ink); }
+.brand small { font-family: var(--mono); font-size: 11px; font-weight: 400; color: var(--muted); letter-spacing: .04em; }
+.btn { border: 1px solid var(--line); background: var(--surface); padding: 8px 16px; border-radius: 6px; cursor: pointer; display: inline-flex; gap: 8px; align-items: center; font-size: 14.5px; text-align: left; }
+.btn:hover { border-color: var(--ink); }
+.btn.pri { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 500; }
+.btn.pri:hover { filter: brightness(1.08); }
+.btn.done { background: var(--good-soft); border-color: var(--good); color: var(--good); }
+.btn.wide { width: 100%; justify-content: center; margin-top: 12px; padding: 11px; }
+.btn, .opt, .an, .tab { min-height: 44px; }
+.btn.sm { min-height: 36px; padding: 6px 12px; font-size: 13.5px; }
+.lang select { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 6px; padding: 4px 6px; font-size: 13px; }
+.cloud { position: relative; }
+.cloud-btn { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; font-size: 13px; }
+.cb-av, .cp-av { width: 20px; height: 20px; border-radius: 50%; }
+.cb-dot { width: 8px; height: 8px; border-radius: 50%; background: #2E9E5B; }
+.cloud-panel { position: absolute; right: 0; top: calc(100% + 8px); width: min(320px, calc(100vw - 32px)); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 8px 28px rgba(0,0,0,.14); padding: 14px 16px; z-index: 40; font-size: 13.5px; line-height: 1.6; }
+.cloud-panel p { margin: 0 0 10px; }
+.cp-t { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; }
+.cp-t small { display: block; font-weight: 400; font-size: 12px; color: var(--muted); }
+.cp-av { width: 32px; height: 32px; }
+.cp-st { background: var(--sunk); border-radius: 6px; padding: 6px 10px; font-size: 12.5px; }
+.cp-st.ok { color: #1F7A45; }
+.cp-go { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-bottom: 10px; }
+.cp-go svg { background: #fff; border-radius: 3px; padding: 1px; }
+.cp-s { font-size: 12px; color: var(--muted); margin: 0 !important; }
+.cp-err { color: var(--eosin); font-size: 12px; margin-top: 8px !important; }
+.sync-hint { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: 14px 0 0; padding: 10px 14px; border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 8px; background: var(--soft); font-size: 13.5px; }
+.sync-hint span { flex: 1 1 260px; }
+.home-link { font-size: 13px; color: var(--muted); text-decoration: none; margin-right: -8px; }
+.home-link:hover { color: var(--accent); }
+
+/* 後中化學：沿用學習階梯色票，主色改為實驗室的青綠；化學圖用自己的一組顏色 */
+:root { --accent: #17705F; --soft: #E1F1EC; --water: #DCEBF3; --acid: #3A5FB8; --base: #D2691E; --arrow: #C0386F; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --accent: #5CCDB6; --accent-ink: #0B231E; --soft: #15302A; --water: #1C2B33; --acid: #8EA9F2; --base: #F0A060; --arrow: #F07DB0; } }
+:root[data-theme="dark"] { --accent: #5CCDB6; --accent-ink: #0B231E; --soft: #15302A; --water: #1C2B33; --acid: #8EA9F2; --base: #F0A060; --arrow: #F07DB0; }
+body { margin: 0; }
+.top-in .prog { margin-left: auto; display: flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.prog .bar { width: 90px; height: 6px; background: var(--sunk); border-radius: 3px; overflow: hidden; }
+.prog .bar i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .3s; }
+.toc-btn { display: none; }
+.layout { max-width: 1240px; margin: 0 auto; padding: 0 16px; display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 36px; }
+#tocBox { position: sticky; top: 64px; align-self: start; max-height: calc(100vh - 80px); overflow: auto; padding: 18px 0 40px; font-size: 14px; }
+.toc-h { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; color: var(--muted); margin: 14px 0 4px; }
+#toc ol { list-style: none; margin: 0; padding: 0; }
+#toc a, #toc .soon { display: flex; gap: 8px; align-items: baseline; padding: 4px 8px; border-radius: 6px; color: var(--ink); text-decoration: none; }
+#toc a:hover { background: var(--soft); }
+#toc a.cur { background: var(--accent); color: var(--accent-ink); }
+#toc a.done .num::after { content: " ✓"; color: var(--good); }
+#toc .soon { color: var(--muted); opacity: .7; }
+#toc .soon small { margin-left: auto; font-size: 11px; }
+#toc .num { font-family: var(--mono); font-size: 11.5px; min-width: 30px; color: var(--muted); }
+#toc a.cur .num { color: inherit; }
+#article { max-width: 820px; padding: 24px 0 80px; min-width: 0; }
+#article h1 { font-family: var(--display); font-size: clamp(28px, 5vw, 40px); margin: 0 0 12px; }
+.hero { font-size: clamp(30px, 6vw, 46px) !important; }
+.lede { font-size: 17px; color: var(--muted); }
+.cta { display: flex; flex-wrap: wrap; gap: 10px; margin: 22px 0 8px; }
+.cta .btn { text-decoration: none; }
+.map { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 8px 30px; }
+.map h3 { font-size: 15px; margin: 6px 0; }
+.map ol { margin: 0; padding-left: 22px; font-size: 14.5px; color: var(--muted); }
+.map li.ok { color: var(--ink); font-weight: 500; }
+.okm { color: var(--good); }
+.how li { margin-bottom: 6px; }
+.secnav { display: flex; flex-wrap: wrap; gap: 6px; margin: 18px 0 8px; }
+.secnav a { font-size: 13px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 99px; text-decoration: none; color: var(--ink); background: var(--surface); }
+.secnav a:hover { border-color: var(--accent); color: var(--accent); }
+.sec { padding-top: 26px; scroll-margin-top: 70px; }
+.sec h2 { font-family: var(--display); font-size: 25px; display: flex; gap: 12px; align-items: baseline; margin: 10px 0 8px; }
+.sn { font-family: var(--mono); font-size: 14px; color: var(--accent-ink); background: var(--accent); border-radius: 50%; width: 28px; height: 28px; display: inline-grid; place-items: center; flex: none; transform: translateY(-3px); }
+.prose p, .prose li { max-width: 72ch; }
+.eq { font-family: var(--mono); font-size: 14.5px; background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--accent); padding: 8px 14px; border-radius: 6px; overflow-x: auto; white-space: nowrap; }
+.tbl { border-collapse: collapse; font-size: 14px; margin: 8px 0 12px; width: 100%; }
+.tbl th, .tbl td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; }
+.tbl th { background: var(--sunk); }
+.widget { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin: 16px 0; transition: box-shadow .3s; }
+.widget.flash { box-shadow: 0 0 0 3px var(--accent); }
+.w-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+.w-row .sp { flex: 1; }
+.seg { display: inline-flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
+.seg button { border: 1px solid var(--line); background: var(--bg); border-radius: 6px; padding: 6px 12px; font-size: 13.5px; cursor: pointer; min-height: 36px; }
+.seg button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.rng { display: flex; align-items: center; gap: 10px; font-size: 14px; flex: 1 1 280px; }
+.rng input { flex: 1; accent-color: var(--accent); }
+.rng output { min-width: 72px; text-align: right; }
+.sel select { border: 1px solid var(--line); background: var(--bg); border-radius: 6px; padding: 5px 8px; font-size: 13.5px; max-width: 100%; }
+.sel { font-size: 13.5px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.chk { display: inline-flex; gap: 6px; align-items: center; margin: 4px 0 10px; font-size: 14px; }
+.btn.ghost { background: none; }
+.cards { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+.card { border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; background: var(--bg); min-width: 96px; }
+.card span { display: block; font-size: 12px; color: var(--muted); }
+.card b { font-family: var(--mono); font-size: 18px; }
+.card small { display: block; font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+.note { background: var(--soft); border-radius: 8px; padding: 10px 14px; font-size: 14.5px; margin: 10px 0 0; }
+.sw { display: inline-block; width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--line); vertical-align: -2px; }
+.ok { color: var(--good); font-weight: 700; } .warn { color: var(--warn); font-weight: 700; } .bad { color: var(--bad); font-weight: 700; }
+/* 座標圖 */
+svg.ch, svg.mol, svg.en, svg.bk, svg.ions { width: 100%; height: auto; display: block; overflow: visible; }
+.ch .grid line { stroke: var(--line); stroke-width: 1; }
+.ch .ax, .en .ax { stroke: var(--muted); stroke-width: 1.2; }
+.tk { font-family: var(--mono); font-size: 11.5px; fill: var(--muted); }
+.tk.hl { fill: var(--ink); font-weight: 700; }
+.lab { font-size: 12.5px; fill: var(--muted); }
+.tline { fill: none; stroke: var(--acid); stroke-width: 2.6; }
+.tline2 { fill: none; stroke: var(--muted); stroke-width: 1.6; stroke-dasharray: 5 4; opacity: .7; }
+.dot { fill: var(--arrow); stroke: var(--surface); stroke-width: 2; }
+.dot2 { fill: var(--muted); stroke: var(--surface); stroke-width: 2; }
+.dot3 { fill: var(--surface); stroke: var(--acid); stroke-width: 2; }
+.mk { stroke: var(--muted); stroke-dasharray: 3 3; }
+.cur { stroke: var(--arrow); stroke-width: 1.5; }
+.buf { fill: var(--accent); opacity: .08; }
+.indband { opacity: .28; }
+.sha { fill: none; stroke: var(--acid); stroke-width: 2.6; } .sa { fill: none; stroke: var(--base); stroke-width: 2.6; }
+.lha { fill: var(--acid); font-weight: 700; } .la { fill: var(--base); font-weight: 700; }
+/* 燒杯 */
+.tgrid { display: grid; grid-template-columns: minmax(0, 220px) minmax(0, 1fr); gap: 16px; align-items: center; }
+.glass { fill: none; stroke: var(--muted); stroke-width: 2.5; }
+.liq { transition: fill .3s; }
+.burette { stroke: var(--muted); stroke-width: 6; stroke-linecap: round; }
+.drop { fill: var(--acid); opacity: .7; }
+.bk text { font-family: var(--mono); font-size: 8.5px; font-weight: 600; }
+.iha circle { fill: var(--acid); } .iha text { fill: #fff; }
+.ia circle { fill: var(--base); } .ia text { fill: #fff; }
+.ih circle { fill: #B0281F; } .ih text { fill: #fff; }
+.ioh circle { fill: #6B4FA0; } .ioh text { fill: #fff; font-size: 7px; }
+.bk .phm { font-family: var(--mono); font-size: 12px; fill: var(--muted); }
+.bk .phv { font-family: var(--mono); font-size: 20px; font-weight: 700; fill: var(--ink); }
+/* 緩衝 */
+.bgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; align-items: center; }
+.bars > div { display: grid; grid-template-columns: 96px 1fr auto; gap: 8px; align-items: center; font-size: 13px; margin: 4px 0; }
+.bars > div.on { font-weight: 700; }
+.bars i { display: block; height: 14px; border-radius: 3px; min-width: 2px; }
+.bha { background: var(--acid); } .ba { background: var(--base); }
+.stack { display: flex; height: 28px; border-radius: 6px; overflow: hidden; margin-top: 8px; }
+.stack i { display: grid; place-items: center; color: #fff; font-style: normal; font-size: 12.5px; font-family: var(--mono); }
+/* 計算 */
+.calc { background: var(--bg); border-radius: 8px; padding: 10px 14px; }
+.cq { margin: 6px 0; }
+.cs { font-family: var(--mono); font-size: 13.5px; margin: 4px 0; }
+.cs li { margin: 3px 0; }
+/* 分子 */
+.mol .b { stroke: var(--ink); stroke-width: 2.2; stroke-linecap: round; }
+.mol .bw { fill: var(--ink); }
+.mol .bh { stroke: var(--ink); stroke-width: 1.6; }
+.mol .bp { stroke: var(--ink); stroke-width: 2.2; stroke-dasharray: 4 4; }
+.mol .at { font-size: 16px; font-weight: 600; fill: var(--ink); }
+.mol .at.hl { fill: var(--bad); }
+.mol .at.br { fill: var(--base); }
+.mol .lp { fill: var(--ink); }
+.mol .chg { fill: var(--surface); stroke: var(--ink); stroke-width: 1.2; }
+.mol .chgt { font-size: 12px; font-weight: 700; fill: var(--ink); }
+.mol .dl { font-size: 12px; fill: var(--muted); }
+.mol .arr { fill: none; stroke: var(--arrow); stroke-width: 2.2; }
+.mol .ahp { fill: var(--arrow); }
+.mol .halo { fill: var(--acid); opacity: .1; }
+.mol .orb { fill: var(--acid); fill-opacity: .1; stroke: var(--acid); stroke-dasharray: 4 3; }
+.mol .ts { font-size: 120px; font-weight: 200; fill: var(--muted); }
+.mol .tsd { font-size: 22px; fill: var(--muted); }
+.mol .note { font-size: 14px; fill: var(--muted); }
+.mol .note.bad { font-size: 30px; fill: var(--bad); font-weight: 700; }
+.mol .nb { stroke: var(--ink); stroke-width: 2.2; }
+.mol .nc { fill: var(--surface); stroke: var(--ink); stroke-width: 2.2; }
+.mech { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+.mech-cap { font-size: 14.5px; margin: 8px 0 0; }
+.mech-ctl { margin-top: 10px; }
+.en .ecurve { fill: none; stroke: var(--acid); stroke-width: 2.4; }
+.en .edot { fill: var(--arrow); stroke: var(--surface); stroke-width: 2; }
+.en .elab { font-size: 11px; fill: var(--muted); }
+.lgrid, .zgrid, .ngrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; align-items: center; }
+.ionc { fill: var(--sunk); stroke: var(--muted); } .ionc.on { fill: var(--base); fill-opacity: .25; stroke: var(--base); stroke-width: 2; }
+.prod { border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; margin-bottom: 8px; }
+.pf { font-family: var(--mono); font-size: 16px; font-weight: 600; margin: 0 0 2px; }
+.prod p { margin: 0 0 4px; }
+.prod .bars > div { grid-template-columns: 44px 1fr; }
+.verdict { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; background: var(--soft); border-radius: 8px; padding: 10px 14px; margin-top: 6px; }
+.verdict .lbl { margin: 0; }
+.verdict .big { font-size: 26px; font-family: var(--mono); color: var(--accent); }
+.reason li { margin: 6px 0; font-size: 14.5px; }
+/* 練習題 */
+.q { border-top: 1px solid var(--line); padding: 14px 0; }
+.qt { font-weight: 500; margin: 0 0 8px; }
+.opts { display: grid; gap: 6px; }
+.opt { text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 9px 14px; cursor: pointer; font-size: 14.5px; min-height: 44px; }
+.opt:hover:not(:disabled) { border-color: var(--accent); }
+.opt.right { border-color: var(--good); background: var(--good-soft); color: var(--good); }
+.opt.wrong { border-color: var(--bad); background: var(--bad-soft); color: var(--bad); }
+.why { margin-top: 8px; padding: 10px 14px; border-radius: 8px; font-size: 14.5px; }
+.why.ok { background: var(--good-soft); } .why.no { background: var(--bad-soft); }
+.why .btn { margin-left: 8px; }
+.foot { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between; border-top: 1px solid var(--line); margin-top: 30px; padding-top: 20px; }
+.btn.done { background: var(--good-soft); border-color: var(--good); color: var(--good); }
+.pn { display: flex; gap: 10px; flex-wrap: wrap; }
+.pn a { border: 1px solid var(--line); border-radius: 8px; padding: 6px 14px; text-decoration: none; color: var(--ink); background: var(--surface); font-size: 14px; }
+.pn small { display: block; color: var(--muted); font-size: 11.5px; }
+@media (max-width: 860px) {
+  .layout { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .toc-btn { display: inline-flex; }
+  #tocBox { display: none; position: fixed; inset: 56px 0 0 0; z-index: 30; background: var(--bg); max-height: none; padding: 10px 16px 40px; }
+  #tocBox.open { display: block; }
+  .mech { grid-template-columns: minmax(0, 1fr); }
+  .tgrid { grid-template-columns: minmax(0, 1fr); }
+  .tgrid .beaker { max-width: 240px; margin: 0 auto; width: 100%; }
+  .prog .bar { width: 50px; }
+  .brand small { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+
+<header class="top"><div class="top-in">
+  <a class="brand" href="#" style="text-decoration:none">後中化學<small>CHEMISTRY · 原理 → 應用</small></a>
+  <button class="btn sm toc-btn" type="button" id="tocBtn">☰ 單元</button>
+  <div class="prog" aria-label="學習進度"><span id="progTxt">0 / 2 章</span><span class="bar"><i id="progBar"></i></span></div>
+</div></header>
+<div class="layout">
+  <aside id="tocBox" aria-label="單元目錄"><nav id="toc"></nav></aside>
+  <main id="article"></main>
+</div>
+<script>
+/* ---------- 後中化學：介面小工具（選取、跳脫、儲存、數字格式、座標圖） ---------- */
+const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('chem-ladder:' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('chem-ladder:' + k, JSON.stringify(v)); } catch (e) { /* 無法儲存時忽略 */ } },
+};
+// 數字：固定小數位；科學記號用 ×10 上標
+const fx = (v, d = 2) => (Number.isFinite(v) ? v.toFixed(d) : '—');
+const SUP = { '-': '⁻', 0: '⁰', 1: '¹', 2: '²', 3: '³', 4: '⁴', 5: '⁵', 6: '⁶', 7: '⁷', 8: '⁸', 9: '⁹' };
+function sci(v, d = 2) {
+  if (!Number.isFinite(v) || v === 0) return String(v);
+  const e = Math.floor(Math.log10(Math.abs(v))), m = v / 10 ** e;
+  if (e >= -2 && e <= 3) return v.toFixed(Math.max(0, d - e));
+  return `${m.toFixed(d)} × 10${String(e).split('').map(c => SUP[c]).join('')}`;
+}
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+
+/* 座標圖：o = { w, h, x:[min,max], y:[min,max], xt:[刻度], yt:[刻度], xlab, ylab }；draw(X, Y) 回傳圖內 SVG */
+function chart(o, draw) {
+  const w = o.w || 560, h = o.h || 300, L = 46, R = 14, T = 12, B = 40;
+  const X = v => L + (v - o.x[0]) / (o.x[1] - o.x[0]) * (w - L - R), Y = v => h - B - (v - o.y[0]) / (o.y[1] - o.y[0]) * (h - T - B);
+  const xt = o.xt || [], yt = o.yt || [];
+  return `<svg class="ch" viewBox="0 0 ${w} ${h}" role="img"${o.label ? ` aria-label="${esc(o.label)}"` : ''}>
+<g class="grid">${yt.map(v => `<line x1="${L}" x2="${w - R}" y1="${Y(v)}" y2="${Y(v)}"/>`).join('')}</g>
+<line class="ax" x1="${L}" x2="${w - R}" y1="${h - B}" y2="${h - B}"/><line class="ax" x1="${L}" x2="${L}" y1="${T}" y2="${h - B}"/>
+${xt.map(v => `<text class="tk" x="${X(v)}" y="${h - B + 16}" text-anchor="middle">${v}</text>`).join('')}
+${yt.map(v => `<text class="tk" x="${L - 6}" y="${Y(v) + 4}" text-anchor="end">${v}</text>`).join('')}
+${o.xlab ? `<text class="lab" x="${(L + w - R) / 2}" y="${h - 6}" text-anchor="middle">${o.xlab}</text>` : ''}
+${o.ylab ? `<text class="lab" transform="translate(13 ${(T + h - B) / 2}) rotate(-90)" text-anchor="middle">${o.ylab}</text>` : ''}
+${draw(X, Y)}</svg>`;
+}
+const path = pts => pts.map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join('');
+
+/* ---------- 後中化學：酸鹼平衡計算引擎 ----------
+   不用近似：直接解電荷平衡 [H⁺] + [Na⁺] = [OH⁻] + [A⁻] + [Cl⁻]，其中 [A⁻] = C·Ka/(Ka + [H⁺])（強酸則 [A⁻] = C）。
+   左邊減右邊隨 [H⁺] 單調遞增，所以在 log[H⁺] 上二分法一定收斂。濃度 M、體積 mL、量 mmol。 */
+const KW = 1e-14;
+function solveH({ Ca = 0, Ka = 1e-5, strong = false, Na = 0, Cl = 0 }) {
+  const f = h => h + Na - KW / h - (strong ? Ca : Ca * Ka / (Ka + h)) - Cl;
+  let lo = -15, hi = 1.5;
+  for (let i = 0; i < 90; i++) { const m = (lo + hi) / 2; if (f(10 ** m) > 0) hi = m; else lo = m; }
+  return 10 ** ((lo + hi) / 2);
+}
+const ACID = {
+  weak: { name: '醋酸 CH₃COOH', short: 'HA', pKa: 4.74, strong: false },
+  strong: { name: '鹽酸 HCl', short: 'HCl', pKa: -7, strong: true },
+};
+// 滴定：Va mL 的 Ca0 M 酸，加入 Vb mL 的 Cb M NaOH
+function titr({ Va = 25, Ca0 = 0.1, Cb = 0.1, Vb = 0, pKa = 4.74, strong = false }) {
+  const V = Va + Vb, Ca = Ca0 * Va / V, Na = Cb * Vb / V, Ka = 10 ** -pKa, h = solveH({ Ca, Ka, strong, Na });
+  const fHA = strong ? 0 : h / (Ka + h);
+  return { V, h, pH: -Math.log10(h), nHA: Ca * V * fHA, nA: Ca * V * (1 - fHA), nOH: KW / h * V, nH: h * V, nNa: Cb * Vb, Veq: Ca0 * Va / Cb };
+}
+// 緩衝溶液：V mL 中各含 C M 的 HA 與 NaA，再加入 addH mmol 強酸或 addOH mmol 強鹼（以濃溶液加入，體積變化忽略）
+function buffer({ C = 0.1, V = 100, pKa = 4.74, addH = 0, addOH = 0 }) {
+  const Ka = 10 ** -pKa, h = solveH({ Ca: 2 * C, Ka, Na: (C * V + addOH) / V, Cl: addH / V }), f = h / (Ka + h);
+  return { pH: -Math.log10(h), nHA: 2 * C * V * f, nA: 2 * C * V * (1 - f) };
+}
+function water({ V = 100, addH = 0, addOH = 0 }) { const h = solveH({ Ca: 0, Na: addOH / V, Cl: addH / V }); return { pH: -Math.log10(h) }; }
+// 指示劑：變色範圍與兩端顏色（低 pH → 高 pH）
+const IND = {
+  none: { name: '不加指示劑' },
+  pp: { name: '酚酞', lo: 8.2, hi: 10.0, c0: [248, 246, 240], c1: [214, 51, 132], txt: '無色 → 粉紅' },
+  mo: { name: '甲基橙', lo: 3.1, hi: 4.4, c0: [214, 60, 50], c1: [240, 196, 60], txt: '紅 → 黃' },
+  btb: { name: '溴瑞香草酚藍', lo: 6.0, hi: 7.6, c0: [226, 200, 60], c1: [52, 104, 196], txt: '黃 → 藍' },
+};
+function indColor(key, pH) {
+  const d = IND[key]; if (!d || !d.c0) return 'var(--water)';
+  const t = clamp((pH - d.lo) / (d.hi - d.lo), 0, 1), c = d.c0.map((v, i) => Math.round(v + (d.c1[i] - v) * t));
+  return `rgb(${c.join(',')})`;
+}
+
+/* ---------- 後中化學：分子與反應機構繪圖 ----------
+   場景（scene）：
+     atoms: { id: { x, y, t: 標籤（'' 為骨架頂點）, c: 電荷（'+' '−' 'δ+' 'δ−'）, lp: [孤對電子方向（度）], halo: 立體障礙半徑, hl: 強調色, hide } }
+     bonds: [[a, b, 型別]]  型別：'s' 單鍵、'd' 雙鍵、'w' 楔形（朝向讀者）、'h' 虛楔（遠離讀者）、'p' 部分鍵（過渡狀態）
+     arrows: [{ f: { lp: [原子, 角度] } | { b: [a, b] }, t: { a: 原子 } | { m: [a, b] }, bend }]  彎箭頭：電子從哪裡流到哪裡
+     orbs: [{ a: 原子, ang }]  空的 p 軌域（兩瓣）；ts: true 畫過渡狀態的括號；notes: [{ x, y, t, cls }]
+   座標以鍵長為 1，y 朝上；MOL.svg(scene, { w, h, s: 每單位像素, cx, cy }) 畫出 SVG。 */
+const MOL = (() => {
+  const vis = t => (t || '').replace(/[₀-₉⁰-⁹⁺⁻]/g, '').length;   // 標籤可見字數（下標不太佔寬）
+  const rad = a => (a.t ? 7 + 4.2 * vis(a.t) : 0);
+  function geom(sc, o) {
+    const S = o.s || 46, cx = o.cx ?? o.w / 2, cy = o.cy ?? o.h / 2;
+    const P = id => { const a = sc.atoms[id]; return [cx + a.x * S, cy - a.y * S]; };
+    return { S, P };
+  }
+  function bond(sc, G, [a, b, k]) {
+    const A = sc.atoms[a], B = sc.atoms[b]; if (!A || !B || A.hide || B.hide) return '';
+    let [x1, y1] = G.P(a), [x2, y2] = G.P(b); const dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L;
+    const r1 = Math.min(rad(A), L * 0.4), r2 = Math.min(rad(B), L * 0.4);
+    x1 += ux * r1; y1 += uy * r1; x2 -= ux * r2; y2 -= uy * r2;
+    const nx = -uy, ny = ux;
+    if (k === 'w') return `<path class="bw" d="M${x1} ${y1}L${x2 + nx * 5} ${y2 + ny * 5}L${x2 - nx * 5} ${y2 - ny * 5}Z"/>`;
+    if (k === 'h') return Array.from({ length: 6 }, (_, i) => { const t = (i + 0.5) / 6, w = 0.8 + 4.5 * t, px = x1 + (x2 - x1) * t, py = y1 + (y2 - y1) * t; return `<line class="bh" x1="${px + nx * w}" y1="${py + ny * w}" x2="${px - nx * w}" y2="${py - ny * w}"/>`; }).join('');
+    if (k === 'p') return `<line class="bp" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+    if (k === 'd') return `<line class="b" x1="${x1 + nx * 3}" y1="${y1 + ny * 3}" x2="${x2 + nx * 3}" y2="${y2 + ny * 3}"/><line class="b" x1="${x1 - nx * 3}" y1="${y1 - ny * 3}" x2="${x2 - nx * 3}" y2="${y2 - ny * 3}"/>`;
+    return `<line class="b" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+  }
+  function atom(sc, G, id) {
+    const a = sc.atoms[id]; if (a.hide) return '';
+    const [x, y] = G.P(id), r = rad(a);
+    let s = '';
+    if (a.halo) s += `<circle class="halo" cx="${x}" cy="${y}" r="${a.halo * G.S}"/>`;
+    if (a.t) s += `<text class="at${a.hl ? ' hl' : ''}" x="${x}" y="${y + 5.5}" text-anchor="middle">${a.t}</text>`;
+    (a.lp || []).forEach(g => {
+      const u = [Math.cos(g * Math.PI / 180), -Math.sin(g * Math.PI / 180)], d = Math.max(r, 6) + 5, px = x + u[0] * d, py = y + u[1] * d;
+      s += `<circle class="lp" cx="${px - u[1] * 3}" cy="${py + u[0] * 3}" r="1.9"/><circle class="lp" cx="${px + u[1] * 3}" cy="${py - u[0] * 3}" r="1.9"/>`;
+    });
+    if (a.c) { const cxx = x + Math.max(r, 6) + 2, cyy = y - 10; s += a.c.startsWith('δ') ? `<text class="dl" x="${cxx}" y="${cyy}">${a.c}</text>` : `<circle class="chg" cx="${cxx + 4}" cy="${cyy - 3}" r="7"/><text class="chgt" x="${cxx + 4}" y="${cyy + 1}" text-anchor="middle">${a.c === '+' ? '+' : '−'}</text>`; }
+    return s;
+  }
+  function arrow(sc, G, ar) {
+    let s, e;
+    if (ar.f.lp) { const [id, g] = ar.f.lp, [x, y] = G.P(id), r = Math.max(rad(sc.atoms[id]), 6) + 5; s = [x + Math.cos(g * Math.PI / 180) * r, y - Math.sin(g * Math.PI / 180) * r]; }
+    else { const [p, q] = ar.f.b.map(G.P); s = [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2]; }
+    if (ar.t.a) { const [x, y] = G.P(ar.t.a), r = Math.max(rad(sc.atoms[ar.t.a]), 7) + 3, d = Math.hypot(x - s[0], y - s[1]) || 1; e = [x - (x - s[0]) / d * r, y - (y - s[1]) / d * r]; }
+    else { const [p, q] = ar.t.m.map(G.P); e = [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2]; }
+    const mx = (s[0] + e[0]) / 2, my = (s[1] + e[1]) / 2, L = Math.hypot(e[0] - s[0], e[1] - s[1]), b = ar.bend ?? 0.45;
+    const c = [mx - (e[1] - s[1]) / L * L * b, my + (e[0] - s[0]) / L * L * b];
+    return `<path class="arr" d="M${s[0].toFixed(1)} ${s[1].toFixed(1)}Q${c[0].toFixed(1)} ${c[1].toFixed(1)} ${e[0].toFixed(1)} ${e[1].toFixed(1)}" marker-end="url(#ah)"/>`;
+  }
+  function orb(sc, G, o) {
+    const [x, y] = G.P(o.a), g = (o.ang || 0), r = G.S * 0.62;
+    return [0, 180].map(k => { const t = (g + k) * Math.PI / 180; return `<ellipse class="orb" cx="${x + Math.cos(t) * r}" cy="${y - Math.sin(t) * r}" rx="${r * 0.82}" ry="${r * 0.42}" transform="rotate(${-(g + k)} ${x + Math.cos(t) * r} ${y - Math.sin(t) * r})"/>`; }).join('');
+  }
+  function svg(sc, o) {
+    const G = geom(sc, o), ids = Object.keys(sc.atoms);
+    let body = (sc.orbs || []).map(x => orb(sc, G, x)).join('');
+    body += ids.filter(i => sc.atoms[i].halo && !sc.atoms[i].hide).map(i => { const [x, y] = G.P(i); return `<circle class="halo" cx="${x}" cy="${y}" r="${sc.atoms[i].halo * G.S}"/>`; }).join('');
+    body += (sc.bonds || []).map(b => bond(sc, G, b)).join('');
+    body += ids.map(i => atom(sc, G, i).replace(/<circle class="halo"[^>]*\/>/, '')).join('');
+    body += (sc.arrows || []).map(a => arrow(sc, G, a)).join('');
+    if (sc.ts) body += `<text class="ts" x="${o.w / 2 - G.S * 3.1}" y="${o.h / 2 + 14}">[</text><text class="ts" x="${o.w / 2 + G.S * 2.85}" y="${o.h / 2 + 14}">]</text><text class="tsd" x="${o.w / 2 + G.S * 3.15}" y="${o.h / 2 - 26}">‡</text>`;
+    body += (sc.notes || []).map(n => { const x = (o.cx ?? o.w / 2) + n.x * G.S, y = (o.cy ?? o.h / 2) - n.y * G.S; return `<text class="note ${n.cls || ''}" x="${x}" y="${y}" text-anchor="middle">${n.t}</text>`; }).join('');
+    return `<svg class="mol" viewBox="0 0 ${o.w} ${o.h}" role="img"${o.label ? ` aria-label="${esc(o.label)}"` : ''}><defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="ahp"/></marker></defs>${body}</svg>`;
+  }
+  // 兩個場景之間的插值：位置線性內插；前半段用起點的鍵，後半段用終點的鍵；動畫中不畫箭頭
+  function lerp(a, b, t) {
+    const atoms = {};
+    for (const id of new Set([...Object.keys(a.atoms), ...Object.keys(b.atoms)])) {
+      const p = a.atoms[id], q = b.atoms[id];
+      if (p && q) atoms[id] = { ...(t < 0.5 ? p : q), x: p.x + (q.x - p.x) * t, y: p.y + (q.y - p.y) * t, hide: (t < 0.5 ? p : q).hide };
+      else atoms[id] = { ...(p || q), hide: (p ? t > 0.5 : t < 0.5) || (p || q).hide };
+    }
+    const src = t < 0.5 ? a : b;
+    return { atoms, bonds: src.bonds, orbs: src.orbs, notes: [] };
+  }
+  return { svg, lerp };
+})();
+
+/* 反應能量圖：pts 為 [x, y] 的控制點（x 0–1、y 0–1），以平滑曲線連起來；at 為目前位置 */
+function energySVG(pts, at, o = {}) {
+  const w = o.w || 300, h = o.h || 150, L = 26, B = 22, T = 10, R = 8;
+  const X = v => L + v * (w - L - R), Y = v => h - B - v * (h - T - B);
+  const f = x => { // 分段餘弦內插：極大極小點都平滑
+    for (let i = 0; i < pts.length - 1; i++) { const [x0, y0] = pts[i], [x1, y1] = pts[i + 1]; if (x <= x1) { const t = (x - x0) / (x1 - x0); return y0 + (y1 - y0) * (1 - Math.cos(Math.PI * t)) / 2; } }
+    return pts[pts.length - 1][1];
+  };
+  const line = Array.from({ length: 121 }, (_, i) => [X(i / 120), Y(f(i / 120))]);
+  const cur = at == null ? '' : `<circle class="edot" cx="${X(at)}" cy="${Y(f(at))}" r="6"/>`;
+  const labs = (o.labels || []).map(([x, t, dy]) => `<text class="elab" x="${X(x) + (x < 0.1 ? 6 : 0)}" y="${Y(f(x)) - (dy || 10)}" text-anchor="${x < 0.1 ? 'start' : x > 0.9 ? 'end' : 'middle'}">${t}</text>`).join('');
+  return `<svg class="en" viewBox="0 0 ${w} ${h}" role="img" aria-label="反應能量圖"><line class="ax" x1="${L}" y1="${T}" x2="${L}" y2="${h - B}"/><line class="ax" x1="${L}" y1="${h - B}" x2="${w - R}" y2="${h - B}"/><text class="lab" transform="translate(12 ${(T + h - B) / 2}) rotate(-90)" text-anchor="middle">能量</text><text class="lab" x="${(L + w) / 2}" y="${h - 5}" text-anchor="middle">反應進行 →</text><path class="ecurve" d="${path(line)}"/>${labs}${cur}</svg>`;
+}
+
+/* 機構播放器：frames = [{ sc, cap, at }]；在 el 中畫出分子、說明、能量圖與控制鈕。回傳 { go(i), reset() } */
+function mechPlayer(el, o) {
+  let frames = o.frames(), i = 0, anim = 0;
+  el.innerHTML = `<div class="mech"><div class="mech-view"></div><div class="mech-side">${o.energy ? '<div class="mech-en"></div>' : ''}<p class="mech-cap" aria-live="polite"></p></div></div>
+<div class="w-row mech-ctl"><button class="btn sm" type="button" data-m="0">⟲ 重來</button><button class="btn sm" type="button" data-m="-1">‹ 上一步</button><button class="btn sm pri" type="button" data-m="1">下一步 ›</button><span class="mech-step mono small mut"></span></div>`;
+  const view = $('.mech-view', el), cap = $('.mech-cap', el), en = $('.mech-en', el), step = $('.mech-step', el), W = o.w || 520, H = o.h || 260;
+  const draw = (sc, f) => {
+    view.innerHTML = MOL.svg(sc, { w: W, h: H, s: o.s || 56, label: o.label });
+    if (f) { cap.innerHTML = f.cap; if (en) en.innerHTML = energySVG(o.energy, f.at, { labels: o.elabels }); step.textContent = `${i + 1} / ${frames.length}`; }
+    $('[data-m="1"]', el).disabled = i >= frames.length - 1; $('[data-m="-1"]', el).disabled = i <= 0;
+  };
+  const show = () => draw(frames[i].sc, frames[i]);
+  function go(n, animate = true) {
+    n = clamp(n, 0, frames.length - 1); cancelAnimationFrame(anim);
+    if (!animate || n !== i + 1 || matchMedia('(prefers-reduced-motion: reduce)').matches) { i = n; show(); return; }
+    const a = frames[i].sc, b = frames[n].sc, t0 = performance.now(), D = 900;
+    const tick = now => {
+      const t = Math.min(1, (now - t0) / D), e = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
+      view.innerHTML = MOL.svg(MOL.lerp(a, b, e), { w: W, h: H, s: o.s || 56 });
+      if (en) en.innerHTML = energySVG(o.energy, frames[i].at + (frames[n].at - frames[i].at) * e, { labels: o.elabels });
+      if (t < 1) anim = requestAnimationFrame(tick); else { i = n; show(); }
+    };
+    anim = requestAnimationFrame(tick);
+  }
+  $$('[data-m]', el).forEach(b => { b.onclick = () => { const m = +b.dataset.m; if (m === 0) go(0, false); else go(i + m, m > 0); }; });
+  show();
+  return { go, reset() { frames = o.frames(); i = Math.min(i, frames.length - 1); go(0, false); }, get i() { return i; } };
+}
+
+/* ---------- 後中化學：課程內容 ----------
+   範圍依據：中國醫藥大學、義守大學、慈濟大學 115 學年度學士後中醫學系簡章，化學考科「含普通化學、有機化學」，
+   未公布細目；命題以大學教科書為準。以下單元依大一普通化學與有機化學教科書的標準章節安排。
+   CH 每章：sections（每節：h 標題、body 內文 HTML、w 互動圖名稱或陣列）、quiz（q 題目、o 選項、a 正解索引、why 解說、show 在圖上示範）。 */
+const UNITS = [
+  { part: '普通化學', key: 'g', items: [
+    ['g1', '原子結構與週期性'], ['g2', '化學鍵與分子形狀'], ['g3', '計量化學與溶液'], ['g4', '氣體'], ['g5', '熱化學與熱力學'],
+    ['g6', '化學動力學'], ['g7', '化學平衡'], ['g8', '酸鹼平衡'], ['g9', '溶解度與錯合物平衡'], ['g10', '電化學'], ['g11', '固體、液體與核化學'],
+  ] },
+  { part: '有機化學', key: 'o', items: [
+    ['o1', '結構、鍵結與共振'], ['o2', '有機酸鹼'], ['o3', '構形與立體化學'], ['o4', '取代與脫去反應'], ['o5', '烯烴與炔烴'], ['o6', '芳香族化合物'],
+    ['o7', '醇、醚與環氧化物'], ['o8', '醛與酮'], ['o9', '羧酸及其衍生物'], ['o10', '胺類'], ['o11', '光譜分析'], ['o12', '生物分子與合成策略'],
+  ] },
+];
+
+const CH = [
+  {
+    id: 'acid-base', unit: 'g8', title: '酸鹼滴定與緩衝溶液',
+    lede: '用一支滴管把酸鹼平衡看清楚：滴進去的每一滴鹼去了哪裡、pH 為什麼在某些地方幾乎不動，又為什麼在當量點附近突然暴衝。',
+    sections: [
+      { h: '一邊滴，一邊看燒杯裡發生什麼', w: 'titration', body: `
+<p>燒杯裡是 25.0 mL、0.100 M 的醋酸（CH₃COOH，以下寫作 <b>HA</b>），滴定管裡是 0.100 M 的 NaOH。每加入一個 OH⁻，就和一個 HA 反應：</p>
+<p class="eq">HA + OH⁻ → A⁻ + H₂O　　K = Ka ÷ Kw ≈ 1.8 × 10⁹</p>
+<p>K 非常大，代表這個反應幾乎完全進行：<b>加了多少 OH⁻，就有多少 HA 變成 A⁻</b>。這是整章最重要的一句話，後面所有計算都從這裡出發。</p>
+<p>拖動滑桿，注意三件事：</p>
+<ol><li>一開始 pH 爬得很快：燒杯裡幾乎只有 HA，加一點 A⁻ 比例就變很多。</li>
+<li>中段 pH 幾乎不動：HA 和 A⁻ 都很多，形成<b>緩衝溶液</b>。</li>
+<li>接近 25.0 mL（<b>當量點</b>，加入的 OH⁻ 剛好等於原本的 HA）時 pH 突然暴衝。</li></ol>
+<p>再切換到強酸 HCl 比較：沒有緩衝區，而且當量點的 pH 剛好是 7；醋酸的當量點卻在 8.7，因為那時燒杯裡剩下的 A⁻ 是鹼。</p>` },
+      { h: '為什麼中段 pH 幾乎不動：緩衝溶液', w: 'buffer', body: `
+<p>緩衝溶液同時含有大量的弱酸 HA 和它的共軛鹼 A⁻。它抵抗 pH 變化的方法很簡單：<b>把強酸強鹼「換成」弱酸弱鹼</b>。</p>
+<p class="eq">加入強酸：A⁻ + H⁺ → HA　　　加入強鹼：HA + OH⁻ → A⁻ + H₂O</p>
+<p>加進來的 H⁺ 或 OH⁻ 幾乎全被吃掉，溶液裡真正改變的只是 A⁻ 和 HA 的比例，而 pH 只跟這個比例的<b>對數</b>有關，所以變化很小。</p>
+<p>右邊兩杯各加入同樣的強酸或強鹼：純水的 pH 從 7 直接掉到 2，緩衝溶液卻只動了不到 0.1。把緩衝溶液的濃度調低再試，會發現它能吸收的酸鹼也跟著變少：這就是<b>緩衝容量</b>。當加入的 H⁺ 超過溶液裡的 A⁻，緩衝就被「打穿」了。</p>` },
+      { h: '比例決定 pH：Henderson–Hasselbalch 方程式', w: 'species', body: `
+<p>從酸解離常數的定義出發：</p>
+<p class="eq">Ka = [H⁺][A⁻] ÷ [HA]</p>
+<p>兩邊取 −log，把 −log[H⁺] 寫成 pH、−log Ka 寫成 pKa，整理後得到：</p>
+<p class="eq">pH = pKa + log([A⁻] ÷ [HA])</p>
+<p>這條式子告訴我們三件事：</p>
+<ol><li><b>pH 由比例決定</b>，和總量無關。同樣 1：1 的緩衝溶液，濃一點稀一點 pH 都一樣（濃度只影響緩衝容量）。</li>
+<li><b>[A⁻] = [HA] 時，pH = pKa</b>。滴定到一半（半當量點）就是這個狀態，所以可以從滴定曲線直接讀出 pKa。</li>
+<li>比例每差 10 倍，pH 才差 1。比例在 1/10 到 10 之間時，緩衝效果最好，所以有效緩衝範圍約為 <b>pKa ± 1</b>。</li></ol>
+<p>拖動 pH 看兩種形式的比例怎麼交換；再改變 pKa，整組曲線會左右平移。</p>` },
+      { h: '滴定曲線上的關鍵點怎麼算', w: 'calc', body: `
+<p>每個點的算法不同，但判斷方式只有一個：<b>先問燒杯裡主要是什麼</b>，再選對應的工具。</p>
+<table class="tbl"><thead><tr><th>燒杯裡主要是</th><th>用什麼算</th></tr></thead><tbody>
+<tr><td>只有弱酸 HA</td><td>弱酸解離：[H⁺] ≈ √(Ka·C)</td></tr>
+<tr><td>HA 和 A⁻ 並存</td><td>Henderson–Hasselbalch（用 mmol 比即可，體積會約掉）</td></tr>
+<tr><td>只剩 A⁻</td><td>共軛鹼水解：Kb = Kw ÷ Ka，[OH⁻] ≈ √(Kb·C)</td></tr>
+<tr><td>OH⁻ 過量</td><td>直接用過量的 OH⁻，A⁻ 的貢獻可忽略</td></tr></tbody></table>
+<p>點選每個點，看判斷過程與計算步驟。近似公式算出的 pH 和右邊的精確解幾乎一樣；如果差很多，代表那個近似的前提（例如解離很少）不成立。</p>` },
+      { h: '選指示劑：顏色要在暴衝區變', w: 'indicator', body: `
+<p>指示劑本身也是弱酸（HIn），酸形和鹼形顏色不同。依照 Henderson–Hasselbalch，pH 在 pKa(HIn) ± 1 之間時兩種形式都多，看起來是過渡色，這就是<b>變色範圍</b>。</p>
+<p>滴定時我們看顏色判斷「到了沒」，所以指示劑必須在 <b>pH 暴衝的那一段</b>變色：那一段只差一兩滴，顏色一變就代表到了當量點。</p>
+<ul><li>醋酸 + NaOH：當量點 pH ≈ 8.7，用<b>酚酞</b>（8.2–10.0）。</li>
+<li>強酸 + 強鹼：暴衝區從 pH 約 3 到 11，酚酞、溴瑞香草酚藍都可以。</li>
+<li>甲基橙（3.1–4.4）滴醋酸會在緩衝區就慢慢變色，你會以為已經到了，其實才加了一小半。</li></ul>
+<p>換不同指示劑，看燒杯的顏色在哪裡開始變。</p>` },
+    ],
+    quiz: [
+      { q: '用 NaOH 滴定醋酸，滴到半當量點時，溶液的 pH 等於什麼？', o: ['醋酸的 pKa', '7', '醋酸 pKa 的一半', '14 − pKa'], a: 0,
+        why: '半當量點時一半的 HA 變成 A⁻，[A⁻] = [HA]，log 1 = 0，所以 pH = pKa。', show: { w: 'titration', set: { acid: 'weak', v: 12.5 } } },
+      { q: '弱酸被強鹼滴定，為什麼當量點的 pH 大於 7？', o: ['此時溶液裡的 A⁻ 會和水反應產生 OH⁻', '加入的 NaOH 過量', '醋酸揮發掉了', '當量點時 HA 全部解離產生 H⁺'], a: 0,
+        why: '當量點時 HA 剛好全變成 A⁻。A⁻ 是弱鹼：A⁻ + H₂O ⇌ HA + OH⁻，所以溶液偏鹼（醋酸約 8.7）。強酸的共軛鹼 Cl⁻ 不會水解，所以強酸的當量點是 7。', show: { w: 'titration', set: { acid: 'weak', v: 25 } } },
+      { q: '在醋酸／醋酸鈉緩衝溶液中加入少量 HCl，主要發生什麼反應？', o: ['A⁻ + H⁺ → HA', 'HA + H⁺ → H₂A⁺', 'H⁺ + OH⁻ → H₂O', 'Cl⁻ + HA → HCl + A⁻'], a: 0,
+        why: '加入的 H⁺ 被共軛鹼 A⁻ 接走變成弱酸 HA，強酸被換成弱酸，所以 pH 變化很小。', show: { w: 'buffer', set: { add: 'H' } } },
+      { q: '要配製 pH 5.0 的緩衝溶液，下列哪一組最適合？（pKa 已列出）', o: ['醋酸／醋酸鈉（pKa 4.74）', '磷酸二氫鈉／磷酸氫二鈉（pKa 7.21）', '氯化銨／氨（pKa 9.25）', '鹽酸／氯化鈉'], a: 0,
+        why: '有效緩衝範圍約 pKa ± 1，pH 5.0 落在醋酸的 3.74–5.74 之間。鹽酸是強酸，它的共軛鹼 Cl⁻ 不會接 H⁺，不能形成緩衝。', show: { w: 'species', set: { pKa: 4.74, pH: 5.0 } } },
+      { q: '20.0 mL 的 0.100 M 醋酸（pKa 4.74）加入 15.0 mL 的 0.100 M NaOH，pH 約為多少？', o: ['5.22', '4.26', '4.74', '8.72'], a: 0,
+        why: '原有 HA 2.00 mmol，加入 OH⁻ 1.50 mmol → 剩 HA 0.50 mmol、生成 A⁻ 1.50 mmol。pH = 4.74 + log(1.50 ÷ 0.50) = 4.74 + 0.48 = 5.22。注意：A⁻ 比 HA 多，pH 一定大於 pKa。' },
+      { q: '用 NaOH 滴定醋酸，選哪一種指示劑最適合？', o: ['酚酞（變色範圍 8.2–10.0）', '甲基橙（3.1–4.4）', '甲基紅（4.4–6.2）', '都可以，指示劑不影響結果'], a: 0,
+        why: '當量點 pH 約 8.7，落在暴衝區中段。酚酞在這段變色；甲基橙、甲基紅會在緩衝區就變色，造成終點提早。', show: { w: 'indicator', set: { ind: 'mo', v: 8 } } },
+    ],
+  },
+  {
+    id: 'sn-e', unit: 'o4', title: '取代與脫去：SN2、SN1、E2、E1',
+    lede: '鹵烷遇到親核基或鹼，會走四條路之一。不用背表格：只要看懂「誰的電子去攻擊誰」和「有什麼擋在路上」，就能推出答案。',
+    sections: [
+      { h: '起點：碳–鹵鍵為什麼會被攻擊', w: 'leaving', body: `
+<p>鹵素的電負度比碳大，C–X 鍵的電子偏向 X，碳帶部分正電（δ+）。帶負電或有孤對電子的分子（<b>親核基</b>，Nu:）就會被這個 δ+ 的碳吸引，用自己的電子對去和它成鍵。</p>
+<p>但碳已經有四個鍵，新鍵要形成，就得有一個舊鍵斷掉：X 必須<b>帶著那一對電子離開</b>，變成 X⁻。離開後的 X⁻ 越穩定，它就越願意離開，我們說它是越好的<b>離去基</b>。</p>
+<p>怎麼判斷 X⁻ 穩不穩定？用酸鹼章學過的關係：<b>酸越強，它的共軛鹼越穩定</b>。所以只要看 HX 的 pKa：</p>
+<p class="eq">HI（−10）> HBr（−9）> HCl（−7）≫ HF（3.2）　⇒　離去能力 I⁻ > Br⁻ > Cl⁻ ≫ F⁻</p>
+<p>同一個道理解釋了醇：直接離開的會是 OH⁻（H₂O 的 pKa 15.7，非常差的離去基），所以醇不會直接被取代；先加酸把 –OH 質子化成 –OH₂⁺，離開的就變成中性的 H₂O（H₃O⁺ 的 pKa −1.7），立刻成為好離去基。</p>` },
+      { h: 'SN2：一步到位，從背面進攻', w: 'sn2', body: `
+<p>親核基的孤對電子從 C–X 鍵的<b>正對面（背面）</b>進攻：這個方向正好對準 C–X 反鍵結軌域，也離帶負電的 X 最遠。新鍵形成和舊鍵斷裂<b>同時發生</b>，整個反應只有一個過渡狀態。</p>
+<p>按「下一步」看動畫，注意兩件事：</p>
+<ol><li>過渡狀態時，碳上另外三個基團被推到同一平面，像一把被風吹到翻過來一半的雨傘。</li>
+<li>產物的三個基團翻到另一邊：<b>構型反轉</b>（華爾頓反轉）。(R)-2-溴丁烷經 SN2 生成 (S)-2-丁醇。</li></ol>
+<p>因為過渡狀態同時包含鹵烷和親核基，速率和兩者都成正比：</p>
+<p class="eq">rate = k [RX] [Nu⁻]　（二級反應，SN2 的「2」就是這個意思）</p>
+<p>切換基質看看：碳上的基團越大，背面越擠，親核基越難靠近。甲基最快，一級次之，二級慢很多，<b>三級幾乎不反應</b>。極性非質子性溶劑（丙酮、DMSO、DMF）不會用氫鍵包住親核基，讓它更「赤裸」、更有攻擊力，所以有利 SN2。</p>` },
+      { h: 'SN1：先斷鍵，再進攻', w: 'sn1', body: `
+<p>三級鹵烷的背面被擋住，走不了 SN2，但它有另一條路：C–X 鍵<b>先自己斷開</b>，生成帶正電的<b>碳陽離子</b>；之後親核基（常常就是溶劑，例如水或醇）再很快地加上去。</p>
+<p>第一步（斷鍵）最慢，而且只有鹵烷參與，所以速率只和鹵烷有關，和親核基的濃度、強弱都無關：</p>
+<p class="eq">rate = k [RX]　（一級反應）</p>
+<p>第一步快不快，取決於碳陽離子穩不穩定：<b>三級 > 二級 > 一級 > 甲基</b>。原因是相鄰的 C–H 鍵電子可以分攤正電荷（<b>超共軛</b>），三級碳旁邊有 9 個 C–H 能幫忙，甲基一個都沒有。極性質子性溶劑（水、醇）能用氫鍵和偶極包住生成的離子，降低第一步的能量，所以有利 SN1。</p>
+<p>碳陽離子是<b>平面形</b>（sp²），空的 p 軌域上下兩瓣都能接受電子，親核基從左右兩面進攻的機會差不多。分別選「從左邊進攻」和「從右邊進攻」播放：一個得到構型反轉、一個得到構型保留，兩者是鏡像異構物，所以產物接近<b>外消旋</b>（常略多一點反轉產物，因為剛離開的 X⁻ 會暫時擋住同一側）。</p>` },
+      { h: 'E2：鹼拿走 β-氫，一步形成雙鍵', w: ['e2', 'newman', 'zaitsev'], body: `
+<p>如果進攻的是<b>強鹼</b>，它可以不碰碳，改拿走旁邊那個碳（β 碳）上的氫。三件事同時發生：</p>
+<ol><li>鹼的孤對電子和 β-H 成鍵；</li><li>原本 C–H 鍵的電子轉過去形成 C=C 的 π 鍵；</li><li>X 帶著電子對離開。</li></ol>
+<p>速率和鹵烷、鹼都有關：rate = k [RX] [B⁻]。</p>
+<p>為了讓 C–H 的電子能順利「推」進 C–X 的反鍵結軌域，<b>H 和 X 必須在相反兩側、同一平面上</b>，稱為<b>反式共平面</b>（anti-periplanar）。下面第二個圖用紐曼投影式沿著 C–C 鍵看過去，轉動後面的碳，找出 E2 可以發生的角度。</p>
+<p>如果不只一種 β-氫可以拿，通常得到<b>雙鍵上取代基較多</b>、較穩定的烯，這叫<b>查依采夫（Zaitsev）規則</b>。但體積很大的鹼（例如 t-BuO⁻）擠不進裡面，只能拿外側甲基上的氫，結果反而以取代較少的烯為主，稱為<b>霍夫曼（Hofmann）產物</b>。第三個圖可以切換兩種鹼比較。</p>` },
+      { h: 'E1：和 SN1 共用第一步', w: 'e1', body: `
+<p>E1 的第一步和 SN1 完全一樣：鹵烷先解離成碳陽離子。接下來碳陽離子有兩個選擇：</p>
+<ul><li>被親核基加上去 → SN1；</li><li>被弱鹼（通常就是溶劑）拿走 β-氫，形成雙鍵 → E1。</li></ul>
+<p>所以 SN1 和 E1 幾乎總是一起出現，速率都只和鹵烷有關（rate = k[RX]）。E1 沒有反式共平面的限制（碳陽離子是平面形，β-H 隨時都對得上空的 p 軌域），產物通常以較穩定、取代較多的烯為主。</p>
+<p><b>加熱會偏向脫去</b>：脫去反應把一個分子變成三個（烯、H–B、X⁻），熵增加（ΔS > 0）。依 ΔG = ΔH − TΔS，溫度越高，−TΔS 越負，對脫去越有利。</p>` },
+      { h: '把四條路放在一起：一步一步判斷', w: 'decide', body: `
+<p>判斷時依序問三個問題，每個問題都對應前面看過的原因：</p>
+<ol><li><b>基質是甲基、一級、二級還是三級？</b>決定背面擠不擠（SN2）、碳陽離子穩不穩（SN1／E1），以及有沒有 β-氫（甲基沒有，不能脫去）。</li>
+<li><b>試劑是強鹼嗎？是好的親核基嗎？體積大嗎？</b>強鹼偏向 E2；強親核弱鹼（I⁻、Br⁻、RS⁻、N₃⁻、CN⁻）偏向 SN2；體積大的強鹼幾乎只做 E2；弱親核弱鹼（H₂O、ROH）只能等碳陽離子生成，走 SN1／E1。</li>
+<li><b>溶劑和溫度？</b>極性非質子性溶劑幫 SN2；極性質子性溶劑幫 SN1／E1；加熱幫脫去。</li></ol>
+<p>選好條件，看推理過程。試著自己先想答案，再對照。</p>` },
+    ],
+    quiz: [
+      { q: 'SN2 反應的速率式為何？', o: ['rate = k[RX][Nu⁻]', 'rate = k[RX]', 'rate = k[Nu⁻]', 'rate = k[RX]²'], a: 0,
+        why: 'SN2 只有一步，過渡狀態同時包含鹵烷和親核基，所以速率和兩者都成正比。', show: { w: 'sn2', set: { sub: 'secondary', step: 1 } } },
+      { q: '(R)-2-溴丁烷和 NaOH 經 SN2 反應，主要產物是什麼？', o: ['(S)-2-丁醇', '(R)-2-丁醇', '外消旋 2-丁醇', '1-丁烯'], a: 0,
+        why: '親核基從背面進攻，三個基團像雨傘一樣翻到另一側，構型反轉。OH 取代 Br 的位置，優先順序不變，所以 R 變成 S。', show: { w: 'sn2', set: { sub: 'secondary', step: 2 } } },
+      { q: '下列鹵烷進行 SN2 反應，何者最快？', o: ['CH₃Br', 'CH₃CH₂Br', '(CH₃)₂CHBr', '(CH₃)₃CBr'], a: 0,
+        why: 'SN2 需要從背面進攻，碳上的基團越少越不擠。甲基最快，三級幾乎不反應。', show: { w: 'sn2', set: { sub: 'methyl', step: 0 } } },
+      { q: '下列碳陽離子何者最穩定？', o: ['(CH₃)₃C⁺', '(CH₃)₂CH⁺', 'CH₃CH₂⁺', 'CH₃⁺'], a: 0,
+        why: '相鄰 C–H 鍵越多，超共軛越能分攤正電荷。三級碳陽離子旁有 9 個 C–H，最穩定。', show: { w: 'sn1', set: { step: 1 } } },
+      { q: '光學活性的三級鹵烷在水中進行 SN1 反應，產物的立體化學通常是？', o: ['接近外消旋（常略多反轉產物）', '完全構型反轉', '完全構型保留', '不會生成醇'], a: 0,
+        why: '碳陽離子是平面形，水可以從兩面進攻，生成兩種鏡像產物。剛離開的 X⁻ 會稍微擋住同側，所以反轉產物通常略多。', show: { w: 'sn1', set: { side: 'R', step: 3 } } },
+      { q: 'E2 反應中，被拿走的 β-H 和離去基需要什麼相對位置？', o: ['反式共平面（二面角 180°）', '順式共平面（二面角 0°）', '二面角 60°（偏位）', '沒有限制'], a: 0,
+        why: 'C–H 鍵的電子要推進 C–X 的反鍵結軌域，兩者必須平行對齊；反式共平面時對齊得最好，也避開了擁擠的重疊構形。', show: { w: 'newman', set: { ang: 180 } } },
+      { q: '2-溴-2-甲基丁烷和第三丁氧化鉀（t-BuOK）反應，主要產物是？', o: ['2-甲基-1-丁烯', '2-甲基-2-丁烯', '2-甲基-2-丁醇', '第三丁基 2-甲基-2-丁基醚'], a: 0,
+        why: 't-BuO⁻ 體積很大，搆不到 CH₂ 上的 H，只能拿外側 CH₃ 上的 H，生成取代較少的霍夫曼產物 2-甲基-1-丁烯（約 72%）。', show: { w: 'zaitsev', set: { base: 'tbuo' } } },
+      { q: '2-溴丙烷和乙氧化鈉（NaOEt）在乙醇中反應，主要走哪一條路？', o: ['E2', 'SN2', 'SN1', 'E1'], a: 0,
+        why: '二級基質加上強鹼（同時也是強親核基），背面有點擠，鹼拿 β-H 比較容易，所以 E2 為主、SN2 為次。', show: { w: 'decide', set: { sub: 'secondary', reag: 'base', solv: 'protic', heat: false } } },
+      { q: '為什麼醇要在酸性條件下才能進行取代反應？', o: ['質子化後離去的是 H₂O，而不是很差的離去基 OH⁻', '酸會讓親核基變強', '酸能把醇氧化成醛', '酸讓碳變成負電荷'], a: 0,
+        why: 'OH⁻ 的共軛酸 H₂O 的 pKa 是 15.7，OH⁻ 很不穩定，不願離開；質子化後離開的是 H₂O，其共軛酸 H₃O⁺ 的 pKa 是 −1.7，H₂O 是好離去基。', show: { w: 'leaving', set: { x: 'OH2' } } },
+    ],
+  },
+];
+
+/* ---------- 後中化學：互動圖 ----------
+   W.名稱(el) 在 el 裡畫出互動圖，回傳 { set(狀態) } 給練習題的「在圖上看」使用。 */
+const W = {};
+const seg = (id, opts, cur) => `<div class="seg" id="${id}" role="group">${opts.map(([v, t]) => `<button type="button" data-v="${v}" aria-pressed="${v === cur}">${t}</button>`).join('')}</div>`;
+const bindSeg = (el, id, f) => $$(`#${id} button`, el).forEach(b => { b.onclick = () => f(b.dataset.v); });
+const pressSeg = (el, id, v) => $$(`#${id} button`, el).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === v)));
+const card = (k, lab, val, sub = '') => `<div class="card" data-k="${k}"><span>${lab}</span><b>${val}</b>${sub ? `<small>${sub}</small>` : ''}</div>`;
+let UID = 0;
+
+/* ===== 1. 滴定：燒杯（粒子）＋滴定曲線 ===== */
+W.titration = (el, opt = {}) => {
+  const id = 't' + (++UID), st = { acid: 'weak', v: 0, ind: opt.ind || 'none' }, Va = 25, Ca0 = 0.1, Cb = 0.1;
+  el.innerHTML = `<div class="w-row">${seg(id + 'a', [['weak', '醋酸（弱酸）'], ['strong', '鹽酸（強酸）']], st.acid)}<label class="sel">指示劑 <select id="${id}i">${Object.entries(IND).map(([k, d]) => `<option value="${k}"${k === st.ind ? ' selected' : ''}>${d.name}${d.txt ? `（${d.lo}–${d.hi}，${d.txt}）` : ''}</option>`).join('')}</select></label></div>
+<div class="tgrid"><div class="beaker" id="${id}b"></div><div class="tcurve" id="${id}c"></div></div>
+<div class="w-row"><label class="rng">加入 NaOH <input type="range" id="${id}v" min="0" max="50" step="0.1" value="0"><output id="${id}o" class="mono"></output></label></div>
+<div class="w-row">${[[-1, '−1 mL'], [-0.1, '−0.1'], [0.1, '+0.1'], [1, '+1 mL']].map(([d, t]) => `<button class="btn sm" type="button" data-d="${d}">${t}</button>`).join('')}<span class="sp"></span>${[[0, '起點'], [12.5, '半當量點'], [25, '當量點'], [30, '鹼過量']].map(([v, t]) => `<button class="btn sm ghost" type="button" data-j="${v}">${t}</button>`).join('')}</div>
+<div class="cards" id="${id}k"></div><p class="note" id="${id}n" aria-live="polite"></p>`;
+  const curve = strong => { const xs = []; for (let v = 0; v <= 50.001; v += (Math.abs(v - 25) < 1.2 ? 0.02 : 0.25)) xs.push(v); return xs.map(v => [v, titr({ Va, Ca0, Cb, Vb: v, strong, pKa: ACID[strong ? 'strong' : 'weak'].pKa }).pH]); };
+  const CUR = { weak: curve(false), strong: curve(true) };
+  function beaker(r) {
+    const W0 = 230, H0 = 270, x0 = 40, x1 = 190, yb = 250, top = 70, lv = yb - (r.V / 80) * (yb - top) - 4;
+    const strong = st.acid === 'strong', icons = [];
+    const push = (n, cls, t) => { for (let i = 0; i < Math.round(n / 0.1); i++) icons.push([cls, t]); };
+    if (strong) push(r.nH, 'ih', 'H⁺'); else push(r.nHA, 'iha', 'HA');
+    if (!strong) push(r.nA, 'ia', 'A⁻');
+    if (r.nOH > 0.05) push(r.nOH, 'ioh', 'OH⁻');
+    const cols = 8, cw = (x1 - x0 - 12) / cols, rowH = 15;
+    const g = icons.slice(0, 64).map(([c, t], i) => { const cx = x0 + 6 + cw * (i % cols + 0.5), cy = yb - 10 - rowH * Math.floor(i / cols); return `<g class="${c}"><circle cx="${cx}" cy="${cy}" r="7"/><text x="${cx}" y="${cy + 3}" text-anchor="middle">${t}</text></g>`; }).join('');
+    const drops = st.v > 0 ? `<line class="burette" x1="115" y1="6" x2="115" y2="40"/><circle class="drop" cx="115" cy="52" r="3"/>` : `<line class="burette" x1="115" y1="6" x2="115" y2="40"/>`;
+    return `<svg viewBox="0 0 ${W0} ${H0}" class="bk" role="img" aria-label="燒杯中的粒子">${drops}<path class="liq" d="M${x0 + 2} ${lv}L${x1 - 2} ${lv}L${x1 - 2} ${yb - 2}L${x0 + 2} ${yb - 2}Z" style="fill:${indColor(st.ind, r.pH)}"/><path class="glass" d="M${x0} ${top - 10}L${x0} ${yb}L${x1} ${yb}L${x1} ${top - 10}"/>${g}<text class="phm" x="${x1 + 4}" y="${top + 4}">pH</text><text class="phv" x="${x1 + 4}" y="${top + 26}">${fx(r.pH)}</text><text class="tk" x="${(x0 + x1) / 2}" y="${H0 - 4}" text-anchor="middle">${strong ? '每個圓 = 0.1 mmol（Na⁺、Cl⁻ 不畫）' : '每個圓 = 0.1 mmol（Na⁺ 不畫）'}</text></svg>`;
+  }
+  function narrate(r) {
+    const strong = st.acid === 'strong', v = st.v, nOH = Cb * v, n0 = Ca0 * Va, eq = Math.abs(v - 25) < 0.05;
+    if (strong) {
+      if (v === 0) return `HCl 是強酸，在水中<b>完全解離</b>：[H⁺] = 0.100 M，pH = 1.00。燒杯裡的「酸」就是 2.50 mmol 的 H⁺。`;
+      if (eq) return `加入的 OH⁻ 剛好中和所有 H⁺。燒杯裡只剩 Na⁺、Cl⁻ 和水，兩者都不和水反應，所以 <b>pH = 7.00</b>。`;
+      if (v < 25) return `加入 ${fx(nOH, 2)} mmol OH⁻，中和等量的 H⁺，剩 ${fx(n0 - nOH, 2)} mmol H⁺ 在 ${fx(r.V, 1)} mL 中 → [H⁺] = ${sci((n0 - nOH) / r.V)} M，pH = ${fx(r.pH)}。沒有弱酸可以「接住」變化，所以沒有緩衝區。`;
+      return `H⁺ 已中和完，多出 ${fx(nOH - n0, 2)} mmol OH⁻，pH 由過量的強鹼決定：${fx(r.pH)}。`;
+    }
+    if (v === 0) return `還沒加鹼。燒杯裡幾乎都是 HA，只有約 ${fx(100 * r.nH / n0, 1)}% 解離：[H⁺] ≈ √(Ka·C) → pH = ${fx(r.pH)}。只有一點點 A⁻，所以剛開始加鹼時比例變化很大，pH 爬得快。`;
+    if (Math.abs(v - 12.5) < 0.05) return `<b>半當量點</b>：一半的 HA 變成 A⁻，HA = A⁻ = ${fx(r.nA, 2)} mmol。比例 1：1，所以 <b>pH = pKa = ${fx(r.pH)}</b>。這也是緩衝能力最強的位置。`;
+    if (eq) return `<b>當量點</b>：HA 全部變成 A⁻（${fx(r.nA, 2)} mmol）。A⁻ 是弱鹼，A⁻ + H₂O ⇌ HA + OH⁻，所以溶液偏鹼，<b>pH = ${fx(r.pH)}</b>，不是 7。`;
+    if (v < 23.5) return `加入 ${fx(nOH, 2)} mmol OH⁻ → 生成 ${fx(nOH, 2)} mmol A⁻，剩 ${fx(n0 - nOH, 2)} mmol HA。HA 和 A⁻ 都很多，是<b>緩衝溶液</b>：pH ≈ pKa + log(${fx(nOH, 2)} ÷ ${fx(n0 - nOH, 2)}) = ${fx(r.pH)}。`;
+    if (v < 25) return `只剩 ${fx(n0 - nOH, 2)} mmol HA 了。HA 越少，每一滴鹼讓 A⁻/HA 比例改變得越劇烈，pH 開始<b>暴衝</b>。`;
+    return `HA 已用完，多出 ${fx(nOH - n0, 2)} mmol OH⁻。過量強鹼產生的 OH⁻ 遠多於 A⁻ 水解產生的，pH 由過量 OH⁻ 決定：${fx(r.pH)}。這之後的曲線和強酸完全重合。`;
+  }
+  function draw() {
+    const strong = st.acid === 'strong', r = titr({ Va, Ca0, Cb, Vb: st.v, strong, pKa: ACID[st.acid].pKa }), d = IND[st.ind];
+    $('#' + id + 'b', el).innerHTML = beaker(r);
+    $('#' + id + 'c', el).innerHTML = chart({ x: [0, 50], y: [0, 14], xt: [0, 10, 20, 25, 30, 40, 50], yt: [0, 2, 4, 6, 7, 8, 10, 12, 14], xlab: '加入 NaOH（mL）', ylab: 'pH', h: 290, label: '滴定曲線' }, (X, Y) =>
+      (d.lo ? `<rect class="indband" x="${X(0)}" y="${Y(d.hi)}" width="${X(50) - X(0)}" height="${Y(d.lo) - Y(d.hi)}" style="fill:${indColor(st.ind, (d.lo + d.hi) / 2)}"/><text class="tk" x="${X(49)}" y="${Y(d.hi) - 4}" text-anchor="end">${d.name}變色範圍</text>` : '') +
+      (strong ? '' : `<rect class="buf" data-k="buf" x="${X(25 / 11)}" y="${Y(14)}" width="${X(250 / 11) - X(25 / 11)}" height="${Y(0) - Y(14)}"/><text class="tk" x="${X(12.5)}" y="${Y(13)}" text-anchor="middle">緩衝區（pKa ± 1）</text><line class="mk" x1="${X(12.5)}" x2="${X(12.5)}" y1="${Y(0)}" y2="${Y(4.74)}"/><line class="mk" x1="${X(0)}" x2="${X(12.5)}" y1="${Y(4.74)}" y2="${Y(4.74)}"/><text class="tk" x="${X(13)}" y="${Y(4.74) + 14}">半當量點 pH = pKa</text>`) +
+      `<line class="mk" x1="${X(25)}" x2="${X(25)}" y1="${Y(0)}" y2="${Y(14)}"/><text class="tk" x="${X(25.6)}" y="${Y(1)}">當量點</text>` +
+      `<path class="tline" d="${path(CUR[st.acid].map(([v, p]) => [X(v), Y(p)]))}"/>${strong ? '' : `<path class="tline2" d="${path(CUR.strong.map(([v, p]) => [X(v), Y(p)]))}"/>`}<circle class="dot" cx="${X(st.v)}" cy="${Y(r.pH)}" r="7"/>`);
+    $('#' + id + 'o', el).textContent = `${fx(st.v, 1)} mL`;
+    $('#' + id + 'v', el).value = st.v;
+    $('#' + id + 'k', el).innerHTML = card('ph', 'pH', fx(r.pH)) + (strong ? card('h', 'H⁺', `${fx(r.nH, 2)} mmol`) : card('ha', 'HA', `${fx(r.nHA, 2)} mmol`) + card('a', 'A⁻', `${fx(r.nA, 2)} mmol`)) + card('oh', '過量 OH⁻', `${fx(Math.max(0, Cb * st.v - Ca0 * Va), 2)} mmol`) + card('vt', '總體積', `${fx(r.V, 1)} mL`);
+    $('#' + id + 'n', el).innerHTML = narrate(r) + (d.lo ? ` 此時${d.name}呈 <span class="sw" style="background:${indColor(st.ind, r.pH)}"></span>${r.pH < d.lo ? '酸色' : r.pH > d.hi ? '鹼色' : '過渡色'}。` : '');
+    pressSeg(el, id + 'a', st.acid);
+  }
+  const setV = v => { st.v = Math.round(clamp(v, 0, 50) * 10) / 10; draw(); };
+  bindSeg(el, id + 'a', v => { st.acid = v; draw(); });
+  $('#' + id + 'v', el).oninput = e => setV(+e.target.value);
+  $('#' + id + 'i', el).onchange = e => { st.ind = e.target.value; draw(); };
+  $$('[data-d]', el).forEach(b => { b.onclick = () => setV(st.v + +b.dataset.d); });
+  $$('[data-j]', el).forEach(b => { b.onclick = () => setV(+b.dataset.j); });
+  draw();
+  return { set(s) { Object.assign(st, s); if (s.ind) $('#' + id + 'i', el).value = s.ind; draw(); } };
+};
+W.indicator = el => W.titration(el, { ind: 'pp' });
+
+/* ===== 2. 緩衝溶液 vs 純水 ===== */
+W.buffer = el => {
+  const st = { C: 0.1, net: 0 }, V = 100, step = 1;
+  el.innerHTML = `<div class="w-row"><button class="btn sm" type="button" data-a="H">＋ 1 mmol HCl</button><button class="btn sm" type="button" data-a="OH">＋ 1 mmol NaOH</button><button class="btn sm ghost" type="button" data-a="0">⟲ 重來</button></div>
+<div class="w-row"><label class="rng">緩衝溶液濃度（HA 與 A⁻ 各）<input type="range" id="bc" min="0.01" max="0.3" step="0.01" value="0.1"><output class="mono" id="bco"></output></label></div>
+<div class="bgrid"><div id="bcards" class="cards"></div><div id="bbars"></div></div><div id="bch"></div><p class="note" id="bn" aria-live="polite"></p>`;
+  const calc = net => ({ b: buffer({ C: st.C, V, addH: Math.max(0, net), addOH: Math.max(0, -net) }), w: water({ V, addH: Math.max(0, net), addOH: Math.max(0, -net) }) });
+  function draw() {
+    const r = calc(st.net), r0 = calc(0), cap = st.C * V;
+    $('#bco', el).textContent = `${fx(st.C, 2)} M（各 ${fx(cap, 1)} mmol）`;
+    const added = st.net === 0 ? '還沒加任何東西' : st.net > 0 ? `已加入 ${st.net} mmol HCl` : `已加入 ${-st.net} mmol NaOH`;
+    $('#bcards', el).innerHTML = `<p class="small mut" style="width:100%;margin:0">${added}（100 mL）</p>` + card('bw', '純水 pH', fx(r.w.pH), `變化 ${(r.w.pH - r0.w.pH >= 0 ? '+' : '')}${fx(r.w.pH - r0.w.pH)}`) + card('bb', '緩衝溶液 pH', fx(r.b.pH), `變化 ${(r.b.pH - r0.b.pH >= 0 ? '+' : '')}${fx(r.b.pH - r0.b.pH)}`);
+    const mx = 2 * cap;
+    $('#bbars', el).innerHTML = `<div class="bars"><div><span>HA</span><i style="width:${100 * r.b.nHA / mx}%" class="bha"></i><b class="mono">${fx(r.b.nHA, 2)}</b></div><div><span>A⁻</span><i style="width:${100 * r.b.nA / mx}%" class="ba"></i><b class="mono">${fx(r.b.nA, 2)}</b></div></div><p class="small mut">緩衝溶液中 HA 與 A⁻ 的量（mmol）</p>`;
+    const lim = 15, xs = Array.from({ length: 121 }, (_, i) => -lim + i * 2 * lim / 120);
+    $('#bch', el).innerHTML = chart({ x: [-lim, lim], y: [0, 14], xt: [-15, -10, -5, 0, 5, 10, 15], yt: [0, 2, 4, 6, 7, 8, 10, 12, 14], xlab: '← 加入 NaOH（mmol）　　　加入 HCl（mmol）→', ylab: 'pH', h: 250, label: '加酸加鹼後的 pH' }, (X, Y) =>
+      `<rect class="buf" x="${X(-cap)}" y="${Y(14)}" width="${X(cap) - X(-cap)}" height="${Y(0) - Y(14)}"/><text class="tk" x="${X(0)}" y="${Y(13.2)}" text-anchor="middle">緩衝容量內</text>` +
+      `<path class="tline2" d="${path(xs.map(x => [X(x), Y(calc(x).w.pH)]))}"/><path class="tline" d="${path(xs.map(x => [X(x), Y(calc(x).b.pH)]))}"/>` +
+      `<circle class="dot2" cx="${X(st.net)}" cy="${Y(r.w.pH)}" r="6"/><circle class="dot" cx="${X(st.net)}" cy="${Y(r.b.pH)}" r="7"/><text class="tk" x="${X(lim) - 4}" y="${Y(calc(lim).w.pH) - 8}" text-anchor="end">純水</text><text class="tk" x="${X(-lim) + 4}" y="${Y(calc(-lim).b.pH) + 16}">緩衝溶液</text>`);
+    const over = Math.abs(st.net) > cap;
+    $('#bn', el).innerHTML = st.net === 0 ? '兩杯都還沒加東西。緩衝溶液 HA：A⁻ = 1：1，pH = pKa = 4.74。'
+      : over ? `加入的${st.net > 0 ? ' H⁺ 已超過 A⁻' : ' OH⁻ 已超過 HA'}的量，緩衝被<b>打穿</b>：多出來的強${st.net > 0 ? '酸' : '鹼'}沒有東西可以吃掉，pH 開始像純水一樣大幅變化。`
+        : `${st.net > 0 ? `加入的 ${st.net} mmol H⁺ 被 A⁻ 接走：A⁻ + H⁺ → HA` : `加入的 ${-st.net} mmol OH⁻ 被 HA 中和：HA + OH⁻ → A⁻ + H₂O`}。比例變成 ${fx(r.b.nA, 1)} ÷ ${fx(r.b.nHA, 1)}，pH = 4.74 + log(${fx(r.b.nA / r.b.nHA, 2)}) = ${fx(r.b.pH)}。純水沒有東西可以吃掉它，pH 直接變到 ${fx(r.w.pH)}。`;
+    $('#bc', el).value = st.C;
+  }
+  $$('[data-a]', el).forEach(b => { b.onclick = () => { const a = b.dataset.a; st.net = a === '0' ? 0 : clamp(st.net + (a === 'H' ? step : -step), -15, 15); draw(); }; });
+  $('#bc', el).oninput = e => { st.C = +e.target.value; draw(); };
+  draw();
+  return { set(s) { st.net = s.add === 'H' ? 1 : s.add === 'OH' ? -1 : 0; draw(); } };
+};
+
+/* ===== 3. 分率曲線與 Henderson–Hasselbalch ===== */
+W.species = el => {
+  const st = { pKa: 4.74, pH: 4.74 };
+  el.innerHTML = `<div class="w-row"><span class="small mut">常見弱酸：</span>${[[4.74, '醋酸 4.74'], [6.35, '碳酸 6.35'], [9.25, '銨離子 9.25']].map(([v, t]) => `<button class="btn sm ghost" type="button" data-p="${v}">${t}</button>`).join('')}</div>
+<div class="w-row"><label class="rng">pKa <input type="range" id="sk" min="2" max="12" step="0.01"><output class="mono" id="sko"></output></label><label class="rng">pH <input type="range" id="sp" min="0" max="14" step="0.05"><output class="mono" id="spo"></output></label></div>
+<div id="sch"></div><div id="sbar"></div><div class="cards" id="sk2"></div><p class="note" id="sn"></p>`;
+  function draw() {
+    const { pKa, pH } = st, fA = 1 / (1 + 10 ** (pKa - pH)), xs = Array.from({ length: 141 }, (_, i) => i / 10);
+    $('#sko', el).textContent = fx(pKa); $('#spo', el).textContent = fx(pH); $('#sk', el).value = pKa; $('#sp', el).value = pH;
+    $('#sch', el).innerHTML = chart({ x: [0, 14], y: [0, 1], xt: [0, 2, 4, 6, 8, 10, 12, 14], yt: [0, 0.25, 0.5, 0.75, 1], xlab: 'pH', ylab: '所佔比例', h: 250, label: '分率曲線' }, (X, Y) =>
+      `<rect class="buf" data-k="range" x="${X(Math.max(0, pKa - 1))}" y="${Y(1)}" width="${X(Math.min(14, pKa + 1)) - X(Math.max(0, pKa - 1))}" height="${Y(0) - Y(1)}"/><text class="tk" x="${X(pKa)}" y="${Y(1) + 14}" text-anchor="middle">pKa ± 1</text>` +
+      `<path class="sha" d="${path(xs.map(x => [X(x), Y(1 - 1 / (1 + 10 ** (pKa - x)))]))}"/><path class="sa" d="${path(xs.map(x => [X(x), Y(1 / (1 + 10 ** (pKa - x)))]))}"/>` +
+      `<line class="mk" x1="${X(pKa)}" x2="${X(pKa)}" y1="${Y(0)}" y2="${Y(0.5)}"/><text class="tk" x="${X(pKa) + 4}" y="${Y(0.04)}">pKa</text>` +
+      `<line class="cur" x1="${X(pH)}" x2="${X(pH)}" y1="${Y(0)}" y2="${Y(1)}"/><circle class="dot" cx="${X(pH)}" cy="${Y(fA)}" r="6"/><circle class="dot2" cx="${X(pH)}" cy="${Y(1 - fA)}" r="6"/>` +
+      `<text class="tk lha" x="${X(0.3)}" y="${Y(0.93)}">HA</text><text class="tk la" x="${X(13.7)}" y="${Y(0.93)}" text-anchor="end">A⁻</text>`);
+    const nA = Math.round(100 * fA);
+    $('#sbar', el).innerHTML = `<div class="stack"><i class="bha" style="width:${100 - nA}%">${100 - nA >= 8 ? `HA ${100 - nA}` : ''}</i><i class="ba" style="width:${nA}%">${nA >= 8 ? `A⁻ ${nA}` : ''}</i></div><p class="small mut">每 100 個分子中，HA 與 A⁻ 各有幾個</p>`;
+    const ratio = 10 ** (pH - pKa);
+    $('#sk2', el).innerHTML = card('r', '[A⁻] ÷ [HA]', ratio >= 100 || ratio < 0.01 ? sci(ratio, 1) : fx(ratio)) + card('lr', 'log 比例', fx(pH - pKa)) + card('hh', 'pKa + log 比例', fx(pKa + Math.log10(ratio)), '= pH');
+    const d = pH - pKa;
+    $('#sn', el).innerHTML = Math.abs(d) < 0.05 ? '<b>pH = pKa</b>：HA 和 A⁻ 各佔一半，兩條曲線正好在這裡交叉。'
+      : `pH ${d > 0 ? '比 pKa 高' : '比 pKa 低'} ${fx(Math.abs(d))}，所以 [A⁻]/[HA] = 10 的 ${fx(d)} 次方 = ${ratio >= 100 || ratio < 0.01 ? sci(ratio, 1) : fx(ratio)}。${Math.abs(d) > 1 ? '已經超出 pKa ± 1：其中一種形式不到 10%，加酸或加鹼時能「接住」的那一種太少，緩衝效果很差。' : '仍在 pKa ± 1 之內，兩種形式都夠多，緩衝效果好。'}`;
+  }
+  $('#sk', el).oninput = e => { st.pKa = +e.target.value; draw(); };
+  $('#sp', el).oninput = e => { st.pH = +e.target.value; draw(); };
+  $$('[data-p]', el).forEach(b => { b.onclick = () => { st.pKa = +b.dataset.p; st.pH = st.pKa; draw(); }; });
+  draw();
+  return { set(s) { Object.assign(st, s); draw(); } };
+};
+
+/* ===== 4. 滴定曲線關鍵點的計算 ===== */
+W.calc = el => {
+  const Va = 25, C0 = 0.1, Cb = 0.1, pKa = 4.74, Ka = 10 ** -pKa, n0 = C0 * Va;
+  const PTS = [['0', 0, '起點'], ['10', 10, '緩衝區（10.0 mL）'], ['12.5', 12.5, '半當量點'], ['25', 25, '當量點'], ['30', 30, '鹼過量（30.0 mL）']];
+  let cur = '0';
+  el.innerHTML = `${seg('cp', PTS.map(p => [p[0], p[2]]), cur)}<div class="calc" id="cbox"></div><div id="cmini"></div>`;
+  function steps(v) {
+    const nOH = Cb * v, V = Va + v, ex = titr({ Va, Ca0: C0, Cb, Vb: v, pKa });
+    let main, s = [], approx;
+    if (v === 0) {
+      main = '只有弱酸 HA（還沒加鹼）';
+      const h = Math.sqrt(Ka * C0); approx = -Math.log10(h);
+      s = [`Ka = 10<sup>−${pKa}</sup> = ${sci(Ka)}`, `HA 只解離一小部分：[H⁺] ≈ √(Ka × C) = √(${sci(Ka)} × ${fx(C0, 3)})`, `= ${sci(h)} M`, `pH = −log(${sci(h)}) = <b>${fx(approx)}</b>`];
+    } else if (v < 25) {
+      main = 'HA 和 A⁻ 並存 → 緩衝溶液';
+      const nA = nOH, nHA = n0 - nOH; approx = pKa + Math.log10(nA / nHA);
+      s = [`加入 OH⁻：${fx(Cb, 3)} M × ${fx(v, 1)} mL = ${fx(nOH, 2)} mmol`, `HA + OH⁻ → A⁻ + H₂O（完全反應）`, `剩 HA = ${fx(n0, 2)} − ${fx(nOH, 2)} = ${fx(nHA, 2)} mmol；生成 A⁻ = ${fx(nA, 2)} mmol`, `pH = pKa + log(A⁻ ÷ HA) = ${pKa} + log(${fx(nA, 2)} ÷ ${fx(nHA, 2)})`, `= ${pKa} + (${fx(Math.log10(nA / nHA))}) = <b>${fx(approx)}</b>`];
+      if (v === 12.5) s.push('A⁻ = HA，log 1 = 0，所以 pH 正好等於 pKa。');
+    } else if (v === 25) {
+      main = '只剩共軛鹼 A⁻ → 弱鹼水解';
+      const C = n0 / V, Kb = 1e-14 / Ka, oh = Math.sqrt(Kb * C); approx = 14 + Math.log10(oh);
+      s = [`HA 全部變成 A⁻：${fx(n0, 2)} mmol，總體積 ${fx(V, 1)} mL → [A⁻] = ${fx(C, 4)} M`, `A⁻ + H₂O ⇌ HA + OH⁻，Kb = Kw ÷ Ka = 10⁻¹⁴ ÷ ${sci(Ka)} = ${sci(Kb)}`, `[OH⁻] ≈ √(Kb × C) = √(${sci(Kb)} × ${fx(C, 4)}) = ${sci(oh)} M`, `pOH = ${fx(-Math.log10(oh))}，pH = 14 − pOH = <b>${fx(approx)}</b>`];
+    } else {
+      main = 'OH⁻ 過量 → 由強鹼決定';
+      const exOH = nOH - n0, c = exOH / V; approx = 14 + Math.log10(c);
+      s = [`加入 OH⁻ ${fx(nOH, 2)} mmol，中和 HA ${fx(n0, 2)} mmol 後多出 ${fx(exOH, 2)} mmol`, `[OH⁻] = ${fx(exOH, 2)} ÷ ${fx(V, 1)} mL = ${sci(c)} M（A⁻ 水解的貢獻小到可以忽略）`, `pOH = ${fx(-Math.log10(c))}，pH = 14 − pOH = <b>${fx(approx)}</b>`];
+    }
+    return { main, s, approx, exact: ex.pH, v };
+  }
+  function draw() {
+    const v = +cur, r = steps(v);
+    $('#cbox', el).innerHTML = `<p class="cq">① 燒杯裡主要是什麼？　<b>${r.main}</b></p><p class="cq">② 計算</p><ol class="cs">${r.s.map(x => `<li>${x}</li>`).join('')}</ol><p class="cq">③ 對照精確解（解電荷平衡）：pH = ${fx(r.exact)}　${Math.abs(r.exact - r.approx) < 0.03 ? '<span class="ok">✓ 近似成立</span>' : `<span class="warn">差 ${fx(Math.abs(r.exact - r.approx))}</span>`}</p>`;
+    const pts = []; for (let x = 0; x <= 40.001; x += Math.abs(x - 25) < 1 ? 0.05 : 0.25) pts.push([x, titr({ Va, Ca0: C0, Cb, Vb: x, pKa }).pH]);
+    $('#cmini', el).innerHTML = chart({ x: [0, 40], y: [0, 14], xt: [0, 10, 12.5, 25, 30, 40], yt: [0, 7, 14], xlab: '加入 NaOH（mL）', ylab: 'pH', h: 170, w: 560 }, (X, Y) => `<path class="tline" d="${path(pts.map(([a, b]) => [X(a), Y(b)]))}"/>${PTS.map(p => `<circle class="${p[0] === cur ? 'dot' : 'dot3'}" cx="${X(p[1])}" cy="${Y(titr({ Va, Ca0: C0, Cb, Vb: p[1], pKa }).pH)}" r="${p[0] === cur ? 7 : 4}"/>`).join('')}`);
+    pressSeg(el, 'cp', cur);
+  }
+  bindSeg(el, 'cp', v => { cur = v; draw(); });
+  draw();
+  return { set(s) { cur = String(s.v ?? 0); draw(); } };
+};
+
+/* ===== 5. 離去基：共軛酸的 pKa ===== */
+W.leaving = el => {
+  const X = {
+    F: { ion: 'F⁻', ca: 'HF', pKa: 3.2, r: 133, v: '差', d: 'HF 是弱酸，F⁻ 相對不穩定，而且 C–F 鍵很強。氟烷幾乎不進行 SN1／SN2。' },
+    Cl: { ion: 'Cl⁻', ca: 'HCl', pKa: -7, r: 181, v: '好', d: 'HCl 是強酸，Cl⁻ 很穩定。' },
+    Br: { ion: 'Br⁻', ca: 'HBr', pKa: -9, r: 196, v: '很好', d: 'HBr 比 HCl 更強，Br⁻ 更大、負電荷分散在更大的體積。' },
+    I: { ion: 'I⁻', ca: 'HI', pKa: -10, r: 220, v: '最好', d: 'HI 最強，I⁻ 最大、最容易被極化，是鹵素中最好的離去基。' },
+    OH: { ion: 'OH⁻', ca: 'H₂O', pKa: 15.7, v: '極差', d: 'H₂O 是極弱的酸，OH⁻ 是強鹼、很不穩定，不願意帶著電子離開。所以醇不能直接被取代。' },
+    OH2: { ion: 'H₂O', ca: 'H₃O⁺', pKa: -1.7, v: '好', d: '醇在酸中先質子化成 R–OH₂⁺，離開的是中性的水分子。H₃O⁺ 是強酸，H₂O 很穩定，成為好離去基。' },
+  };
+  let cur = 'Br';
+  el.innerHTML = `${seg('lx', [['F', 'F'], ['Cl', 'Cl'], ['Br', 'Br'], ['I', 'I'], ['OH', 'OH（醇）'], ['OH2', 'OH₂⁺（質子化的醇）']], cur)}<div class="lgrid"><div id="lmol"></div><div id="lion"></div></div><div id="lscale"></div><p class="note" id="ln"></p>`;
+  function draw() {
+    const d = X[cur], lab = cur === 'OH' ? 'OH' : cur === 'OH2' ? 'OH₂' : cur;
+    const sc = { atoms: { C: { x: -0.4, y: 0, t: 'C', c: 'δ+' }, X: { x: 1.0, y: 0, t: lab, c: cur === 'OH2' ? '+' : 'δ−', lp: cur === 'OH2' ? [0] : cur === 'OH' ? [60, -60] : [0, 90, 270] }, h1: { x: -0.85, y: 0.9, t: 'H' }, h2: { x: -1.35, y: -0.35, t: 'H' }, h3: { x: -0.65, y: -0.95, t: 'H' } },
+      bonds: [['C', 'X', 's'], ['C', 'h1', 's'], ['C', 'h2', 'w'], ['C', 'h3', 'h']], arrows: [{ f: { b: ['C', 'X'] }, t: { a: 'X' }, bend: -0.9 }] };
+    $('#lmol', el).innerHTML = MOL.svg(sc, { w: 260, h: 160, s: 50, label: 'C–X 鍵' }) + `<p class="small mut">電子偏向 ${lab}；離開時帶走整對電子 → ${d.ion}</p>`;
+    $('#lion', el).innerHTML = d.r ? `<svg viewBox="0 0 260 160" class="ions">${['F', 'Cl', 'Br', 'I'].map((k, i) => { const r = X[k].r / 9; return `<circle class="${k === cur ? 'ionc on' : 'ionc'}" cx="${40 + i * 62}" cy="80" r="${r}"/><text class="tk" x="${40 + i * 62}" y="${84}" text-anchor="middle">${X[k].ion}</text><text class="tk" x="${40 + i * 62}" y="${140}" text-anchor="middle">${X[k].r} pm</text>`; }).join('')}</svg><p class="small mut">鹵離子半徑：越大，負電荷分散在越大的體積，越穩定</p>` : `<p class="note">${cur === 'OH' ? 'OH⁻ 體積小、電荷集中，是強鹼。' : '離開的是中性分子，不必帶著負電荷離開。'}</p>`;
+    const keys = ['I', 'Br', 'Cl', 'OH2', 'F', 'OH'];
+    $('#lscale', el).innerHTML = chart({ x: [-12, 18], y: [0, 1], xt: [-10, -5, 0, 5, 10, 15], yt: [], xlab: '離開基團的共軛酸的 pKa　（越左：酸越強 → 離開的基團越穩定 → 越好離開）', h: 170, label: '共軛酸 pKa' }, (Xs, Y) =>
+      keys.map((k, i) => { const x = Xs(X[k].pKa), y = Y([0.75, 0.5, 0.25][i % 3]); return `<line class="mk" x1="${x}" x2="${x}" y1="${Y(0)}" y2="${y}"/><circle class="${k === cur ? 'dot' : 'dot3'}" cx="${x}" cy="${y}" r="${k === cur ? 7 : 5}"/><text class="tk${k === cur ? ' hl' : ''}" x="${x}" y="${y - 10}" text-anchor="middle">${X[k].ca}（${X[k].pKa}）</text>`; }).join(''));
+    $('#ln', el).innerHTML = `<b>${d.ion} 作為離去基：${d.v}</b>。共軛酸 ${d.ca} 的 pKa = ${d.pKa}。${d.d}`;
+    pressSeg(el, 'lx', cur);
+  }
+  bindSeg(el, 'lx', v => { cur = v; draw(); });
+  draw();
+  return { set(s) { cur = s.x || cur; draw(); } };
+};
+
+/* ===== 6. SN2 機構 ===== */
+const GRP = { H: 0.3, 'CH₃': 0.52, 'C₂H₅': 0.6 };
+const SUBS = {
+  methyl: { n: '甲基', s: ['H', 'H', 'H'], r: '溴甲烷', p: '甲醇', rate: 30 },
+  primary: { n: '一級', s: ['H', 'H', 'CH₃'], r: '溴乙烷', p: '乙醇', rate: 1 },
+  secondary: { n: '二級', s: ['H', 'CH₃', 'C₂H₅'], r: '(R)-2-溴丁烷', p: '(S)-2-丁醇', rate: 0.02 },
+  tertiary: { n: '三級', s: ['CH₃', 'CH₃', 'CH₃'], r: '2-溴-2-甲基丙烷', p: '', rate: 0 },
+};
+const SLOT = { R: [[-0.38, 1.0], [-1.0, -0.42], [-0.12, -1.05]], T: [[0, 1.1], [-0.6, -0.62], [0.55, -0.82]], P: [[0.38, 1.0], [1.0, -0.42], [0.12, -1.05]] };
+const subAtoms = (labels, pos, halo = true) => Object.fromEntries(labels.map((t, i) => [`s${i}`, { x: pos[i][0], y: pos[i][1], t, halo: halo ? GRP[t] : 0 }]));
+const subBonds = (c = 'C') => [[c, 's0', 's'], [c, 's1', 'w'], [c, 's2', 'h']];
+W.sn2 = el => {
+  let sub = 'secondary', pl;
+  el.innerHTML = `${seg('s2s', Object.entries(SUBS).map(([k, v]) => [k, `${v.n}（${v.r}）`]), sub)}<div id="s2p"></div><div id="s2r"></div>`;
+  const frames = () => {
+    const S = SUBS[sub], lb = S.s;
+    const R = { atoms: { O: { x: -3.0, y: 0, t: 'HO', c: '−', lp: [0, 90, 270] }, C: { x: 0, y: 0, t: 'C', c: 'δ+' }, Br: { x: 1.95, y: 0, t: 'Br', c: 'δ−', lp: [0, 90, 270] }, ...subAtoms(lb, SLOT.R) },
+      bonds: [['C', 'Br', 's'], ...subBonds()], arrows: [{ f: { lp: ['O', 0] }, t: { a: 'C' }, bend: -0.35 }, { f: { b: ['C', 'Br'] }, t: { a: 'Br' }, bend: -0.9 }], notes: [{ x: 0, y: -2.05, t: S.r }] };
+    if (sub === 'tertiary') return [
+      { sc: R, at: 0, cap: '三級碳上三個甲基把背面擋住了。親核基能不能靠近？按「下一步」。' },
+      { sc: { ...R, atoms: { ...R.atoms, O: { ...R.atoms.O, x: -2.3 } }, arrows: [], notes: [{ x: -1.25, y: 0.35, t: '✕', cls: 'bad' }, { x: 0, y: -2.05, t: '背面被三個甲基擋住：SN2 幾乎不發生' }] }, at: 0.25, cap: '親核基撞上三個甲基的電子雲，到不了碳的背面。三級鹵烷改走 SN1 或 E2（後面兩節）。' }];
+    const T = { atoms: { O: { x: -2.05, y: 0, t: 'HO', c: 'δ−', lp: [90, 270] }, C: { x: 0, y: 0, t: 'C' }, Br: { x: 2.1, y: 0, t: 'Br', c: 'δ−', lp: [0, 90, 270] }, ...subAtoms(lb, SLOT.T) },
+      bonds: [['O', 'C', 'p'], ['C', 'Br', 'p'], ...subBonds()], ts: true };
+    const P = { atoms: { O: { x: -1.5, y: 0, t: 'HO', lp: [90, 270] }, C: { x: 0, y: 0, t: 'C' }, Br: { x: 3.3, y: 0, t: 'Br', c: '−', lp: [0, 90, 180, 270] }, ...subAtoms(lb, SLOT.P) },
+      bonds: [['O', 'C', 's'], ...subBonds()], notes: [{ x: 0, y: -2.05, t: `${S.p}（構型反轉）` }] };
+    return [
+      { sc: R, at: 0, cap: '親核基 HO⁻ 的孤對電子對準碳的<b>背面</b>（和 Br 相反的方向）。彎箭頭表示電子對的移動：一對從 O 流向 C，另一對從 C–Br 鍵流向 Br。碳周圍的淡色圓表示各基團佔的空間。' },
+      { sc: T, at: 0.5, cap: '<b>過渡狀態</b>：O–C 鍵形成一半、C–Br 鍵斷了一半（虛線），三個基團被推到同一平面。這是能量最高點，碳此時同時連著五個基團，所以基團越大越擠、能量越高。' },
+      { sc: P, at: 1, cap: `產物：三個基團像雨傘一樣翻到另一側，<b>構型反轉</b>。${sub === 'secondary' ? '(R)-2-溴丁烷變成 (S)-2-丁醇。' : ''}Br⁻ 帶著原本 C–Br 鍵的電子對離開。` }];
+  };
+  function rates() {
+    const mx = Math.log10(30) + 2.5;
+    $('#s2r', el).innerHTML = `<p class="lbl">SN2 相對速率（以溴乙烷 = 1，常見教科書數據）</p><div class="bars">${Object.entries(SUBS).map(([k, v]) => `<div class="${k === sub ? 'on' : ''}"><span>${v.n}</span><i class="ba" style="width:${v.rate ? 100 * (Math.log10(v.rate) + 2.5) / mx : 1}%"></i><b class="mono">${v.rate || '≈ 0'}</b></div>`).join('')}</div><p class="small mut">長條為對數長度：每多一個基團擋住背面，速率就掉好幾十倍。</p>`;
+  }
+  pl = mechPlayer($('#s2p', el), { frames, energy: [[0, 0.3], [0.5, 0.9], [1, 0.12]], elabels: [[0, '反應物'], [0.5, '過渡狀態'], [1, '產物']], w: 520, h: 250, label: 'SN2 反應機構' });
+  bindSeg(el, 's2s', v => { sub = v; pressSeg(el, 's2s', v); pl.reset(); rates(); });
+  rates();
+  return { set(s) { if (s.sub) { sub = s.sub; pressSeg(el, 's2s', sub); pl.reset(); rates(); } pl.go(s.step || 0, false); } };
+};
+
+/* ===== 7. SN1 機構（可選擇進攻方向）＋碳陽離子穩定度 ===== */
+W.sn1 = el => {
+  let side = 'L', pl;
+  el.innerHTML = `${seg('s1d', [['L', '水從左邊進攻'], ['R', '水從右邊進攻']], side)}<div id="s1p"></div><div id="s1s"></div>`;
+  const lb = ['CH₃', 'C₂H₅', 'C₃H₇'];
+  const frames = () => {
+    const k = side === 'L' ? -1 : 1, W2 = (x, y) => ({ O: { x: k * x, y, t: 'O', lp: [side === 'L' ? 0 : 180, side === 'L' ? 180 : 0] }, Ha: { x: k * (x + 0.45), y: y + 0.75, t: 'H' }, Hb: { x: k * (x + 0.45), y: y - 0.75, t: 'H' } });
+    const wb = [['O', 'Ha', 's'], ['O', 'Hb', 's']], br = { x: 1.0, y: -2.05, t: 'Br', c: '−', lp: [0, 90, 180, 270] };
+    const F0 = { atoms: { C: { x: 0, y: 0, t: 'C', c: 'δ+' }, Br: { x: 1.95, y: 0, t: 'Br', c: 'δ−', lp: [0, 90, 270] }, ...subAtoms(lb, SLOT.R, false) }, bonds: [['C', 'Br', 's'], ...subBonds()], arrows: [{ f: { b: ['C', 'Br'] }, t: { a: 'Br' }, bend: -0.9 }], notes: [{ x: 0, y: -2.1, t: '3-溴-3-甲基己烷（三級）' }] };
+    const F1 = { atoms: { C: { x: 0, y: 0, t: 'C', c: '+' }, Br: br, ...subAtoms(lb, SLOT.T, false) }, bonds: subBonds(), orbs: [{ a: 'C', ang: 0 }] };
+    const F2 = { atoms: { ...F1.atoms, ...W2(2.35, 0) }, bonds: [...F1.bonds, ...wb], orbs: F1.orbs, arrows: [{ f: { lp: ['O', side === 'L' ? 0 : 180] }, t: { a: 'C' }, bend: side === 'L' ? -0.35 : 0.35 }] };
+    const W3 = W2(1.5, 0), O2 = { x: k * 3.1, y: 1.55, t: 'H₂O', lp: [side === 'L' ? -31 : -149] };
+    const F3 = { atoms: { C: { x: 0, y: 0, t: 'C' }, Br: br, ...subAtoms(lb, side === 'L' ? SLOT.P : SLOT.R, false), ...W3, O: { ...W3.O, c: '+', lp: [] }, O2 }, bonds: [['C', 'O', 's'], ...subBonds(), ...wb],
+      arrows: [{ f: { lp: ['O2', side === 'L' ? -31 : -149] }, t: { a: 'Ha' }, bend: side === 'L' ? -0.3 : 0.3 }, { f: { b: ['O', 'Ha'] }, t: { a: 'O' }, bend: side === 'L' ? 0.6 : -0.6 }] };
+    const F4 = { atoms: { ...F3.atoms, O: { ...W3.O, lp: [] }, Ha: { x: k * 2.55, y: 1.05, t: 'H' }, O2: { ...O2, c: '+', lp: [] } }, bonds: [['C', 'O', 's'], ...subBonds(), ['O', 'Hb', 's'], ['O2', 'Ha', 's']],
+      notes: [{ x: 0, y: -2.1, t: side === 'L' ? '構型反轉的產物' : '構型保留的產物' }] };
+    return [
+      { sc: F0, at: 0, cap: '<b>第一步（慢）</b>：C–Br 鍵自己斷開，兩個電子都跟著 Br 走。這一步只有鹵烷參與，決定整個反應的速率：rate = k[RX]。' },
+      { sc: F1, at: 0.45, cap: '生成<b>碳陽離子</b>：中心碳只剩三個基團，攤成平面（sp²）。空的 p 軌域兩瓣朝左右，兩邊都可以接受電子。' },
+      { sc: F2, at: 0.45, cap: `<b>第二步（快）</b>：水的孤對電子攻擊帶正電的碳，這次從${side === 'L' ? '左' : '右'}邊。切換上面的按鈕可以改從另一邊。` },
+      { sc: F3, at: 0.76, cap: '生成質子化的醇（氧帶正電）。<b>第三步</b>：另一個水分子拿走 O 上的 H⁺。' },
+      { sc: F4, at: 1, cap: `產物：醇 + H₃O⁺。${side === 'L' ? '從左邊（原本 Br 的背面）進攻，基團翻到另一側：<b>構型反轉</b>。' : '從右邊（原本 Br 的那一側）進攻，基團留在原位：<b>構型保留</b>。'}兩種產物互為鏡像，所以 SN1 得到接近外消旋的混合物。` }];
+  };
+  pl = mechPlayer($('#s1p', el), { frames, energy: [[0, 0.3], [0.25, 0.92], [0.45, 0.62], [0.6, 0.72], [0.76, 0.4], [0.88, 0.46], [1, 0.16]], elabels: [[0.25, '過渡狀態 1'], [0.45, '碳陽離子', 16]], w: 520, h: 250, label: 'SN1 反應機構' });
+  bindSeg(el, 's1d', v => { side = v; pressSeg(el, 's1d', v); const i = pl.i; pl.reset(); pl.go(i, false); });
+  const CC = [['甲基 CH₃⁺', 0], ['一級 CH₃CH₂⁺', 3], ['二級 (CH₃)₂CH⁺', 6], ['三級 (CH₃)₃C⁺', 9]];
+  $('#s1s', el).innerHTML = `<p class="lbl">碳陽離子穩定度：相鄰 C–H 鍵越多，越能分攤正電荷（超共軛）</p><div class="bars">${CC.map(([n, k]) => `<div><span>${n}</span><i class="ba" style="width:${k / 9 * 100}%"></i><b class="mono">${k} 個 C–H</b></div>`).join('')}</div><p class="small mut">穩定度：三級 > 二級 > 一級 > 甲基。一級與甲基碳陽離子太不穩定，實際上不走 SN1。</p>`;
+  return { set(s) { if (s.side) { side = s.side; pressSeg(el, 's1d', side); pl.reset(); } pl.go(s.step || 0, false); } };
+};
+
+/* ===== 8. E2 機構 ===== */
+W.e2 = el => {
+  el.innerHTML = '<div id="e2p"></div>';
+  const frames = () => {
+    const F0 = { atoms: { Cb: { x: -0.7, y: 0, t: 'C' }, Ca: { x: 0.7, y: 0, t: 'C' }, H: { x: -1.05, y: 1.0, t: 'H', hl: 1 }, b1: { x: -1.5, y: -0.45, t: 'H' }, b2: { x: -0.95, y: -0.95, t: 'H' }, Br: { x: 1.05, y: -1.0, t: 'Br', lp: [0, 270, 315] }, m: { x: 1.55, y: 0.45, t: 'CH₃' }, h: { x: 0.95, y: 0.95, t: 'H' }, O: { x: -1.95, y: 2.15, t: 'EtO', c: '−', lp: [-52] } },
+      bonds: [['Cb', 'Ca', 's'], ['Cb', 'H', 's'], ['Cb', 'b1', 'w'], ['Cb', 'b2', 'h'], ['Ca', 'Br', 's'], ['Ca', 'm', 'w'], ['Ca', 'h', 'h']],
+      arrows: [{ f: { lp: ['O', -52] }, t: { a: 'H' }, bend: -0.3 }, { f: { b: ['Cb', 'H'] }, t: { m: ['Cb', 'Ca'] }, bend: 0.5 }, { f: { b: ['Ca', 'Br'] }, t: { a: 'Br' }, bend: 0.7 }], notes: [{ x: 0, y: -2.0, t: '2-溴丙烷 + 乙氧基' }] };
+    const F1 = { atoms: { Cb: { x: -0.65, y: 0, t: 'C' }, Ca: { x: 0.65, y: 0, t: 'C' }, H: { x: -1.3, y: 1.6, t: 'H' }, b1: { x: -1.25, y: -0.6, t: 'H' }, b2: { x: -1.25, y: 0.6, t: 'H' }, Br: { x: 1.7, y: -1.75, t: 'Br', c: '−', lp: [0, 90, 180, 270] }, m: { x: 1.4, y: 0.6, t: 'CH₃' }, h: { x: 1.25, y: -0.6, t: 'H' }, O: { x: -1.95, y: 2.15, t: 'EtO', lp: [] } },
+      bonds: [['Cb', 'Ca', 'd'], ['Cb', 'b1', 's'], ['Cb', 'b2', 's'], ['Ca', 'm', 's'], ['Ca', 'h', 's'], ['O', 'H', 's']], notes: [{ x: 0, y: -2.0, t: '丙烯 + EtOH + Br⁻' }] };
+    return [
+      { sc: F0, at: 0, cap: '強鹼 EtO⁻ 對準 <b>β-碳上的 H</b>（紅色）。注意這個 H 和 Br 分別在 C–C 鍵的上下兩側、同一平面：<b>反式共平面</b>。三個彎箭頭同時發生。' },
+      { sc: F1, at: 1, cap: '一步完成：鹼拿走 H 變成 EtOH、C–H 的電子對變成 C=C 的 π 鍵、Br⁻ 帶著電子對離開。產物是丙烯。' }];
+  };
+  const pl = mechPlayer($('#e2p', el), { frames, energy: [[0, 0.3], [0.5, 0.88], [1, 0.12]], elabels: [[0.5, '過渡狀態']], w: 520, h: 260, label: 'E2 反應機構' });
+  return { set(s) { pl.go(s.step || 0, false); } };
+};
+
+/* ===== 9. 紐曼投影：轉動後碳，找反式共平面 ===== */
+W.newman = el => {
+  let ang = 60;
+  el.innerHTML = `<div class="w-row"><label class="rng">轉動後面的碳（H–C–C–Br 二面角）<input type="range" id="nwa" min="0" max="360" step="5" value="60"><output class="mono" id="nwo"></output></label></div><div class="w-row">${[0, 60, 120, 180, 240, 300].map(a => `<button class="btn sm ghost" type="button" data-a="${a}">${a}°</button>`).join('')}</div><div class="ngrid"><div id="nws"></div><p class="note" id="nwn"></p></div>`;
+  function draw() {
+    const cx = 150, cy = 130, R = 52, L = 98, P = (a, r) => [cx + Math.cos(a * Math.PI / 180) * r, cy - Math.sin(a * Math.PI / 180) * r];
+    const front = [[90, 'H', 'hl'], [210, 'H', ''], [330, 'H', '']], back = [[90 - ang, 'Br', 'br'], [210 - ang, 'CH₃', ''], [330 - ang, 'H', '']];
+    const bl = ([a, t, c]) => { const [x1, y1] = P(a, R), [x2, y2] = P(a, L); const [tx, ty] = P(a, L + 16); return `<line class="nb" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/><text class="at ${c}" x="${tx}" y="${ty + 5}" text-anchor="middle">${t}</text>`; };
+    const fl = ([a, t, c]) => { const [x2, y2] = P(a, L - 10); const [tx, ty] = P(a, L + 6); return `<line class="nb" x1="${cx}" y1="${cy}" x2="${x2}" y2="${y2}"/><text class="at ${c}" x="${tx}" y="${ty + 5}" text-anchor="middle">${t}</text>`; };
+    $('#nws', el).innerHTML = `<svg viewBox="0 0 300 260" class="mol" role="img" aria-label="紐曼投影式">${back.map(bl).join('')}<circle class="nc" cx="${cx}" cy="${cy}" r="${R}"/>${front.map(fl).join('')}<circle cx="${cx}" cy="${cy}" r="3" class="lp"/></svg>`;
+    const d = ((ang % 360) + 360) % 360, anti = Math.abs(d - 180) <= 10, syn = d <= 10 || d >= 350;
+    $('#nwn', el).innerHTML = `前面的碳（β 碳）：紅色的 H；後面的碳：Br。二面角 ${d}°。<br>` + (anti ? '<span class="ok">✓ 反式共平面</span>：H 和 Br 在相反兩側且同一平面，C–H 的電子可以順利推進 C–Br 的反鍵結軌域，<b>E2 可以發生</b>。這也是交錯式構形，能量低。'
+      : syn ? '<span class="warn">順式共平面</span>：理論上軌域也平行，但這是重疊式構形，H 和 Br 擠在一起，能量很高，很少經由這個構形反應。'
+        : '<span class="bad">✕ 不行</span>：C–H 和 C–Br 沒有平行，電子推不過去。分子要先轉到 180°（反式共平面）才能進行 E2。');
+    $('#nwo', el).textContent = `${d}°`; $('#nwa', el).value = d;
+  }
+  $('#nwa', el).oninput = e => { ang = +e.target.value; draw(); };
+  $$('[data-a]', el).forEach(b => { b.onclick = () => { ang = +b.dataset.a; draw(); }; });
+  draw();
+  return { set(s) { ang = s.ang ?? ang; draw(); } };
+};
+
+/* ===== 10. 查依采夫 vs 霍夫曼 ===== */
+W.zaitsev = el => {
+  let base = 'eto';
+  const B = { eto: { n: '乙氧基 EtO⁻（體積小）', z: 70, h: 30 }, tbuo: { n: '第三丁氧基 t-BuO⁻（體積大）', z: 28, h: 72 } };
+  el.innerHTML = `${seg('zb', Object.entries(B).map(([k, v]) => [k, v.n]), base)}<div class="zgrid"><div id="zs"></div><div id="zp"></div></div><p class="note" id="zn"></p>`;
+  function draw() {
+    const big = base === 'tbuo';
+    const sc = { atoms: { C2: { x: 0, y: 0, t: 'C' }, C1: { x: -1.0, y: 0.55, t: 'CH₃', hl: big ? 1 : 0, halo: big ? 0.55 : 0 }, Me: { x: -1.0, y: -0.6, t: 'CH₃', hl: big ? 1 : 0, halo: big ? 0.55 : 0 }, Br: { x: 0, y: -1.1, t: 'Br' }, C3: { x: 1.0, y: 0.55, t: 'CH₂', hl: big ? 0 : 1, halo: big ? 0 : 0.55 }, C4: { x: 2.05, y: 0, t: 'CH₃' },
+      Bs: { x: big ? -2.35 : 1.55, y: big ? 1.55 : 1.75, t: big ? 't-BuO⁻' : 'EtO⁻', halo: big ? 0.85 : 0.45 } },
+      bonds: [['C2', 'C1', 's'], ['C2', 'Me', 's'], ['C2', 'Br', 's'], ['C2', 'C3', 's'], ['C3', 'C4', 's']] };
+    $('#zs', el).innerHTML = MOL.svg(sc, { w: 300, h: 210, s: 52, cx: 140, cy: 110, label: '2-溴-2-甲基丁烷' }) + `<p class="small mut">2-溴-2-甲基丁烷。β-H 有兩種：CH₂ 上 2 個（內側），兩個 CH₃ 上共 6 個（外側）。</p>`;
+    const d = B[base];
+    $('#zp', el).innerHTML = `<div class="prod"><p class="pf">(CH₃)₂C=CH–CH₃</p><p class="small">2-甲基-2-丁烯　三取代烯（較穩定）<br>拿走內側 CH₂ 的 H：<b>查依采夫產物</b></p><div class="bars"><div><span>${d.z}%</span><i class="ba" style="width:${d.z}%"></i></div></div></div>
+<div class="prod"><p class="pf">CH₂=C(CH₃)–CH₂CH₃</p><p class="small">2-甲基-1-丁烯　二取代烯<br>拿走外側 CH₃ 的 H：<b>霍夫曼產物</b></p><div class="bars"><div><span>${d.h}%</span><i class="bha" style="width:${d.h}%"></i></div></div></div>`;
+    $('#zn', el).innerHTML = big ? '體積很大的 t-BuO⁻ 擠不進三級碳旁邊的 CH₂，只能拿外側、比較好接近的 CH₃ 上的 H，所以取代較少的烯反而是主產物（約 72%）。'
+      : '小的 EtO⁻ 兩種 H 都拿得到。形成取代較多的雙鍵，過渡狀態已經有部分雙鍵的穩定性，所以較穩定的三取代烯是主產物（約 70%）。';
+    pressSeg(el, 'zb', base);
+  }
+  bindSeg(el, 'zb', v => { base = v; draw(); });
+  draw();
+  return { set(s) { base = s.base || base; draw(); } };
+};
+
+/* ===== 11. E1 機構 ===== */
+W.e1 = el => {
+  el.innerHTML = '<div id="e1p"></div>';
+  const frames = () => {
+    const base = { Cb: { x: -0.7, y: 0, t: 'C' }, H: { x: -1.05, y: 1.0, t: 'H', hl: 1 }, b1: { x: -1.5, y: -0.45, t: 'H' }, b2: { x: -0.95, y: -0.95, t: 'H' } };
+    const F0 = { atoms: { ...base, Ca: { x: 0.7, y: 0, t: 'C' }, Br: { x: 1.05, y: -1.0, t: 'Br', lp: [0, 270, 315] }, m1: { x: 1.55, y: 0.45, t: 'CH₃' }, m2: { x: 0.95, y: 0.95, t: 'CH₃' } },
+      bonds: [['Cb', 'Ca', 's'], ['Cb', 'H', 's'], ['Cb', 'b1', 'w'], ['Cb', 'b2', 'h'], ['Ca', 'Br', 's'], ['Ca', 'm1', 'w'], ['Ca', 'm2', 'h']], arrows: [{ f: { b: ['Ca', 'Br'] }, t: { a: 'Br' }, bend: 0.7 }], notes: [{ x: 0, y: -2.0, t: '2-溴-2-甲基丙烷' }] };
+    const cat = { ...base, Ca: { x: 0.7, y: 0, t: 'C', c: '+' }, Br: { x: 1.8, y: -1.75, t: 'Br', c: '−', lp: [0, 90, 180, 270] }, m1: { x: 1.4, y: 0.75, t: 'CH₃' }, m2: { x: 1.4, y: -0.75, t: 'CH₃' } };
+    const cb = [['Cb', 'Ca', 's'], ['Cb', 'H', 's'], ['Cb', 'b1', 'w'], ['Cb', 'b2', 'h'], ['Ca', 'm1', 's'], ['Ca', 'm2', 's']];
+    const F1 = { atoms: cat, bonds: cb };
+    const F2 = { atoms: { ...cat, O: { x: -1.95, y: 2.15, t: 'H₂O', lp: [-52] } }, bonds: cb, arrows: [{ f: { lp: ['O', -52] }, t: { a: 'H' }, bend: -0.3 }, { f: { b: ['Cb', 'H'] }, t: { m: ['Cb', 'Ca'] }, bend: 0.5 }] };
+    const F3 = { atoms: { Cb: { x: -0.65, y: 0, t: 'C' }, Ca: { x: 0.65, y: 0, t: 'C' }, H: { x: -1.3, y: 1.6, t: 'H' }, b1: { x: -1.25, y: -0.6, t: 'H' }, b2: { x: -1.25, y: 0.6, t: 'H' }, Br: cat.Br, m1: { x: 1.4, y: 0.6, t: 'CH₃' }, m2: { x: 1.4, y: -0.6, t: 'CH₃' }, O: { x: -1.95, y: 2.15, t: 'H₂O', c: '+' } },
+      bonds: [['Cb', 'Ca', 'd'], ['Cb', 'b1', 's'], ['Cb', 'b2', 's'], ['Ca', 'm1', 's'], ['Ca', 'm2', 's'], ['O', 'H', 's']], notes: [{ x: 0, y: -2.0, t: '2-甲基丙烯 + H₃O⁺' }] };
+    return [
+      { sc: F0, at: 0, cap: '<b>第一步（慢）</b>：和 SN1 完全相同，C–Br 鍵先斷開。' },
+      { sc: F1, at: 0.45, cap: '生成三級碳陽離子。接下來它可以被水加上去（SN1），也可以失去 β-H（E1）。' },
+      { sc: F2, at: 0.45, cap: '<b>第二步</b>：水當作弱鹼，拿走 β-碳上的 H；C–H 的電子對轉過去形成 C=C。這裡不需要反式共平面：碳陽離子的空軌域隨時對得上。' },
+      { sc: F3, at: 1, cap: '產物：2-甲基丙烯 + H₃O⁺ + Br⁻。一個分子變成三個，熵增加，所以加熱有利於 E1。' }];
+  };
+  const pl = mechPlayer($('#e1p', el), { frames, energy: [[0, 0.3], [0.25, 0.92], [0.45, 0.62], [0.62, 0.74], [1, 0.22]], elabels: [[0.25, '過渡狀態 1'], [0.45, '碳陽離子', 16]], w: 520, h: 260, label: 'E1 反應機構' });
+  return { set(s) { pl.go(s.step || 0, false); } };
+};
+
+/* ===== 12. 判斷器 ===== */
+W.decide = el => {
+  const st = { sub: 'secondary', reag: 'base', solv: 'protic', heat: false };
+  const SUB = { methyl: '甲基（CH₃X）', primary: '一級（RCH₂X）', secondary: '二級（R₂CHX）', tertiary: '三級（R₃CX）' };
+  const REAG = { nuc: '強親核、弱鹼（I⁻、Br⁻、RS⁻、N₃⁻、CN⁻）', base: '強鹼、強親核（OH⁻、RO⁻）', bulky: '體積大的強鹼（t-BuO⁻）', weak: '弱親核、弱鹼（H₂O、ROH）' };
+  const SOLV = { protic: '極性質子性（水、醇）', aprotic: '極性非質子性（丙酮、DMSO、DMF）' };
+  el.innerHTML = `<p class="lbl">基質</p>${seg('ds', Object.entries(SUB), st.sub)}<p class="lbl">試劑</p>${seg('dr', Object.entries(REAG), st.reag)}<p class="lbl">溶劑</p>${seg('dv', Object.entries(SOLV), st.solv)}<label class="chk"><input type="checkbox" id="dh"> 加熱</label><div class="verdict" id="dv0"></div><ol class="reason" id="dl"></ol>`;
+  function decide({ sub, reag, solv, heat }) {
+    const s = [];
+    s.push({ methyl: '甲基：背面最空，最適合 SN2；沒有 β-H，不能脫去；甲基碳陽離子極不穩定，不走 SN1／E1。', primary: '一級：背面還算空，SN2 容易；一級碳陽離子很不穩定，不走 SN1／E1。', secondary: '二級：背面有點擠、碳陽離子中等穩定，四條路都有可能，關鍵看試劑。', tertiary: '三級：背面被三個基團擋住，不走 SN2；碳陽離子穩定，可以走 SN1／E1；也有很多 β-H 可以做 E2。' }[sub]);
+    s.push({ nuc: '試劑是好的親核基但鹼性弱：傾向去攻擊碳（取代），不太去拿 H（脫去）。', base: '試劑是強鹼，也是強親核基：取代和脫去互相競爭，基質越擠越偏向脫去。', bulky: '試劑是體積很大的強鹼：擠不到碳旁邊做取代，幾乎只拿外側的 β-H 做 E2。', weak: '試劑是弱親核、弱鹼：推不動 SN2，也拿不動 H 做 E2，只能等鹵烷自己解離成碳陽離子（SN1／E1）。' }[reag]);
+    let major, minor = '';
+    if (sub === 'methyl') { major = reag === 'weak' ? '幾乎不反應' : 'SN2'; if (reag === 'bulky') s.push('沒有 β-H 可以拿，t-BuO⁻ 只能很慢地做 SN2。'); if (reag === 'weak') s.push('弱親核基推不動 SN2，甲基碳陽離子又生不出來。'); }
+    else if (sub === 'primary') {
+      if (reag === 'nuc') major = 'SN2'; else if (reag === 'base') { major = 'SN2'; minor = 'E2'; s.push('一級背面夠空，強鹼大多直接當親核基做 SN2；加熱會讓 E2 比例上升。'); }
+      else if (reag === 'bulky') { major = 'E2'; minor = 'SN2'; } else { major = '幾乎不反應'; s.push('一級碳陽離子太不穩定，弱親核基又推不動 SN2。'); }
+    } else if (sub === 'secondary') {
+      if (reag === 'nuc') major = 'SN2'; else if (reag === 'base') { major = 'E2'; minor = 'SN2'; s.push('二級背面有點擠，強鹼拿 β-H 比擠進背面容易，所以 E2 為主。'); }
+      else if (reag === 'bulky') major = 'E2';
+      else { major = heat ? 'E1' : 'SN1'; minor = heat ? 'SN1' : 'E1'; s.push('二級碳陽離子勉強可以生成，反應很慢，而且產物是取代和脫去的混合物。'); }
+    } else {
+      if (reag === 'nuc') { major = solv === 'protic' ? 'SN1' : 'SN1（很慢）'; minor = 'E1'; s.push(solv === 'protic' ? '背面被擋住只能走 SN1：先解離成碳陽離子，親核基再加上去。' : 'SN1 需要極性質子性溶劑幫忙穩定生成的離子；在非質子性溶劑中解離很慢。'); }
+      else if (reag === 'base') { major = 'E2'; s.push('強鹼不必等碳陽離子生成，直接拿 β-H 做 E2，比 SN1 快得多。'); }
+      else if (reag === 'bulky') { major = 'E2'; s.push('大體積的鹼拿外側的 H，霍夫曼產物（取代較少的烯）比例較高。'); }
+      else { major = heat ? 'E1' : 'SN1'; minor = heat ? 'SN1' : 'E1'; }
+    }
+    if (/SN2/.test(major)) s.push(solv === 'aprotic' ? '溶劑是非質子性：不會用氫鍵包住親核基，親核基更有攻擊力，有利 SN2。' : '溶劑是質子性：會用氫鍵包住親核基，SN2 會變慢一些；換成丙酮、DMSO 會更快。');
+    if (/SN1|E1/.test(major) && solv === 'protic') s.push('溶劑是極性質子性：能穩定碳陽離子和 X⁻，幫助第一步解離。');
+    if (heat && /SN1|E1|SN2|E2/.test(major)) s.push(/E1|E2/.test(major) ? '加熱：脫去讓分子數增加（熵增加），高溫更有利於脫去。' : '加熱：會提高脫去產物的比例。');
+    return { major, minor, s };
+  }
+  function draw() {
+    const r = decide(st);
+    $('#dv0', el).innerHTML = `<span class="lbl">主要</span><b class="big">${r.major}</b>${r.minor ? `<span class="lbl">次要</span><b>${r.minor}</b>` : ''}`;
+    $('#dl', el).innerHTML = r.s.map(x => `<li>${x}</li>`).join('');
+    pressSeg(el, 'ds', st.sub); pressSeg(el, 'dr', st.reag); pressSeg(el, 'dv', st.solv); $('#dh', el).checked = st.heat;
+  }
+  bindSeg(el, 'ds', v => { st.sub = v; draw(); }); bindSeg(el, 'dr', v => { st.reag = v; draw(); }); bindSeg(el, 'dv', v => { st.solv = v; draw(); });
+  $('#dh', el).onchange = e => { st.heat = e.target.checked; draw(); };
+  draw();
+  return { set(s) { Object.assign(st, s); draw(); } };
+};
+
+/* ---------- 後中化學：頁面框架（首頁、單元目錄、章節、練習題、進度） ---------- */
+const state = { done: store.get('done', {}) };
+const chOf = id => CH.find(c => c.id === id), unitCh = u => CH.find(c => c.unit === u);
+const unitName = u => UNITS.flatMap(p => p.items).find(i => i[0] === u)[1];
+
+function updateProgress() {
+  const n = CH.filter(c => state.done[c.id]).length;
+  $('#progTxt').textContent = `${n} / ${CH.length} 章`;
+  $('#progBar').style.width = `${100 * n / CH.length}%`;
+}
+function setDone(id, v) {
+  if (v) state.done[id] = 1; else delete state.done[id];
+  store.set('done', state.done); updateProgress(); renderTOC(id);
+  if (typeof CLOUD !== 'undefined') { CLOUD.push(); CLOUD.render(); }
+}
+function renderTOC(cur) {
+  $('#toc').innerHTML = UNITS.map(p => `<p class="toc-h">${p.part}</p><ol>${p.items.map(([u, t], i) => { const c = unitCh(u);
+    return c ? `<li><a href="#${c.id}" class="${c.id === cur ? 'cur' : ''} ${state.done[c.id] ? 'done' : ''}"${c.id === cur ? ' aria-current="page"' : ''}><span class="num">${p.key === 'g' ? '普' : '有'}${i + 1}</span><span>${c.title}</span></a></li>`
+      : `<li><span class="soon"><span class="num">${p.key === 'g' ? '普' : '有'}${i + 1}</span><span>${t}</span><small>製作中</small></span></li>`; }).join('')}</ol>`).join('');
+}
+
+function renderHome() {
+  $('#article').innerHTML = `<div class="home">
+<p class="eyebrow">學士後中醫入學考 · 化學</p>
+<h1 class="hero">不背反應，<br>看懂原理就推得出來。</h1>
+<p class="lede">普通化學和有機化學，每一章都從直覺和圖像開始：先動手看到現象，再推出公式與規則，最後用在題目上。普化學到的酸鹼、平衡、熱力學，會直接拿來解釋有機反應。</p>
+<div class="cta">${CH.map(c => `<a class="btn pri" href="#${c.id}">${unitName(c.unit)}：${c.title}</a>`).join('')}</div>
+<h2>課程地圖</h2>
+<div class="map">${UNITS.map(p => `<div><h3>${p.part}</h3><ol>${p.items.map(([u, t]) => { const c = unitCh(u); return `<li class="${c ? 'ok' : ''}">${c ? `<a href="#${c.id}">${t}</a>` : t}${c ? (state.done[c.id] ? ' <span class="okm">✓</span>' : '') : ' <small class="mut">製作中</small>'}</li>`; }).join('')}</ol></div>`).join('')}</div>
+<h2>怎麼使用</h2>
+<ul class="how"><li><b>每章是一堂課</b>：照小節順序讀，每節都有可以動手調整的圖。先玩圖、看說明，再往下讀。</li>
+<li><b>章末小題只用來確認懂了沒</b>：答錯時按「在圖上看」，回到圖上找出哪裡想錯。</li>
+<li><b>考試範圍</b>：中國醫藥、義守、慈濟大學學士後中醫的化學考科都包含普通化學與有機化學，命題以大學教科書為準；課程單元依教科書標準章節安排。</li></ul>
+</div>`;
+}
+
+const INST = {};   // 目前頁面上各互動圖的實例（練習題「在圖上看」用）
+function renderChapter(id) {
+  const c = chOf(id), i = CH.indexOf(c), prev = CH[i - 1], next = CH[i + 1];
+  $('#article').innerHTML = `<p class="eyebrow">${UNITS.find(p => p.items.some(x => x[0] === c.unit)).part} · ${unitName(c.unit)}</p><h1>${c.title}</h1><p class="lede">${c.lede}</p>
+<nav class="secnav" aria-label="本章小節">${c.sections.map((s, k) => `<a href="#${id}/${k + 1}">${k + 1}. ${s.h}</a>`).join('')}<a href="#${id}/quiz">確認理解</a></nav>
+${c.sections.map((s, k) => `<section class="sec" id="sec-${k + 1}"><h2><span class="sn">${k + 1}</span>${s.h}</h2><div class="prose">${s.body}</div>${[].concat(s.w || []).map(w => `<div class="widget" data-w="${w}"></div>`).join('')}</section>`).join('')}
+<section class="sec" id="sec-quiz"><h2><span class="sn">✓</span>確認理解</h2><p class="mut small">答錯了沒關係：按「在圖上看」回到對應的圖，找出哪裡想錯。</p>${c.quiz.map((q, k) => `<div class="q" data-q="${k}"><p class="qt">${k + 1}. ${q.q}</p><div class="opts">${order(q, k).map(j => `<button class="opt" type="button" data-o="${j}">${q.o[j]}</button>`).join('')}</div><div class="why" hidden></div></div>`).join('')}</section>
+<div class="foot"><button class="btn ${state.done[id] ? 'done' : ''}" type="button" id="doneBtn">${state.done[id] ? '已完成 ✓' : '標記為完成'}</button><nav class="pn">${prev ? `<a href="#${prev.id}"><small>上一章</small>${prev.title}</a>` : '<span></span>'}${next ? `<a href="#${next.id}" class="nx"><small>下一章</small>${next.title}</a>` : ''}</nav></div>`;
+  for (const k in INST) delete INST[k];
+  $$('.widget', $('#article')).forEach(w => { const n = w.dataset.w; try { const inst = W[n](w); if (!INST[n]) INST[n] = { inst, el: w }; } catch (e) { w.innerHTML = `<p class="note bad">互動圖載入失敗：${esc(e.message)}</p>`; console.error(e); } });
+  const right = new Set();
+  $$('.q', $('#article')).forEach(qe => {
+    const q = c.quiz[+qe.dataset.q], why = $('.why', qe);
+    $$('.opt', qe).forEach(b => { b.onclick = () => {
+      const ok = +b.dataset.o === q.a; b.classList.add(ok ? 'right' : 'wrong'); why.hidden = false;
+      const demo = q.show && INST[q.show.w] ? '<button class="btn sm" type="button" data-show>在圖上看 ↑</button>' : '';
+      if (ok) { $$('.opt', qe).forEach(x => { x.disabled = true; }); why.className = 'why ok'; why.innerHTML = `<b>答對了。</b>${q.why}${demo}`; right.add(qe.dataset.q);
+        if (right.size === c.quiz.length && !state.done[id]) { setDone(id, true); markBtn(); } }
+      else { b.disabled = true; why.className = 'why no'; why.innerHTML = `<b>再想想。</b>${demo ? '按下面的按鈕回到圖上看看。' : ''}${demo}`; }
+      const sb = $('[data-show]', why); if (sb) sb.onclick = () => { const it = INST[q.show.w]; if (q.show.set) it.inst.set(q.show.set); it.el.scrollIntoView({ behavior: 'smooth', block: 'center' }); it.el.classList.add('flash'); setTimeout(() => it.el.classList.remove('flash'), 1200); };
+    }; });
+  });
+  const markBtn = () => { const d = !!state.done[id]; $('#doneBtn').textContent = d ? '已完成 ✓' : '標記為完成'; $('#doneBtn').classList.toggle('done', d); };
+  $('#doneBtn').onclick = () => { setDone(id, !state.done[id]); markBtn(); };
+}
+// 選項順序：依題號固定打散，避免正解永遠在第一個（不用亂數，重新整理後順序不變）
+function order(q, k) { const n = q.o.length, s = (k * 7 + q.q.length) % n; return Array.from({ length: n }, (_, i) => (i + s) % n); }
+
+let shown = null;
+function route(h) {
+  const [id, sec] = (h || '').split('/');
+  const c = chOf(id);
+  if (c && shown === id && sec) { const t = document.getElementById(`sec-${sec}`); if (t) t.scrollIntoView({ block: 'start' }); return; }  // 同一章只捲動，保留互動圖狀態
+  shown = c ? id : null;
+  if (c) { renderChapter(id); renderTOC(id); document.title = `${c.title}｜後中化學`; }
+  else { renderHome(); renderTOC(''); document.title = '後中化學｜學習階梯'; }
+  $('#tocBox').classList.remove('open');
+  const t = sec && document.getElementById(`sec-${sec}`);
+  if (t) setTimeout(() => t.scrollIntoView({ block: 'start' }), 0); else window.scrollTo(0, 0);
+}
+function boot() {
+  addEventListener('hashchange', () => route(location.hash.slice(1)));
+  $('#tocBtn').onclick = () => $('#tocBox').classList.toggle('open');
+  updateProgress(); route(location.hash.slice(1));
+}
+
+/* ---------- 雲端同步（Firebase，各課程與首頁共用）：Google 登入後，把「已完成的章節」存到 Firestore ----------
+   只在正式網站（GitHub Pages，HEAD 帶 app-site meta）啟用；Artifact 與本機檔案不載入 SDK。
+   位置：users/{uid}/settings/<課程 doc> ＝ { done: {章節id: 1}, lang, updated }
+   使用前先定義 COURSE：
+     tracks: [{ doc, get() → 已完成表, set(表) }]   課程頁一條；首頁列出全部課程，一次同步
+     count() / total()                             面板上顯示的完成章數
+     refresh()                                     從雲端合併進新章節後重畫畫面
+   介面：右上角按鈕 → 下拉面板說明「登入有什麼用」與目前同步狀態；hint() 給首頁的提示列。 */
+const CLOUD = (() => {
+  const CFG = { apiKey: 'AIzaSyD8oEe02SY2PCDe3d40NtTprrApqW_DhB8', authDomain: 'test-5dbba.firebaseapp.com', projectId: 'test-5dbba' };
+  const SDK = 'https://www.gstatic.com/firebasejs/10.12.0/firebase-';
+  let auth = null, db = null, user = null, timer = 0, ready = false, busy = false, err = '', last = 0;
+  const on = () => !!document.querySelector('meta[name="app-site"]') && /^https?:$/.test(location.protocol);
+  const load = src => new Promise((ok, no) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s); });
+  const ref = doc => db.collection('users').doc(user.uid).collection('settings').doc(doc);
+  const zh = () => (typeof isZh === 'function' ? isZh() : true), lang = () => (typeof I18N !== 'undefined' ? I18N.lang : 'zh-TW');
+  const T = (a, b) => (zh() ? a : b);
+  const nDone = () => COURSE.count();
+  const time = t => new Date(t).toLocaleTimeString(zh() ? 'zh-TW' : 'en', { hour: '2-digit', minute: '2-digit' });
+  const G = '<svg viewBox="0 0 18 18" width="16" height="16" aria-hidden="true"><path fill="#4285F4" d="M17.6 9.2c0-.6-.1-1.2-.2-1.7H9v3.3h4.8a4.1 4.1 0 0 1-1.8 2.7v2.2h2.9c1.7-1.6 2.7-3.9 2.7-6.5z"/><path fill="#34A853" d="M9 18c2.4 0 4.5-.8 5.9-2.2L12 13.6c-.8.5-1.8.9-3 .9-2.3 0-4.3-1.6-5-3.7H1v2.3A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M4 10.8a5.4 5.4 0 0 1 0-3.5V4.9H1a9 9 0 0 0 0 8.1l3-2.3z"/><path fill="#EA4335" d="M9 3.6c1.3 0 2.5.5 3.4 1.3l2.6-2.6A9 9 0 0 0 1 4.9l3 2.3c.7-2.1 2.7-3.6 5-3.6z"/></svg>';
+
+  function panelHTML() {
+    if (!ready) return `<p class="cp-t">${T('連線中…', 'Connecting…')}</p>`;
+    const n = nDone(), tot = COURSE.total(), e = err ? `<p class="cp-err">${esc(err)}</p>` : '';
+    if (!user) return `<p class="cp-t">${T('在不同裝置接著學', 'Pick up where you left off on any device')}</p>
+<p>${T('用 Google 帳號登入後，你完成的章節會存到雲端。之後在手機或其他電腦登入同一個帳號，進度會自動接上。', 'Sign in with Google and the chapters you finish are saved to the cloud. Sign in with the same account on your phone or another computer and your progress follows you.')}</p>
+<p class="cp-st">${T(`目前：進度只存在這台裝置（已完成 ${n} / ${tot} 章）`, `Now: progress is saved on this device only (${n} / ${tot} chapters done)`)}</p>
+<button class="btn pri cp-go" type="button" id="cpIn">${G}<span>${T('用 Google 登入', 'Sign in with Google')}</span></button>
+<p class="cp-s">${T('不登入也能使用全部內容。這裡只儲存「完成了哪些章節」，不會讀取你的其他 Google 資料。', 'Everything works without signing in. Only the list of finished chapters is stored, nothing else from your Google account.')}</p>${e}`;
+    return `<p class="cp-t">${user.photoURL ? `<img class="cp-av" src="${esc(user.photoURL)}" alt="" referrerpolicy="no-referrer">` : ''}<span>${esc(user.displayName || T('已登入', 'Signed in'))}<small>${esc(user.email || '')}</small></span></p>
+<p class="cp-st ok">${busy ? T('同步中…', 'Syncing…') : `✓ ${T(`已同步 ${n} / ${tot} 章`, `${n} / ${tot} chapters synced`)}${last ? ` · ${time(last)}` : ''}`}</p>
+<p>${T('在其他裝置用同一個帳號登入，就會看到相同的進度；在任何一台標記完成，其他裝置也會跟著更新。', 'Sign in with the same account on another device to see the same progress. Chapters you finish anywhere show up everywhere.')}</p>
+<button class="btn" type="button" id="cpOut">${T('登出', 'Sign out')}</button>
+<p class="cp-s" style="margin-top:8px !important">${T('登出後，這台裝置上的進度仍會保留。', 'Signing out keeps your progress on this device.')}</p>${e}`;
+  }
+  function render() {
+    const b = document.getElementById('cloudBtn'), p = document.getElementById('cloudPanel');
+    if (b) {
+      b.innerHTML = user ? `${user.photoURL ? `<img class="cb-av" src="${esc(user.photoURL)}" alt="" referrerpolicy="no-referrer">` : '<span class="cb-dot"></span>'}<span>${busy ? T('同步中', 'Syncing') : T('已同步', 'Synced')}</span>` : `<span aria-hidden="true">☁</span><span>${T('同步進度', 'Sync progress')}</span>`;
+      b.title = user ? T('進度已同步到雲端，點一下看詳情', 'Progress is synced; click for details') : T('登入後可在不同裝置同步學習進度', 'Sign in to sync progress across devices');
+    }
+    if (p && !p.hidden) {
+      p.innerHTML = panelHTML();
+      const i = document.getElementById('cpIn'), o = document.getElementById('cpOut');
+      if (i) i.onclick = signIn;
+      if (o) o.onclick = () => auth.signOut();
+    }
+    const h = document.getElementById('syncHint'); if (h) h.outerHTML = hint();
+  }
+  function signIn() {
+    err = ''; if (!ready) return;
+    auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e => {
+      if (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request') { err = T('登入失敗：', 'Sign-in failed: ') + e.code; toggle(true); }
+    });
+  }
+  function toggle(show) {
+    const p = document.getElementById('cloudPanel'), b = document.getElementById('cloudBtn'); if (!p) return;
+    p.hidden = show === undefined ? !p.hidden : !show; b.setAttribute('aria-expanded', String(!p.hidden)); render();
+  }
+  function push() {
+    if (!user) return;
+    clearTimeout(timer); busy = true; render();
+    timer = setTimeout(() => Promise.all(COURSE.tracks.map(t => ref(t.doc).set({ done: t.get(), lang: lang(), updated: Date.now() })))
+      .then(() => { busy = false; err = ''; last = Date.now(); render(); })
+      .catch(e => { busy = false; err = T('同步失敗：', 'Sync failed: ') + e.code; render(); }), 800);
+  }
+  async function pull() {
+    try {
+      busy = true; render();
+      let added = 0, ahead = false;
+      for (const t of COURSE.tracks) {
+        const snap = await ref(t.doc).get(), remote = (snap.exists && snap.data().done) || {}, local = { ...t.get() };
+        const add = Object.keys(remote).filter(k => !local[k]);
+        add.forEach(k => { local[k] = 1; });
+        if (add.length) { t.set(local); added += add.length; }
+        if (Object.keys(local).some(k => !remote[k])) ahead = true;
+      }
+      if (added) COURSE.refresh();
+      busy = false; last = Date.now(); err = '';
+      if (ahead) push(); else render();
+    } catch (e) { busy = false; err = T('同步失敗：', 'Sync failed: ') + e.code; render(); }
+  }
+  // 首頁提示：有進度、還沒登入、沒按過「不用了」時才出現
+  function hint() {
+    if (!on() || user || !ready || !nDone() || store.get('syncHintOff', 0)) return '<div id="syncHint" hidden></div>';
+    return `<div id="syncHint" class="sync-hint" data-notr><span>☁ ${T(`你已完成 ${nDone()} 章，進度目前只存在這台裝置。登入 Google 帳號，換手機或電腦也能接著學。`, `You've finished ${nDone()} chapters, saved on this device only. Sign in with Google to continue on your phone or another computer.`)}</span><button class="btn sm pri" type="button" data-sync="in">${T('登入同步', 'Sign in')}</button><button class="btn sm" type="button" data-sync="off">${T('不用了', 'No thanks')}</button></div>`;
+  }
+  async function start() {
+    if (!on()) return;
+    const top = document.querySelector('.top-in');
+    if (!top) return;
+    top.insertAdjacentHTML('beforeend', '<div class="cloud" data-notr><button class="btn cloud-btn" type="button" id="cloudBtn" aria-expanded="false" aria-controls="cloudPanel"></button><div class="cloud-panel" id="cloudPanel" role="dialog" hidden></div></div>');
+    document.getElementById('cloudBtn').onclick = e => { e.stopPropagation(); toggle(); };
+    document.addEventListener('click', e => {
+      if (!e.target.closest('.cloud')) toggle(false);
+      const s = e.target.closest('[data-sync]');
+      if (s) { if (s.dataset.sync === 'in') signIn(); else { store.set('syncHintOff', 1); render(); } }
+    });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') toggle(false); });
+    render();
+    try {
+      await load(SDK + 'app-compat.js');
+      await Promise.all([load(SDK + 'auth-compat.js'), load(SDK + 'firestore-compat.js')]);
+    } catch (e) { document.querySelector('.cloud').remove(); return; }
+    firebase.initializeApp(CFG);
+    auth = firebase.auth(); db = firebase.firestore();
+    auth.onAuthStateChanged(u => { user = u; ready = true; err = ''; render(); if (u) pull(); });
+  }
+  return { start, push, hint, render };
+})();
+
+
+/* ---------- 後中化學：啟動、雲端同步、PWA ---------- */
+boot();
+store.set('total', CH.length);  // 給學習階梯首頁顯示進度
+const COURSE = {
+  tracks: [{ doc: 'chemLadder', get: () => state.done, set: m => { state.done = m; store.set('done', m); } }],
+  count: () => CH.filter(c => state.done[c.id]).length, total: () => CH.length,
+  refresh: () => { updateProgress(); route(location.hash.slice(1)); },
+};
+if (document.querySelector('meta[name="app-site"]')) {
+  document.querySelector('.brand').insertAdjacentHTML('beforebegin', '<a class="home-link" href="../">‹ 學習階梯</a>');
+  if (typeof CLOUD !== 'undefined') CLOUD.start();
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('../sw.js', { scope: '../' }).catch(() => {});
+}
+
+</script>
+
+</body>
+</html>
