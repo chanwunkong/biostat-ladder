@@ -152,6 +152,23 @@ svg.ch, svg.mol, svg.en, svg.bk, svg.ions { width: 100%; height: auto; display: 
 .verdict .lbl { margin: 0; }
 .verdict .big { font-size: 26px; font-family: var(--mono); color: var(--accent); }
 .reason li { margin: 6px 0; font-size: 14.5px; }
+/* 立體化學 */
+.mirror { display: grid; grid-template-columns: minmax(0, 1fr) 2px minmax(0, 1fr); gap: 10px; align-items: center; }
+.mline { align-self: stretch; background: repeating-linear-gradient(var(--muted) 0 6px, transparent 6px 12px); }
+.c { text-align: center; margin: 0; }
+.mirror svg { max-height: 220px; }
+#chairV svg, .ngrid svg { max-height: 260px; }
+.rsgrid { display: grid; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); gap: 14px; align-items: start; }
+.rsteps li { margin: 6px 0; font-size: 14.5px; }
+.mol .note.pri { font-family: var(--mono); font-size: 13px; fill: var(--accent); font-weight: 700; }
+.fgrid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.fgrid .lbl, .fgrid .small { width: 100%; }
+.fcell { border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; display: grid; font-size: 13.5px; }
+.fcell.on { border-color: var(--accent); background: var(--soft); }
+.fcell b { font-family: var(--mono); }
+.clash { stroke: var(--bad); stroke-width: 1.5; stroke-dasharray: 3 3; }
+.ice td:first-child { font-weight: 600; white-space: nowrap; }
+@media (max-width: 600px) { .rsgrid { grid-template-columns: minmax(0, 1fr); } }
 /* 練習題 */
 .q { border-top: 1px solid var(--line); padding: 14px 0; }
 .qt { font-weight: 500; margin: 0 0 8px; }

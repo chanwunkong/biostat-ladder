@@ -31,7 +31,7 @@ window.__errs = []; addEventListener('error', e => __errs.push(e.message)); cons
 })();
 JS
 sed 's#<script>#<script src="probe.js"></script><script>#' docs/chem/index.html | sed 's#src="probe.js"></script><script>#src="probe.js" defer></script><script>#' > "$TMP/p.html"
-CHAPTERS=$(node -e "const fs=require('fs');console.log(new Function(fs.readFileSync('src/chem/content.js','utf8')+';return CH;')().map(c=>c.id).join(' '))")
+CHAPTERS=$(node -e "const fs=require('fs');console.log(new Function(['src/chem/content.js',...require('fs').readdirSync('src/chem/ch').map(f=>'src/chem/ch/'+f)].map(f=>fs.readFileSync(f,'utf8')).join('\n')+';return CH;')().map(c=>c.id).join(' '))")
 fail=0
 for c in home $CHAPTERS; do
   "$CHROME" --headless=new --disable-gpu --user-data-dir="$TMP/prof-$c" --window-size=1100,900 --virtual-time-budget=120000 --dump-dom "file://$TMP/p.html#$c" 2>/dev/null > "$TMP/out-$c" &

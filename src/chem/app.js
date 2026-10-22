@@ -1,5 +1,7 @@
 /* ---------- 後中化學：頁面框架（首頁、單元目錄、章節、練習題、進度） ---------- */
 const state = { done: store.get('done', {}) };
+const UORDER = UNITS.flatMap(p => p.items.map(i => i[0]));
+CH.sort((a, b) => UORDER.indexOf(a.unit) - UORDER.indexOf(b.unit));
 const chOf = id => CH.find(c => c.id === id), unitCh = u => CH.find(c => c.unit === u);
 const unitName = u => UNITS.flatMap(p => p.items).find(i => i[0] === u)[1];
 

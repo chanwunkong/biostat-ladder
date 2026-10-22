@@ -24,7 +24,7 @@ COURSES = {
         "theme": "#2F3B99",
     },
     "chem": {
-        "scripts": ["ui.js", "chem.js", "mol.js", "content.js", "widgets.js", "app.js", "@cloud.js", "start.js"],
+        "scripts": ["ui.js", "chem.js", "mol.js", "content.js", "ch/*.js", "widgets.js", "w/*.js", "app.js", "@cloud.js", "start.js"],
         "desc": "學士後中醫入學考的普通化學與有機化學：用互動圖從原理學起，看懂酸鹼平衡與反應機構。",
         "theme": "#17705F",
     },
@@ -111,6 +111,9 @@ def assemble(cdir, scripts):
     shell = shell.replace("/*BASE*/", (SRC / "shared" / "base.css").read_text(encoding="utf-8"))
     files = []
     for f in scripts:
+        if "*" in f:  # 整個資料夾（依檔名排序）
+            files += sorted(cdir.glob(f))
+            continue
         files.append(SRC / "shared" / f[1:] if f.startswith("@") else cdir / f)
         if f.startswith("lang-"):  # 語言包的分檔：<課程>/lang/<語言>/*.js
             files += sorted((cdir / "lang" / f[5:-3]).glob("*.js"))

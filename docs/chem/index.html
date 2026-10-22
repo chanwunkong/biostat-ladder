@@ -233,6 +233,23 @@ svg.ch, svg.mol, svg.en, svg.bk, svg.ions { width: 100%; height: auto; display: 
 .verdict .lbl { margin: 0; }
 .verdict .big { font-size: 26px; font-family: var(--mono); color: var(--accent); }
 .reason li { margin: 6px 0; font-size: 14.5px; }
+/* 立體化學 */
+.mirror { display: grid; grid-template-columns: minmax(0, 1fr) 2px minmax(0, 1fr); gap: 10px; align-items: center; }
+.mline { align-self: stretch; background: repeating-linear-gradient(var(--muted) 0 6px, transparent 6px 12px); }
+.c { text-align: center; margin: 0; }
+.mirror svg { max-height: 220px; }
+#chairV svg, .ngrid svg { max-height: 260px; }
+.rsgrid { display: grid; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); gap: 14px; align-items: start; }
+.rsteps li { margin: 6px 0; font-size: 14.5px; }
+.mol .note.pri { font-family: var(--mono); font-size: 13px; fill: var(--accent); font-weight: 700; }
+.fgrid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.fgrid .lbl, .fgrid .small { width: 100%; }
+.fcell { border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; display: grid; font-size: 13.5px; }
+.fcell.on { border-color: var(--accent); background: var(--soft); }
+.fcell b { font-family: var(--mono); }
+.clash { stroke: var(--bad); stroke-width: 1.5; stroke-dasharray: 3 3; }
+.ice td:first-child { font-weight: 600; white-space: nowrap; }
+@media (max-width: 600px) { .rsgrid { grid-template-columns: minmax(0, 1fr); } }
 /* 練習題 */
 .q { border-top: 1px solid var(--line); padding: 14px 0; }
 .qt { font-weight: 500; margin: 0 0 8px; }
@@ -486,8 +503,10 @@ const UNITS = [
   ] },
 ];
 
-const CH = [
-  {
+const CH = [];  // 各章在 src/chem/ch/*.js 以 CH.push(...) 加入；顯示順序依 UNITS
+
+/* ---------- 後中化學：acid-base ---------- */
+CH.push({
     id: 'acid-base', unit: 'g8', title: '酸鹼滴定與緩衝溶液',
     lede: '用一支滴管把酸鹼平衡看清楚：滴進去的每一滴鹼去了哪裡、pH 為什麼在某些地方幾乎不動，又為什麼在當量點附近突然暴衝。',
     sections: [
@@ -545,8 +564,69 @@ const CH = [
       { q: '用 NaOH 滴定醋酸，選哪一種指示劑最適合？', o: ['酚酞（變色範圍 8.2–10.0）', '甲基橙（3.1–4.4）', '甲基紅（4.4–6.2）', '都可以，指示劑不影響結果'], a: 0,
         why: '當量點 pH 約 8.7，落在暴衝區中段。酚酞在這段變色；甲基橙、甲基紅會在緩衝區就變色，造成終點提早。', show: { w: 'indicator', set: { ind: 'mo', v: 8 } } },
     ],
-  },
-  {
+  });
+
+/* ---------- 後中化學：化學平衡 ---------- */
+CH.push({
+  id: 'equilibrium', unit: 'g7', title: '化學平衡：K、Q 與勒沙特列原理',
+  lede: '反應不一定會「做完」。這一章看懂平衡為什麼停在某個比例、怎麼預測反應往哪邊走，以及外界改變時系統如何調整。後面的酸鹼、溶解度、電化學，全部建立在這一章上。',
+  sections: [
+    { h: '平衡是動態的：正逆反應一樣快', w: 'eqdyn', body: `
+<p>A ⇌ B 的反應同時往兩個方向進行。正反應速率 = k<sub>f</sub>[A]，逆反應速率 = k<sub>r</sub>[B]。剛開始只有 A，正反應很快、逆反應是 0；隨著 A 變少、B 變多，正反應變慢、逆反應變快，直到兩者<b>一樣快</b>。</p>
+<p>這時濃度不再改變，稱為<b>化學平衡</b>。注意：反應並沒有停止，只是每秒有多少 A 變成 B，就有多少 B 變回 A。</p>
+<p>平衡時 k<sub>f</sub>[A] = k<sub>r</sub>[B]，整理得到：</p>
+<p class="eq">[B] ÷ [A] = k<sub>f</sub> ÷ k<sub>r</sub> = K（平衡常數）</p>
+<p>改從純 B 開始試試：最後到達的比例完全一樣。<b>平衡組成只由 K 決定，和從哪一邊出發無關。</b></p>` },
+    { h: '平衡常數 K：怎麼寫、代表什麼', body: `
+<p>對一般反應 aA + bB ⇌ cC + dD，平衡常數是「產物濃度的係數次方相乘」除以「反應物濃度的係數次方相乘」：</p>
+<p class="eq">K = [C]<sup>c</sup>[D]<sup>d</sup> ÷ ([A]<sup>a</sup>[B]<sup>b</sup>)</p>
+<ul><li><b>純固體與純液體不寫進 K</b>（例如水當溶劑時），因為它們的「濃度」不會改變。</li>
+<li><b>K 很大（≫ 1）</b>：平衡時幾乎都是產物，反應「幾乎完全」。例如上一章的 HA + OH⁻ → A⁻ + H₂O，K ≈ 1.8 × 10⁹。</li>
+<li><b>K 很小（≪ 1）</b>：平衡時幾乎都是反應物。例如醋酸的解離 Ka = 1.8 × 10⁻⁵，所以醋酸溶液裡大部分還是 HA。</li>
+<li><b>反應倒過來寫，K 變成倒數</b>；係數全部乘 2，K 變成平方；兩個反應相加，K 相乘。</li>
+<li>氣體反應也可以用分壓寫成 Kp，Kp = Kc(RT)<sup>Δn</sup>，Δn 是氣體產物與反應物的莫耳數差。</li></ul>
+<p>K 只和<b>溫度</b>有關：改變濃度、壓力或加入催化劑，K 都不變。</p>` },
+    { h: '反應商 Q：還沒平衡時往哪走', w: 'qk', body: `
+<p>把「目前」的濃度代入 K 的式子，得到的值叫<b>反應商 Q</b>。比較 Q 和 K 就知道反應往哪個方向走：</p>
+<ul><li><b>Q &lt; K</b>：產物不夠，反應<b>向右</b>。</li><li><b>Q &gt; K</b>：產物太多，反應<b>向左</b>。</li><li><b>Q = K</b>：已經平衡。</li></ul>
+<p>要算平衡濃度，用 <b>ICE 表</b>：I（Initial）起始濃度、C（Change）變化量、E（Equilibrium）平衡濃度。變化量依係數比例寫成 −x、+2x，把平衡濃度代入 K 的式子解出 x。</p>
+<p>以 N₂O₄ ⇌ 2NO₂ 為例，調整起始濃度：有時 Q 比 K 小、有時比 K 大，x 的正負代表反應的方向。</p>` },
+    { h: '勒沙特列原理：干擾之後系統怎麼調整', w: 'lechat', body: `
+<p>勒沙特列原理說：平衡受到干擾時，系統會往<b>部分抵銷干擾</b>的方向移動。但與其背口訣，不如每次都用 Q 和 K 判斷，永遠不會錯：</p>
+<table class="tbl"><thead><tr><th>干擾</th><th>改變了什麼</th><th>結果</th></tr></thead><tbody>
+<tr><td>加入反應物或產物</td><td>Q 改變，K 不變</td><td>往消耗加入物的方向移動</td></tr>
+<tr><td>壓縮體積（加壓）</td><td>所有氣體濃度同倍增加；氣體分子數多的一側，Q 受影響較大</td><td>往<b>氣體分子數較少</b>的一側移動</td></tr>
+<tr><td>改變溫度</td><td>Q 不變，<b>K 改變</b></td><td>升溫往吸熱方向，降溫往放熱方向</td></tr>
+<tr><td>加入催化劑</td><td>都不變</td><td>平衡不移動，只是更快到達</td></tr></tbody></table>
+<p>N₂O₄（無色）⇌ 2NO₂（紅棕色）的正反應吸熱。試試各種干擾：先看干擾後 Q 和 K 的關係，再讓系統回到平衡。注意加壓時顏色先變深（濃度加倍）、再稍微變淡（反應向左），這是經典的課堂示範。</p>` },
+    { h: 'K 由什麼決定：ΔG° 與溫度', w: 'kdg', body: `
+<p>平衡常數和標準自由能變化有一條直接的關係：</p>
+<p class="eq">ΔG° = −RT ln K　　⇔　　K = e<sup>−ΔG°/RT</sup></p>
+<ul><li>ΔG° &lt; 0 → K &gt; 1，產物有利；ΔG° &gt; 0 → K &lt; 1，反應物有利。</li>
+<li>這是<b>指數</b>關係：25 °C 時 ΔG° 每差 5.7 kJ/mol，K 就差 10 倍。所以 ΔG° 只要幾十 kJ/mol，平衡就幾乎完全偏向一邊。</li>
+<li>溫度改變 K 的方向由 ΔH° 決定（van 't Hoff 方程式）：吸熱反應升溫 K 變大，放熱反應升溫 K 變小。這正是上一節加熱、冷卻的結果。</li></ul>
+<p>熱力學一章會再說明 ΔG° = ΔH° − TΔS° 從何而來；這裡先記住 ΔG° 決定 K、K 決定平衡組成。</p>` },
+  ],
+  quiz: [
+    { q: '反應達到化學平衡時，下列敘述何者正確？', o: ['正反應與逆反應的速率相等，但反應仍在進行', '正反應與逆反應都停止了', '反應物與產物的濃度一定相等', '反應物全部轉變為產物'], a: 0,
+      why: '平衡是動態的：兩個方向的速率相等，所以濃度不變；濃度比例由 K 決定，不一定相等。', show: { w: 'eqdyn', set: { t: 10 } } },
+    { q: 'CaCO₃(s) ⇌ CaO(s) + CO₂(g) 的平衡常數表示式為何？', o: ['K = [CO₂]', 'K = [CaO][CO₂] ÷ [CaCO₃]', 'K = [CaCO₃] ÷ ([CaO][CO₂])', 'K = [CaO][CO₂]'], a: 0,
+      why: '純固體不寫進平衡常數，所以只剩 [CO₂]（或 Kp = P_CO₂）。' },
+    { q: 'N₂O₄ ⇌ 2NO₂ 的 K = 4.6 × 10⁻³。若 [N₂O₄] = 0.10 M、[NO₂] = 0.050 M，反應會往哪個方向進行？', o: ['向左（生成 N₂O₄）', '向右（生成 NO₂）', '已達平衡', '無法判斷'], a: 0,
+      why: 'Q = 0.050² ÷ 0.10 = 0.025 > K = 0.0046，產物太多，反應向左進行。', show: { w: 'qk', set: { a: 0.1, b: 0.05 } } },
+    { q: 'N₂O₄ ⇌ 2NO₂ 達平衡後將容器體積壓縮為一半，重新達平衡時，下列何者正確？', o: ['平衡向左移，但 [NO₂] 仍比壓縮前大', '平衡向左移，[NO₂] 比壓縮前小', '平衡向右移', 'K 變為原來的 2 倍'], a: 0,
+      why: '壓縮使 Q 變成原來的 2 倍，Q > K，向左移以減少氣體分子數。但只能部分抵銷，[NO₂] 仍比壓縮前高（顏色先變深再稍微變淡，最後仍比原本深）。K 只和溫度有關。', show: { w: 'lechat', set: { act: 'comp' } } },
+    { q: '對吸熱反應而言，升高溫度會使平衡常數 K 如何變化？', o: ['變大', '變小', '不變', '先變大後變小'], a: 0,
+      why: '吸熱反應升溫，平衡往吸熱（正反應）方向移動，K 變大。濃度、壓力改變只影響 Q，只有溫度會改變 K。', show: { w: 'lechat', set: { act: 'heat' } } },
+    { q: '在反應中加入催化劑，對平衡有什麼影響？', o: ['平衡位置不變，但更快達到平衡', '平衡向右移', 'K 變大', '平衡向左移'], a: 0,
+      why: '催化劑同時降低正逆反應的活化能，兩個方向等比例加快，所以 K 和平衡組成都不變，只是更快到達平衡。' },
+    { q: '某反應在 25 °C 的 ΔG° = −11.4 kJ/mol，其平衡常數 K 約為多少？', o: ['約 100', '約 0.01', '約 1', '約 11.4'], a: 0,
+      why: 'K = e^(−ΔG°/RT) = e^(11400 ÷ (8.314 × 298)) = e^4.6 ≈ 100。也可以用「每 5.7 kJ/mol 差 10 倍」心算：11.4 是兩個 5.7，所以 K ≈ 10² 。', show: { w: 'kdg', set: { dG: -11.4, T: 298 } } },
+  ],
+});
+
+/* ---------- 後中化學：sn-e ---------- */
+CH.push({
     id: 'sn-e', unit: 'o4', title: '取代與脫去：SN2、SN1、E2、E1',
     lede: '鹵烷遇到親核基或鹼，會走四條路之一。不用背表格：只要看懂「誰的電子去攻擊誰」和「有什麼擋在路上」，就能推出答案。',
     sections: [
@@ -608,8 +688,61 @@ const CH = [
       { q: '為什麼醇要在酸性條件下才能進行取代反應？', o: ['質子化後離去的是 H₂O，而不是很差的離去基 OH⁻', '酸會讓親核基變強', '酸能把醇氧化成醛', '酸讓碳變成負電荷'], a: 0,
         why: 'OH⁻ 的共軛酸 H₂O 的 pKa 是 15.7，OH⁻ 很不穩定，不願離開；質子化後離開的是 H₂O，其共軛酸 H₃O⁺ 的 pKa 是 −1.7，H₂O 是好離去基。', show: { w: 'leaving', set: { x: 'OH2' } } },
     ],
-  },
-];
+  });
+
+/* ---------- 後中化學：構形與立體化學 ---------- */
+CH.push({
+  id: 'stereo', unit: 'o3', title: '構形與立體化學',
+  lede: '分子式相同、原子連接方式也相同，只差在空間中的排列，性質卻可能天差地遠：一個是藥、一個沒有藥效甚至有毒。這一章看懂分子的「左右手」和「姿勢」，SN2 的構型反轉、E2 的反式共平面都建立在這裡。',
+  sections: [
+    { h: '左手和右手：掌性', w: 'chiral', body: `
+<p>你的左手和右手互為鏡像，但不管怎麼轉都疊不起來。分子也一樣：如果一個分子和它的鏡像無法重疊，就稱為<b>掌性分子</b>（chiral），它和鏡像是一對<b>鏡像異構物</b>（enantiomers）。</p>
+<p>最常見的原因是<b>掌性中心</b>：一個 sp³ 碳連著<b>四個不同</b>的基團。立體式的畫法：</p>
+<ul><li>實線：在紙面上；<b>楔形</b>（實心三角形）：朝向你；<b>虛楔</b>（斜線）：遠離你。</li></ul>
+<p>比較 2-丁醇（四個基團都不同）和 2-丙醇（有兩個 CH₃）。把鏡像轉過來疊到原分子上：2-丙醇疊得起來，因為它有一個穿過分子的鏡面；2-丁醇疊不起來。</p>
+<p>鏡像異構物的熔點、沸點、溶解度完全相同，差別只在<b>使平面偏極光旋轉的方向相反</b>，以及和其他掌性分子（例如體內的酵素、受體）的作用不同。等量的一對鏡像異構物混合物稱為<b>外消旋</b>混合物，旋光互相抵消。</p>` },
+    { h: 'R 和 S：給左右手取名字', w: 'rs', body: `
+<p>用 Cahn–Ingold–Prelog（CIP）規則命名掌性中心，三個步驟：</p>
+<ol><li><b>排優先順序</b>：看直接連在掌性中心上的原子，<b>原子序大的優先</b>。相同時往下一層，把各自連著的三個原子由大到小排好，從第一個開始比，第一個不同處決定勝負。雙鍵把相連的原子算兩次。</li>
+<li><b>把最低優先（通常是 H）放到遠離你的位置</b>（虛楔）。</li>
+<li>看 1 → 2 → 3 的方向：<b>順時針 = R</b>（rectus，右），<b>逆時針 = S</b>（sinister，左）。</li></ol>
+<p>實用技巧：如果 H 在楔形（朝向你），直接看方向再把答案<b>反過來</b>；任意交換兩個基團，構型就反轉一次。</p>
+<p>注意：R/S 只是命名，和旋光方向（+／−）沒有固定關係，必須用實驗量測。</p>` },
+    { h: '兩個掌性中心：非鏡像異構物與內消旋', w: 'fischer', body: `
+<p>有 n 個掌性中心，最多有 2ⁿ 個立體異構物。兩個中心時有四種組合：(R,R)、(S,S)、(R,S)、(S,R)。</p>
+<ul><li>構型<b>全部相反</b>：鏡像異構物，例如 (R,R) 和 (S,S)。</li>
+<li>只有<b>部分相反</b>：<b>非鏡像異構物</b>（diastereomers），例如 (R,R) 和 (R,S)。它們不是鏡像，物理性質不同，可以用一般方法分離。</li>
+<li>如果分子兩半結構相同，(R,S) 可能和自己的鏡像相同：分子內有鏡面，稱為<b>內消旋</b>（meso）化合物，雖然有掌性中心卻沒有光學活性。</li></ul>
+<p>這裡用<b>費雪投影式</b>表示：碳鏈直放，<b>橫線朝向你、直線遠離你</b>。費雪投影式只能在紙面上轉 180°，不能轉 90° 或翻面，否則構型會變。</p>
+<p>切換酒石酸和 2-溴-3-氯丁烷，比較為什麼前者只有 3 個立體異構物、後者有 4 個。</p>` },
+    { h: '構形：單鍵可以轉', w: 'butane', body: `
+<p>C–C 單鍵可以自由旋轉，旋轉造成的不同空間排列稱為<b>構形</b>（conformation）。構形之間轉換很快，不能分離，這點和需要斷鍵才能互換的<b>構型</b>（configuration，如 R/S）不同。</p>
+<p>用<b>紐曼投影式</b>沿著 C–C 鍵看過去：前面的碳是中心點，後面的碳是圓。</p>
+<ul><li><b>交錯式</b>：前後的鍵錯開，能量低。</li><li><b>重疊式</b>：前後的鍵正對，電子互斥（扭轉張力），能量高。</li></ul>
+<p>丁烷還要考慮兩個甲基的距離：<b>反式</b>（180°）最穩定；<b>間扭式</b>（60°）兩個甲基相鄰，高 3.8 kJ/mol；兩個甲基重疊時最高。上一章 E2 需要 H 和離去基「反式共平面」，指的就是這種 180° 的交錯構形。</p>` },
+    { h: '環己烷的椅式：直立鍵與平伏鍵', w: 'chair', body: `
+<p>環己烷不是平的，而是折成<b>椅式</b>：所有鍵角接近 109.5°，而且每個 C–C 鍵都是交錯式，沒有角張力也沒有扭轉張力。</p>
+<p>每個碳有兩個位置：</p>
+<ul><li><b>直立鍵</b>（axial）：和環的軸平行，上下交替。</li><li><b>平伏鍵</b>（equatorial）：大致沿著環的外圍向外伸。</li></ul>
+<p>椅式可以<b>環翻轉</b>，翻轉後所有直立鍵變成平伏鍵、平伏鍵變成直立鍵。取代基在直立鍵時，會和同一側、隔一個碳的兩個直立 H 擠在一起（<b>1,3-雙直立作用</b>），所以大的取代基偏好<b>平伏鍵</b>。基團越大，偏好越明顯：第三丁基幾乎 100% 待在平伏鍵。</p>` },
+  ],
+  quiz: [
+    { q: '下列哪一個分子有掌性中心？', o: ['2-丁醇 CH₃CH(OH)CH₂CH₃', '2-丙醇 CH₃CH(OH)CH₃', '乙醇 CH₃CH₂OH', '甘胺酸 H₂NCH₂COOH'], a: 0,
+      why: '2-丁醇的 C2 連著 OH、H、CH₃、C₂H₅ 四個不同基團。其他分子的碳都有兩個以上相同的基團。', show: { w: 'chiral', set: { set: 'butanol', rot: true } } },
+    { q: '依 CIP 規則，下列基團優先順序何者正確？', o: ['–OH > –CHO > –CH₂OH > –H', '–CHO > –OH > –CH₂OH > –H', '–CH₂OH > –CHO > –OH > –H', '–OH > –CH₂OH > –CHO > –H'], a: 0,
+      why: '先比直接相連的原子：O > C > H。兩個 C 再往下一層：CHO 的碳連著 (O, O, H)（雙鍵 O 算兩次），CH₂OH 的碳連著 (O, H, H)，所以 CHO 優先。', show: { w: 'rs', set: { mol: 'gla', step: 1 } } },
+    { q: '最低優先的 H 在楔形（朝向你）時，看到 1 → 2 → 3 是順時針，這個掌性中心是？', o: ['S', 'R', '無法判斷', '不是掌性中心'], a: 0,
+      why: 'H 朝向你時，看到的方向和真正的方向相反：看起來順時針，實際是逆時針，所以是 S。', show: { w: 'rs', set: { mol: 'but', swap: 'wedge,dash', step: 3 } } },
+    { q: '(2R,3R)-酒石酸和 (2R,3S)-酒石酸的關係是？', o: ['非鏡像異構物', '鏡像異構物', '同一個化合物', '構造異構物'], a: 0,
+      why: '只有 C3 的構型相反，不是鏡像，所以是非鏡像異構物。(2R,3S) 本身是內消旋化合物。', show: { w: 'fischer', set: { mol: 'tart', sides: ['right', 'left'] } } },
+    { q: '內消旋（meso）化合物的特徵是？', o: ['有掌性中心，但分子內有鏡面，沒有光學活性', '沒有掌性中心', '是一對鏡像異構物的等量混合物', '旋光度是鏡像異構物的兩倍'], a: 0,
+      why: '內消旋化合物有兩個以上掌性中心，但分子本身和鏡像相同（內部有鏡面）。注意和外消旋「混合物」區分。', show: { w: 'fischer', set: { mol: 'tart', sides: ['right', 'right'] } } },
+    { q: '丁烷最穩定的構形是？', o: ['反式（兩個甲基二面角 180°）', '間扭式（60°）', '甲基與甲基重疊（0°）', '甲基與氫重疊（120°）'], a: 0,
+      why: '反式是交錯式，而且兩個甲基離得最遠，沒有扭轉張力也沒有立體擁擠。', show: { w: 'butane', set: { ang: 180 } } },
+    { q: '甲基環己烷在室溫下，甲基主要位於？', o: ['平伏鍵（約 95%）', '直立鍵（約 95%）', '兩者各半', '環平面上'], a: 0,
+      why: '甲基在直立鍵時有 1,3-雙直立作用，能量高約 7.6 kJ/mol，所以約 95% 的分子處在甲基平伏的構形。', show: { w: 'chair', set: { sub: 'me', axial: true } } },
+  ],
+});
 
 /* ---------- 後中化學：互動圖 ----------
    W.名稱(el) 在 el 裡畫出互動圖，回傳 { set(狀態) } 給練習題的「在圖上看」使用。 */
@@ -1011,8 +1144,323 @@ W.decide = el => {
   return { set(s) { Object.assign(st, s); draw(); } };
 };
 
+/* ---------- 後中化學：化學平衡的互動圖 ----------
+   N₂O₄ ⇌ 2 NO₂：25 °C 時 Kc ≈ 4.6 × 10⁻³（濃度以 M 計），ΔH° ≈ +57.2 kJ/mol（正反應吸熱）。K 隨溫度依 van 't Hoff 式變化。 */
+const N2O4 = { K298: 4.6e-3, dH: 57.2e3, R: 8.314 };
+const Kat = T => N2O4.K298 * Math.exp(-N2O4.dH / N2O4.R * (1 / T - 1 / 298.15));
+// 從 [N₂O₄] = a、[NO₂] = b 出發達到平衡：(b + 2x)² = K(a − x)，取物理上合理的根
+function eqSolve(a, b, K) { const B = 4 * b + K, C = b * b - K * a, x = (-B + Math.sqrt(B * B - 16 * C)) / 8; return { a: a - x, b: b + 2 * x, x }; }
+
+/* ===== 1. 動態平衡：A ⇌ B ===== */
+W.eqdyn = el => {
+  const st = { kf: 0.6, kr: 0.2, t: 2, fromB: false }, T = 12;
+  el.innerHTML = `<div class="w-row">${seg('edS', [['A', '從純 A 開始'], ['B', '從純 B 開始']], 'A')}</div>
+<div class="w-row"><label class="rng">正反應 k<sub>f</sub> <input type="range" id="edf" min="0.05" max="1.5" step="0.05"><output class="mono" id="edfo"></output></label><label class="rng">逆反應 k<sub>r</sub> <input type="range" id="edr" min="0.05" max="1.5" step="0.05"><output class="mono" id="edro"></output></label></div>
+<div class="w-row"><label class="rng">時間 <input type="range" id="edt" min="0" max="${T}" step="0.1"><output class="mono" id="edto"></output></label></div>
+<div class="bgrid"><div id="edc"></div><div id="edv"></div></div><div class="cards" id="edk"></div><p class="note" id="edn"></p>`;
+  const conc = t => { const s = st.kf + st.kr, Aeq = st.kr / s, A0 = st.fromB ? 0 : 1, A = Aeq + (A0 - Aeq) * Math.exp(-s * t); return [A, 1 - A]; };
+  function draw() {
+    const ts = Array.from({ length: 121 }, (_, i) => i * T / 120), [A, B] = conc(st.t), K = st.kf / st.kr;
+    $('#edc', el).innerHTML = chart({ x: [0, T], y: [0, 1], xt: [0, 3, 6, 9, 12], yt: [0, 0.5, 1], xlab: '時間', ylab: '濃度（M）', h: 220, label: '濃度隨時間' }, (X, Y) =>
+      `<path class="sha" d="${path(ts.map(t => [X(t), Y(conc(t)[0])]))}"/><path class="sa" d="${path(ts.map(t => [X(t), Y(conc(t)[1])]))}"/><line class="cur" x1="${X(st.t)}" x2="${X(st.t)}" y1="${Y(0)}" y2="${Y(1)}"/><circle class="dot2" cx="${X(st.t)}" cy="${Y(A)}" r="5"/><circle class="dot" cx="${X(st.t)}" cy="${Y(B)}" r="5"/><text class="tk lha" x="${X(0.3)}" y="${Y(st.fromB ? 0.06 : 0.93)}">[A]</text><text class="tk la" x="${X(0.3)}" y="${Y(st.fromB ? 0.93 : 0.06)}">[B]</text>`);
+    const rmax = Math.max(st.kf, st.kr);
+    $('#edv', el).innerHTML = chart({ x: [0, T], y: [0, rmax], xt: [0, 3, 6, 9, 12], yt: [0, +(rmax / 2).toFixed(2), +rmax.toFixed(2)], xlab: '時間', ylab: '反應速率', h: 220, label: '正逆反應速率' }, (X, Y) =>
+      `<path class="sha" d="${path(ts.map(t => [X(t), Y(st.kf * conc(t)[0])]))}"/><path class="sa" d="${path(ts.map(t => [X(t), Y(st.kr * conc(t)[1])]))}"/><line class="cur" x1="${X(st.t)}" x2="${X(st.t)}" y1="${Y(0)}" y2="${Y(rmax)}"/><text class="tk lha" x="${X(T) - 4}" y="${Y(rmax) + 12}" text-anchor="end">藍：正反應 k<tspan dy="3" font-size="9">f</tspan><tspan dy="-3">[A]</tspan></text><text class="tk la" x="${X(T) - 4}" y="${Y(rmax) + 26}" text-anchor="end">橘：逆反應 k<tspan dy="3" font-size="9">r</tspan><tspan dy="-3">[B]</tspan></text>`);
+    const Q = A > 1e-9 ? B / A : Infinity, rf = st.kf * A, rr = st.kr * B, eq = Math.abs(rf - rr) < 0.005;
+    $('#edk', el).innerHTML = card('q', 'Q = [B] ÷ [A]', Number.isFinite(Q) ? fx(Q) : '∞') + card('k', 'K = k<sub>f</sub> ÷ k<sub>r</sub>', fx(K)) + card('rf', '正反應速率', fx(rf, 3)) + card('rr', '逆反應速率', fx(rr, 3));
+    $('#edn', el).innerHTML = eq ? `<b>已達平衡</b>：正逆反應速率相等（都是 ${fx(rf, 3)}），所以濃度不再改變；但兩個反應都還在進行，只是互相抵消。此時 Q = K = ${fx(K)}。`
+      : `尚未平衡：${rf > rr ? '正反應比逆反應快，A 持續變成 B' : '逆反應比正反應快，B 持續變回 A'}，Q（${Number.isFinite(Q) ? fx(Q) : '∞'}）${Q < K ? '小於' : '大於'} K（${fx(K)}）。`;
+    $('#edfo', el).textContent = fx(st.kf); $('#edro', el).textContent = fx(st.kr); $('#edto', el).textContent = fx(st.t, 1);
+    $('#edf', el).value = st.kf; $('#edr', el).value = st.kr; $('#edt', el).value = st.t; pressSeg(el, 'edS', st.fromB ? 'B' : 'A');
+  }
+  $('#edf', el).oninput = e => { st.kf = +e.target.value; draw(); };
+  $('#edr', el).oninput = e => { st.kr = +e.target.value; draw(); };
+  $('#edt', el).oninput = e => { st.t = +e.target.value; draw(); };
+  bindSeg(el, 'edS', v => { st.fromB = v === 'B'; draw(); });
+  draw();
+  return { set(s) { Object.assign(st, s); draw(); } };
+};
+
+/* ===== 2. Q 與 K、ICE 表 ===== */
+W.qk = el => {
+  const st = { a: 0.1, b: 0 }, K = N2O4.K298;
+  el.innerHTML = `<p class="eq">N₂O₄(g) ⇌ 2 NO₂(g)　　K = [NO₂]² ÷ [N₂O₄] = 4.6 × 10⁻³（25 °C）</p>
+<div class="w-row"><label class="rng">起始 [N₂O₄] <input type="range" id="qka" min="0" max="0.5" step="0.005"><output class="mono" id="qkao"></output></label><label class="rng">起始 [NO₂] <input type="range" id="qkb" min="0" max="0.1" step="0.001"><output class="mono" id="qkbo"></output></label></div>
+<div class="bgrid"><div id="qkq"></div><div id="qkt"></div></div><div id="qkbar"></div><p class="note" id="qkn"></p>`;
+  function draw() {
+    const { a, b } = st, Q = a > 0 ? b * b / a : Infinity, r = eqSolve(a, b, K), dir = Math.abs(Math.log10((Q || 1e-12) / K)) < 0.01 ? 0 : Q < K ? 1 : -1;
+    $('#qkao', el).textContent = `${fx(a, 3)} M`; $('#qkbo', el).textContent = `${fx(b, 3)} M`; $('#qka', el).value = a; $('#qkb', el).value = b;
+    const lq = Number.isFinite(Q) && Q > 0 ? Math.log10(Q) : (Q === 0 ? -6 : 2), lk = Math.log10(K);
+    $('#qkq', el).innerHTML = chart({ x: [-6, 2], y: [0, 1], xt: [-6, -4, -2, 0, 2], yt: [], xlab: 'log Q（左：幾乎都是反應物；右：產物多）', h: 120, label: 'Q 與 K 的比較' }, (X, Y) =>
+      `<line class="mk" x1="${X(lk)}" x2="${X(lk)}" y1="${Y(0)}" y2="${Y(1)}"/><text class="tk hl" x="${X(lk)}" y="${Y(0.85)}" text-anchor="middle">K</text><circle class="dot" cx="${X(Math.max(-6, Math.min(2, lq)))}" cy="${Y(0.4)}" r="7"/><text class="tk" x="${X(Math.max(-6, Math.min(2, lq)))}" y="${Y(0.4) - 12}" text-anchor="middle">Q</text>${dir ? `<path class="arr" d="M${X(Math.max(-6, Math.min(2, lq))) + dir * 12} ${Y(0.4)}L${X(lk) - dir * 8} ${Y(0.4)}" marker-end="url(#ah2)"/>` : ''}<defs><marker id="ah2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--arrow)"/></marker></defs>`);
+    const f = v => fx(v, 4);
+    $('#qkt', el).innerHTML = `<table class="tbl ice"><thead><tr><th></th><th>[N₂O₄]</th><th>[NO₂]</th></tr></thead><tbody>
+<tr><td>I 起始</td><td>${f(a)}</td><td>${f(b)}</td></tr><tr><td>C 變化</td><td>${r.x >= 0 ? '−' : '+'}x = ${r.x >= 0 ? '−' : '+'}${f(Math.abs(r.x))}</td><td>${r.x >= 0 ? '+' : '−'}2x = ${r.x >= 0 ? '+' : '−'}${f(Math.abs(2 * r.x))}</td></tr>
+<tr><td>E 平衡</td><td><b>${f(r.a)}</b></td><td><b>${f(r.b)}</b></td></tr></tbody></table><p class="small mut">驗算：[NO₂]² ÷ [N₂O₄] = ${r.a > 0 ? sci(r.b * r.b / r.a) : '—'}</p>`;
+    const mx = Math.max(a, b, r.a, r.b, 0.01);
+    $('#qkbar', el).innerHTML = `<div class="bars"><div><span>起始 N₂O₄</span><i class="bha" style="width:${100 * a / mx}%"></i><b class="mono">${fx(a, 3)}</b></div><div><span>平衡 N₂O₄</span><i class="bha" style="width:${100 * r.a / mx}%"></i><b class="mono">${fx(r.a, 3)}</b></div><div><span>起始 NO₂</span><i class="ba" style="width:${100 * b / mx}%"></i><b class="mono">${fx(b, 3)}</b></div><div><span>平衡 NO₂</span><i class="ba" style="width:${100 * r.b / mx}%"></i><b class="mono">${fx(r.b, 3)}</b></div></div>`;
+    $('#qkn', el).innerHTML = a === 0 && b === 0 ? '容器是空的，沒有反應。' : dir === 0 ? '<b>Q = K</b>：已經在平衡，濃度不會改變。'
+      : `Q = ${Number.isFinite(Q) ? sci(Q) : '∞'}，${dir > 0 ? `<b>Q &lt; K</b>：產物太少，反應<b>向右</b>進行（N₂O₄ 分解），直到 Q 增加到 K。` : `<b>Q &gt; K</b>：產物太多，反應<b>向左</b>進行（NO₂ 結合），直到 Q 降到 K。`}設變化量為 x，代入 K 的式子解出 x = ${fx(r.x, 4)} M。`;
+  }
+  $('#qka', el).oninput = e => { st.a = +e.target.value; draw(); };
+  $('#qkb', el).oninput = e => { st.b = +e.target.value; draw(); };
+  draw();
+  return { set(s) { Object.assign(st, s); draw(); } };
+};
+
+/* ===== 3. 勒沙特列原理：干擾後先看 Q，再看系統怎麼回到平衡 ===== */
+W.lechat = el => {
+  let st, hist;
+  const reset = () => { const r = eqSolve(0.1, 0, Kat(298.15)); st = { T: 298.15, V: 1, nN: r.a, nB: r.b, phase: 'eq', msg: '' }; hist = [{ N: r.a, B: r.b, lab: '起始平衡' }]; };
+  reset();
+  const ACT = { addN: '加入 N₂O₄', addB: '加入 NO₂', comp: '體積減半（加壓）', exp: '體積加倍（減壓）', heat: '加熱 +30 °C', cool: '冷卻 −30 °C' };
+  el.innerHTML = `<div class="w-row">${Object.entries(ACT).map(([k, t]) => `<button class="btn sm" type="button" data-a="${k}">${t}</button>`).join('')}<button class="btn sm ghost" type="button" data-a="reset">⟲ 重來</button></div>
+<div class="bgrid"><div id="lcs"></div><div class="cards" id="lck"></div></div><div class="w-row"><button class="btn sm pri" type="button" id="lcgo" disabled>讓系統回到平衡 →</button></div><div id="lch"></div><p class="note" id="lcn" aria-live="polite"></p>`;
+  const conc = () => ({ a: st.nN / st.V, b: st.nB / st.V });
+  function draw() {
+    const { a, b } = conc(), K = Kat(st.T), Q = b * b / a, eq = st.phase === 'eq';
+    // 針筒：寬度 ∝ 體積，顏色深淺 ∝ [NO₂]（紅棕色）
+    const w = 60 + 110 * st.V, op = Math.min(0.95, b / 0.06);
+    $('#lcs', el).innerHTML = `<svg viewBox="0 0 280 120" class="bk" role="img" aria-label="裝氣體的針筒"><rect x="20" y="30" width="230" height="60" rx="6" fill="none" stroke="var(--muted)" stroke-width="2"/><rect x="22" y="32" width="${w}" height="56" fill="rgb(150,60,20)" fill-opacity="${op.toFixed(2)}"/><rect x="${22 + w}" y="26" width="8" height="68" fill="var(--muted)"/><rect x="${30 + w}" y="56" width="${230 - w}" height="8" fill="var(--muted)"/><text class="tk" x="24" y="110">顏色越深 = NO₂ 越濃；${fx(st.T - 273.15, 0)} °C、${fx(st.V, 2)} L</text></svg>`;
+    $('#lck', el).innerHTML = card('a', '[N₂O₄]', fx(a, 4)) + card('b', '[NO₂]', fx(b, 4)) + card('q', 'Q', sci(Q)) + card('k', `K（${fx(st.T - 273.15, 0)} °C）`, sci(K));
+    $('#lcgo', el).disabled = eq;
+    const pts = hist, mx = Math.max(...pts.flatMap(p => [p.N, p.B])) * 1.1;
+    $('#lch', el).innerHTML = chart({ x: [0, Math.max(4, pts.length - 1)], y: [0, mx], xt: [], yt: [0, +(mx / 2).toFixed(3), +mx.toFixed(3)], xlab: '事件順序（每次干擾 → 回到平衡）', ylab: '濃度（M）', h: 200, label: '濃度變化歷程' }, (X, Y) =>
+      `<path class="sha" d="${path(pts.map((p, i) => [X(i), Y(p.N)]))}"/><path class="sa" d="${path(pts.map((p, i) => [X(i), Y(p.B)]))}"/>${pts.map((p, i) => `<circle class="dot3" cx="${X(i)}" cy="${Y(p.N)}" r="3"/><circle class="dot2" cx="${X(i)}" cy="${Y(p.B)}" r="3"/>`).join('')}<text class="tk lha" x="${X(0) + 4}" y="${Y(pts[0].N) - 6}">N₂O₄</text><text class="tk la" x="${X(0) + 4}" y="${Y(pts[0].B) + 14}">NO₂</text>`);
+    $('#lcn', el).innerHTML = st.msg || '系統在平衡。選一種干擾，先看 Q 和 K 的關係，再按「讓系統回到平衡」。';
+  }
+  function act(k) {
+    if (k === 'reset') { reset(); draw(); return; }
+    if (st.phase !== 'eq') relax();
+    const K0 = Kat(st.T);
+    if (k === 'addN') st.nN += 0.05; if (k === 'addB') st.nB += 0.02;
+    if (k === 'comp') st.V /= 2; if (k === 'exp') st.V *= 2;
+    if (k === 'heat') st.T += 30; if (k === 'cool') st.T -= 30;
+    st.V = clamp(st.V, 0.125, 2); st.T = clamp(st.T, 238.15, 388.15);
+    const { a, b } = conc(), K = Kat(st.T), Q = b * b / a;
+    hist.push({ N: a, B: b, lab: ACT[k] });
+    const why = { addN: '加入反應物 N₂O₄，分母變大，Q 變小', addB: '加入產物 NO₂，分子變大，Q 變大', comp: '體積減半，兩者濃度都加倍；但 [NO₂] 是平方，所以 Q 變成原本的 2 倍', exp: '體積加倍，兩者濃度都減半；Q 變成原本的一半', heat: `Q 沒變，但正反應吸熱，升溫讓 K 從 ${sci(K0)} 變大到 ${sci(K)}`, cool: `Q 沒變，但降溫讓 K 從 ${sci(K0)} 變小到 ${sci(K)}` }[k];
+    st.phase = 'pert';
+    st.msg = `<b>${ACT[k]}</b>：${why}。現在 Q = ${sci(Q)}，K = ${sci(K)}，<b>Q ${Q < K ? '&lt;' : '&gt;'} K</b> → 系統會<b>${Q < K ? '向右（產生更多 NO₂）' : '向左（產生更多 N₂O₄）'}</b>移動。${k === 'comp' ? '向左可以減少氣體分子數（2 個 NO₂ → 1 個 N₂O₄），部分抵銷加壓。注意顏色：先因為變濃而加深，回到平衡時再稍微變淡。' : k === 'exp' ? '向右可以增加氣體分子數，部分抵銷減壓。' : ''}`;
+    draw();
+  }
+  function relax() {
+    const { a, b } = conc(), r = eqSolve(a, b, Kat(st.T));
+    st.nN = r.a * st.V; st.nB = r.b * st.V; st.phase = 'eq';
+    hist.push({ N: r.a, B: r.b, lab: '回到平衡' });
+    st.msg = `回到平衡：[N₂O₄] = ${fx(r.a, 4)}、[NO₂] = ${fx(r.b, 4)} M，Q 又等於 K。系統只能<b>部分抵銷</b>干擾，不會完全回到原來的濃度。`;
+  }
+  $$('[data-a]', el).forEach(b => { b.onclick = () => act(b.dataset.a); });
+  $('#lcgo', el).onclick = () => { relax(); draw(); };
+  draw();
+  return { set(s) { reset(); if (s.act) act(s.act); draw(); } };
+};
+
+/* ===== 4. ΔG° 與 K ===== */
+W.kdg = el => {
+  const st = { dG: -5.7, T: 298 };
+  el.innerHTML = `<div class="w-row"><label class="rng">ΔG°（kJ/mol） <input type="range" id="kgd" min="-40" max="40" step="0.1"><output class="mono" id="kgdo"></output></label><label class="rng">溫度（K） <input type="range" id="kgt" min="250" max="500" step="1"><output class="mono" id="kgto"></output></label></div><div id="kgc"></div><div id="kgb"></div><div class="cards" id="kgk"></div><p class="note" id="kgn"></p>`;
+  function draw() {
+    const R = 8.314e-3, K = Math.exp(-st.dG / (R * st.T)), fB = K / (1 + K), xs = Array.from({ length: 161 }, (_, i) => -40 + i * 0.5);
+    $('#kgdo', el).textContent = fx(st.dG, 1); $('#kgto', el).textContent = st.T; $('#kgd', el).value = st.dG; $('#kgt', el).value = st.T;
+    $('#kgc', el).innerHTML = chart({ x: [-40, 40], y: [-8, 8], xt: [-40, -20, 0, 20, 40], yt: [-8, -4, 0, 4, 8], xlab: 'ΔG°（kJ/mol）', ylab: 'log K', h: 220, label: 'ΔG° 與 log K' }, (X, Y) =>
+      `<line class="mk" x1="${X(-40)}" x2="${X(40)}" y1="${Y(0)}" y2="${Y(0)}"/><line class="mk" x1="${X(0)}" x2="${X(0)}" y1="${Y(-8)}" y2="${Y(8)}"/><path class="tline" d="${path(xs.map(x => [X(x), Y(clamp(-x / (R * st.T) / Math.LN10, -8, 8))]))}"/><circle class="dot" cx="${X(st.dG)}" cy="${Y(clamp(Math.log10(K), -8, 8))}" r="7"/>`);
+    $('#kgb', el).innerHTML = `<div class="stack"><i class="bha" style="width:${100 - 100 * fB}%">${100 - 100 * fB >= 10 ? `A ${fx(100 - 100 * fB, 1)}%` : ''}</i><i class="ba" style="width:${100 * fB}%">${100 * fB >= 10 ? `B ${fx(100 * fB, 1)}%` : ''}</i></div><p class="small mut">A ⇌ B 達到平衡時的組成</p>`;
+    $('#kgk', el).innerHTML = card('k', 'K = e<sup>−ΔG°/RT</sup>', sci(K)) + card('l', 'log K', fx(Math.log10(K)));
+    $('#kgn', el).innerHTML = Math.abs(st.dG) < 0.3 ? 'ΔG° ≈ 0：K ≈ 1，平衡時 A 和 B 差不多一樣多。'
+      : `ΔG° ${st.dG < 0 ? '為負' : '為正'}，K ${st.dG < 0 ? '大於' : '小於'} 1：平衡時${st.dG < 0 ? '產物 B' : '反應物 A'}較多。在 ${st.T} K，ΔG° 每改變 ${fx(R * st.T * Math.LN10, 1)} kJ/mol，K 就差 10 倍，所以幾十 kJ/mol 的差別就讓反應幾乎完全偏向一邊。`;
+  }
+  $('#kgd', el).oninput = e => { st.dG = +e.target.value; draw(); };
+  $('#kgt', el).oninput = e => { st.T = +e.target.value; draw(); };
+  draw();
+  return { set(s) { Object.assign(st, s); draw(); } };
+};
+
+/* ---------- 後中化學：立體化學與構形的互動圖 ----------
+   掌性中心以四面體的四個位置表示：上（紙面）、右（紙面）、楔形（朝向讀者）、虛楔（遠離讀者）。
+   構型一律由三維向量計算：優先順序 1、2、3 的向量 v1·(v2 × v3) < 0 為 R，> 0 為 S（不靠記憶規則，避免畫錯）。 */
+const TET = { up: [0, 1, 0], right: [0.94, -0.33, 0], wedge: [-0.47, -0.33, 0.82], dash: [-0.47, -0.33, -0.82] };
+const POS2 = { up: [0, 1.1], right: [1.0, -0.38], wedge: [-0.85, -0.52], dash: [-0.22, -1.02] };
+const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]], dot3 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const chir = (v1, v2, v3) => (dot3(v1, cross(v2, v3)) < 0 ? 'R' : 'S');
+// slots：{ 位置: 基團索引 }；pri：各基團優先順序（1 最高）
+function centerScene(labels, slots, mirror = false, hl = {}) {
+  const atoms = { C: { x: 0, y: 0, t: 'C' } }, bonds = [];
+  for (const [pos, gi] of Object.entries(slots)) {
+    const [x, y] = POS2[pos], id = 'g' + gi; atoms[id] = { x: mirror ? -x : x, y, t: labels[gi], hl: hl[gi] ? 1 : 0 };
+    bonds.push(['C', id, pos === 'wedge' ? 'w' : pos === 'dash' ? 'h' : 's']);
+  }
+  return { atoms, bonds };
+}
+
+/* ===== 1. 掌性：鏡像能不能疊合 ===== */
+W.chiral = el => {
+  const SETS = {
+    butanol: { n: '2-丁醇', g: ['OH', 'H', 'CH₃', 'C₂H₅'] },
+    propanol: { n: '2-丙醇', g: ['OH', 'H', 'CH₃', 'CH₃'] },
+    ala: { n: '丙胺酸', g: ['NH₂', 'H', 'CH₃', 'COOH'] },
+    gly: { n: '甘胺酸', g: ['NH₂', 'COOH', 'H', 'H'] },
+  };
+  let cur = 'butanol', rot = false;
+  el.innerHTML = `${seg('chS', Object.entries(SETS).map(([k, v]) => [k, v.n]), cur)}<div class="mirror"><div id="chA"></div><div class="mline"></div><div id="chB"></div></div><div class="w-row"><button class="btn sm" type="button" id="chR">把鏡像繞直立軸轉 180°，疊到原分子上</button></div><p class="note" id="chN"></p>`;
+  function draw() {
+    const g = SETS[cur].g, slots = { up: 0, right: 1, wedge: 2, dash: 3 }, chiralMol = new Set(g).size === 4;
+    $('#chA', el).innerHTML = MOL.svg(centerScene(g, slots), { w: 230, h: 190, s: 52, label: '原分子' }) + '<p class="small mut c">原分子</p>';
+    // 鏡像：x → −x；再繞直立軸轉 180°：x → −x、z → −z，結果等於原位置但楔形與虛楔互換
+    const rs = { up: 0, right: 1, wedge: 3, dash: 2 }, diff = rot && g[2] !== g[3] ? { 2: 1, 3: 1 } : {};
+    $('#chB', el).innerHTML = MOL.svg(rot ? centerScene(g, rs, false, diff) : centerScene(g, slots, true), { w: 230, h: 190, s: 52, label: '鏡像' }) + `<p class="small mut c">${rot ? '鏡像轉 180° 後' : '鏡像'}</p>`;
+    $('#chN', el).innerHTML = !rot ? `${SETS[cur].n}的中心碳連著 ${g.join('、')}。按按鈕把鏡像轉過來，看能不能和原分子完全重疊。`
+      : chiralMol ? `<span class="bad">疊不起來</span>：上和右對上了，但楔形和虛楔上的 ${g[2]}、${g[3]} 剛好相反（紅色）。不管怎麼轉都無法重疊，所以這是<b>掌性分子</b>，它和鏡像是一對<b>鏡像異構物</b>。關鍵：中心碳連著<b>四個不同</b>的基團。`
+        : `<span class="ok">完全重疊</span>：楔形和虛楔上都是 ${g[2]}，互換之後一模一樣。中心碳有兩個相同的基團，分子有一個鏡面，所以<b>不是掌性分子</b>。`;
+    pressSeg(el, 'chS', cur); $('#chR', el).textContent = rot ? '回到鏡像' : '把鏡像繞直立軸轉 180°，疊到原分子上';
+  }
+  bindSeg(el, 'chS', v => { cur = v; rot = false; draw(); });
+  $('#chR', el).onclick = () => { rot = !rot; draw(); };
+  draw();
+  return { set(s) { if (s.set) cur = s.set; rot = !!s.rot; draw(); } };
+};
+
+/* ===== 2. R/S 命名：一步一步 ===== */
+const RSMOL = {
+  brbut: { n: '2-溴丁烷', g: ['Br', 'C₂H₅', 'CH₃', 'H'], why: 'Br 的原子序 35 最大。C₂H₅ 和 CH₃ 第一個原子都是 C，往下一層比：C₂H₅ 的碳連著 (C, H, H)，CH₃ 連著 (H, H, H)，C 勝，所以 C₂H₅ 優先。' },
+  but: { n: '2-丁醇', g: ['OH', 'C₂H₅', 'CH₃', 'H'], why: 'O（8）> C（6）> H（1）。兩個碳基團往下一層比：C₂H₅ 的碳連著 (C, H, H)，勝過 CH₃ 的 (H, H, H)。' },
+  ala: { n: '丙胺酸', g: ['NH₂', 'COOH', 'CH₃', 'H'], why: 'N（7）最大。COOH 和 CH₃ 都是 C 開頭，往下一層：COOH 的碳連著 (O, O, O)（C=O 雙鍵的 O 算兩次），CH₃ 是 (H, H, H)，COOH 優先。' },
+  gla: { n: '甘油醛', g: ['OH', 'CHO', 'CH₂OH', 'H'], why: 'OH 的 O 最大。CHO 的碳連著 (O, O, H)，CH₂OH 的碳連著 (O, H, H)；第一個 O 相同，第二個 O > H，所以 CHO 優先。' },
+};
+W.rs = el => {
+  let cur = 'but', slots = { up: 0, right: 1, wedge: 2, dash: 3 }, step = 0;
+  el.innerHTML = `${seg('rsS', Object.entries(RSMOL).map(([k, v]) => [k, v.n]), cur)}<div class="rsgrid"><div id="rsM"></div><ol class="rsteps" id="rsT"></ol></div>
+<div class="w-row"><button class="btn sm" type="button" data-sw="wedge,dash">交換楔形與虛楔</button><button class="btn sm" type="button" data-sw="up,right">交換上與右</button><button class="btn sm" type="button" data-sw="up,dash">交換上與虛楔</button><span class="sp"></span><button class="btn sm" type="button" id="rsB">‹ 上一步</button><button class="btn sm pri" type="button" id="rsN">下一步 ›</button></div>`;
+  function draw() {
+    const m = RSMOL[cur], g = m.g, posOf = gi => Object.keys(slots).find(p => slots[p] === gi);
+    const v = [0, 1, 2].map(i => TET[posOf(i)]), truth = chir(...v), low = posOf(3);
+    const sc = centerScene(g, slots);
+    if (step >= 1) [0, 1, 2, 3].forEach(i => { const p = POS2[posOf(i)]; sc.notes = (sc.notes || []).concat({ x: p[0] * 1.55, y: p[1] * 1.55 - 0.12, t: String(i + 1), cls: 'pri' }); });
+    let arc = '', vis = '';
+    if (step >= 3) {
+      const P = [0, 1, 2].map(i => POS2[posOf(i)]), area = (P[1][0] - P[0][0]) * (P[2][1] - P[0][1]) - (P[2][0] - P[0][0]) * (P[1][1] - P[0][1]);
+      vis = area < 0 ? '順時針' : '逆時針';
+      const S = 56, cx = 130, cy = 115, Q = P.map(([x, y]) => [cx + x * S * 0.72, cy - y * S * 0.72]);
+      arc = `<path class="arr" d="M${Q[0][0]} ${Q[0][1]}Q${(Q[0][0] + Q[1][0]) / 2 + (Q[0][0] + Q[1][0] - 2 * cx) * 0.5} ${(Q[0][1] + Q[1][1]) / 2 + (Q[0][1] + Q[1][1] - 2 * cy) * 0.5} ${Q[1][0]} ${Q[1][1]}Q${(Q[1][0] + Q[2][0]) / 2 + (Q[1][0] + Q[2][0] - 2 * cx) * 0.5} ${(Q[1][1] + Q[2][1]) / 2 + (Q[1][1] + Q[2][1] - 2 * cy) * 0.5} ${Q[2][0]} ${Q[2][1]}" marker-end="url(#ah)"/>`;
+    }
+    $('#rsM', el).innerHTML = MOL.svg(sc, { w: 260, h: 230, s: 56, cx: 130, cy: 115, label: m.n }).replace('</svg>', arc + '</svg>');
+    const where = low === 'dash' ? '最低優先的 H 在<b>虛楔</b>（遠離你）：直接看 1 → 2 → 3 的方向。' : low === 'wedge' ? '最低優先的 H 在<b>楔形</b>（朝向你）：看到的方向要<b>反過來</b>判斷。' : '最低優先的 H 在<b>紙面</b>上：先把它和虛楔上的基團互換（互換一次構型就反轉），判斷完再把答案反過來。';
+    const visR = vis === '順時針' ? 'R' : 'S', ans = low === 'dash' ? visR : low === 'wedge' ? (visR === 'R' ? 'S' : 'R') : null;
+    const S = [`<b>排優先順序</b>（看直接相連的原子，原子序大的優先；相同就往下一層比）：${m.why}`, where,
+      step >= 3 ? `1 → 2 → 3 看起來是<b>${vis}</b>${low === 'dash' ? `，所以是 <b>${visR}</b>（順時針 = R，逆時針 = S）。` : low === 'wedge' ? `；H 朝向你，反過來，所以是 <b>${ans}</b>。` : '；因為 H 在紙面上，用上面的互換法再判斷一次。'}` : '畫出 1 → 2 → 3 的方向。',
+      `答案：<b>(${truth})-${m.n}</b>。試試「交換」按鈕：任意交換兩個基團，構型就會反轉。`];
+    $('#rsT', el).innerHTML = S.slice(0, step + 1).map(x => `<li>${x}</li>`).join('');
+    $('#rsB', el).disabled = step === 0; $('#rsN', el).disabled = step >= 3; pressSeg(el, 'rsS', cur);
+  }
+  bindSeg(el, 'rsS', v => { cur = v; slots = { up: 0, right: 1, wedge: 2, dash: 3 }; step = 0; draw(); });
+  $$('[data-sw]', el).forEach(b => { b.onclick = () => { const [p, q] = b.dataset.sw.split(','); [slots[p], slots[q]] = [slots[q], slots[p]]; draw(); }; });
+  $('#rsN', el).onclick = () => { step = Math.min(3, step + 1); draw(); };
+  $('#rsB', el).onclick = () => { step = Math.max(0, step - 1); draw(); };
+  draw();
+  return { set(s) { if (s.mol) { cur = s.mol; slots = { up: 0, right: 1, wedge: 2, dash: 3 }; } if (s.swap) { const [p, q] = s.swap.split(','); [slots[p], slots[q]] = [slots[q], slots[p]]; } step = s.step ?? 3; draw(); } };
+};
+
+/* ===== 3. 兩個掌性中心：費雪投影、非鏡像異構物、內消旋 ===== */
+const FISH = {
+  tart: { n: '酒石酸', top: 'COOH', bot: 'COOH', x: ['OH', 'OH'], sym: true,
+    // 各中心的優先順序：[水平基團 X, 上方, 下方]（H 為 4）
+    pri: [{ X: 1, up: 2, down: 3 }, { X: 1, up: 3, down: 2 }] },
+  brcl: { n: '2-溴-3-氯丁烷', top: 'CH₃', bot: 'CH₃', x: ['Br', 'Cl'], sym: false,
+    pri: [{ X: 1, up: 3, down: 2 }, { X: 1, up: 2, down: 3 }] },
+};
+const FV = { up: [0, 1, -1], down: [0, -1, -1], left: [-1, 0, 1], right: [1, 0, 1] };
+function fConfig(m, sides) { return sides.map((s, i) => { const p = m.pri[i], v = {}; v[p.X] = FV[s]; v[p.up] = FV.up; v[p.down] = FV.down; return chir(v[1], v[2], v[3]); }); }
+W.fischer = el => {
+  let cur = 'tart', sides = ['right', 'left'];
+  el.innerHTML = `${seg('fiS', Object.entries(FISH).map(([k, v]) => [k, v.n]), cur)}<div class="w-row"><button class="btn sm" type="button" data-f="0">翻轉 C2 的 ${'X'}</button><button class="btn sm" type="button" data-f="1">翻轉 C3 的 X</button></div><div class="mirror"><div id="fiA"></div><div class="mline"></div><div id="fiB"></div></div><p class="note" id="fiN"></p><div id="fiG" class="fgrid"></div>`;
+  const draw1 = (m, sd, cfg, hl) => {
+    const row = (y, s, X, lab) => `<line class="b" x1="70" y1="${y}" x2="170" y2="${y}"/><text class="at${hl ? ' hl' : ''}" x="${s === 'left' ? 52 : 188}" y="${y + 5}" text-anchor="middle">${X}</text><text class="at" x="${s === 'left' ? 188 : 52}" y="${y + 5}" text-anchor="middle">H</text><text class="tk" x="236" y="${y + 4}">${lab}</text>`;
+    return `<svg viewBox="0 0 270 210" class="mol" role="img" aria-label="費雪投影式"><line class="b" x1="120" y1="40" x2="120" y2="170"/><text class="at" x="120" y="30" text-anchor="middle">${m.top}</text><text class="at" x="120" y="192" text-anchor="middle">${m.bot}</text>${row(80, sd[0], m.x[0], `C2 ${cfg[0]}`)}${row(130, sd[1], m.x[1], `C3 ${cfg[1]}`)}</svg>`;
+  };
+  const key = (m, c) => (m.sym && c[0] !== c[1] ? 'meso' : c.join(''));
+  function draw() {
+    const m = FISH[cur], cfg = fConfig(m, sides), mir = sides.map(s => (s === 'left' ? 'right' : 'left')), mcfg = fConfig(m, mir);
+    const same = key(m, cfg) === key(m, mcfg);
+    $('#fiA', el).innerHTML = draw1(m, sides, cfg) + `<p class="small mut c">(2${cfg[0]},3${cfg[1]})</p>`;
+    $('#fiB', el).innerHTML = draw1(m, mir, mcfg) + `<p class="small mut c">鏡像 (2${mcfg[0]},3${mcfg[1]})</p>`;
+    $('#fiN', el).innerHTML = `費雪投影式：<b>橫線朝向你、直線遠離你</b>。${same ? `<span class="ok">鏡像就是自己</span>：分子中間有一個鏡面（上下兩半互為鏡像），雖然有兩個掌性中心卻不是掌性分子，稱為<b>內消旋（meso）</b>化合物，沒有光學活性。` : '這個分子和它的鏡像不能重疊，兩者是一對<b>鏡像異構物</b>：兩個掌性中心的構型<b>全部相反</b>。'}`;
+    const all = [['right', 'right'], ['left', 'left'], ['right', 'left'], ['left', 'right']], seen = new Set();
+    $('#fiG', el).innerHTML = `<p class="lbl">所有立體異構物（和上面那個比較）</p>` + all.map(sd => { const c = fConfig(m, sd), k = key(m, c); if (seen.has(k)) return ''; seen.add(k);
+      const rel = k === key(m, cfg) ? '就是它' : (c[0] !== cfg[0] && c[1] !== cfg[1]) || (k === key(m, mcfg)) ? '鏡像異構物' : '非鏡像異構物';
+      return `<div class="fcell ${rel === '就是它' ? 'on' : ''}"><b>${k === 'meso' ? '內消旋 (2R,3S)' : `(2${c[0]},3${c[1]})`}</b><span>${rel}</span></div>`; }).join('') +
+      `<p class="small mut">兩個掌性中心最多有 2² = 4 個立體異構物；${m.sym ? '酒石酸兩端相同，(2R,3S) 和 (2S,3R) 是同一個內消旋化合物，所以只有 3 個。' : '兩端不同，沒有內消旋，4 個都存在。'}只有部分中心相反的，稱為<b>非鏡像異構物</b>：它們的物理性質（熔點、溶解度）不同。</p>`;
+    pressSeg(el, 'fiS', cur); $$('[data-f]', el).forEach((b, i) => { b.textContent = `翻轉 C${i + 2} 的 ${m.x[i]}`; });
+  }
+  bindSeg(el, 'fiS', v => { cur = v; draw(); });
+  $$('[data-f]', el).forEach(b => { b.onclick = () => { const i = +b.dataset.f; sides[i] = sides[i] === 'left' ? 'right' : 'left'; draw(); }; });
+  draw();
+  return { set(s) { if (s.mol) cur = s.mol; if (s.sides) sides = s.sides.slice(); draw(); } };
+};
+
+/* ===== 4. 丁烷的構形與能量 ===== */
+W.butane = el => {
+  let ang = 180;
+  // 相對能量（kJ/mol，McMurry）：反式 0、間扭式 3.8、CH₃/H 重疊 16、CH₃/CH₃ 重疊 19
+  const PTS = [[0, 19], [60, 3.8], [120, 16], [180, 0], [240, 16], [300, 3.8], [360, 19]];
+  const E = a => { a = ((a % 360) + 360) % 360; for (let i = 0; i < 6; i++) { const [a0, e0] = PTS[i], [a1, e1] = PTS[i + 1]; if (a <= a1) { const t = (a - a0) / (a1 - a0); return e0 + (e1 - e0) * (1 - Math.cos(Math.PI * t)) / 2; } } return 19; };
+  const NAME = a => ({ 0: '全重疊式（CH₃ 與 CH₃ 重疊）', 60: '間扭式（gauche）', 120: '重疊式（CH₃ 與 H 重疊）', 180: '反式（anti）', 240: '重疊式（CH₃ 與 H 重疊）', 300: '間扭式（gauche）', 360: '全重疊式（CH₃ 與 CH₃ 重疊）' }[a]);
+  el.innerHTML = `<div class="w-row"><label class="rng">轉動後碳（CH₃–C–C–CH₃ 二面角）<input type="range" id="buA" min="0" max="360" step="5"><output class="mono" id="buO"></output></label></div><div class="ngrid"><div id="buN"></div><div id="buE"></div></div><p class="note" id="buT"></p>`;
+  function draw() {
+    const cx = 130, cy = 120, R = 48, L = 92, P = (a, r) => [cx + Math.cos(a * Math.PI / 180) * r, cy - Math.sin(a * Math.PI / 180) * r];
+    const front = [[90, 'CH₃', 'hl'], [210, 'H', ''], [330, 'H', '']], back = [[90 - ang, 'CH₃', 'br'], [210 - ang, 'H', ''], [330 - ang, 'H', '']];
+    const bl = ([a, t, c]) => { const [x1, y1] = P(a, R), [x2, y2] = P(a, L), [tx, ty] = P(a, L + 16); return `<line class="nb" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/><text class="at ${c}" x="${tx}" y="${ty + 5}" text-anchor="middle">${t}</text>`; };
+    const fl = ([a, t, c]) => { const [x2, y2] = P(a, L - 12), [tx, ty] = P(a, L + 4); return `<line class="nb" x1="${cx}" y1="${cy}" x2="${x2}" y2="${y2}"/><text class="at ${c}" x="${tx}" y="${ty + 5}" text-anchor="middle">${t}</text>`; };
+    $('#buN', el).innerHTML = `<svg viewBox="0 0 260 245" class="mol" role="img" aria-label="丁烷紐曼投影">${back.map(bl).join('')}<circle class="nc" cx="${cx}" cy="${cy}" r="${R}"/>${front.map(fl).join('')}</svg>`;
+    const xs = Array.from({ length: 73 }, (_, i) => i * 5);
+    $('#buE', el).innerHTML = chart({ x: [0, 360], y: [0, 20], xt: [0, 60, 120, 180, 240, 300, 360], yt: [0, 3.8, 16, 19], xlab: '二面角（°）', ylab: '相對能量（kJ/mol）', h: 230, label: '丁烷構形能量' }, (X, Y) => `<path class="tline" d="${path(xs.map(a => [X(a), Y(E(a))]))}"/><circle class="dot" cx="${X(ang)}" cy="${Y(E(ang))}" r="7"/>`);
+    const d = ang % 360 === 0 && ang ? 360 : ang, nm = NAME(d);
+    $('#buT', el).innerHTML = `二面角 ${ang}°，相對能量 ${fx(E(ang), 1)} kJ/mol${nm ? `：<b>${nm}</b>` : ''}。` + (nm ? { 0: '兩個甲基正面相撞（立體張力）加上鍵電子互斥（扭轉張力），能量最高。', 60: '交錯式，但兩個甲基相鄰，有一點立體擁擠：比反式高 3.8 kJ/mol。', 120: '重疊式：鍵與鍵正對，扭轉張力大。', 180: '兩個甲基離得最遠，而且是交錯式：<b>能量最低、最穩定</b>，室溫下大部分丁烷分子處在這個構形。', 240: '重疊式：鍵與鍵正對，扭轉張力大。', 300: '交錯式，但兩個甲基相鄰：比反式高 3.8 kJ/mol。', 360: '兩個甲基正面相撞，能量最高。' }[d] : '介於兩種構形之間。室溫下 C–C 單鍵轉得很快（每秒數十億次），這些構形不能分離，只是出現的機率不同。');
+    $('#buO', el).textContent = `${ang}°`; $('#buA', el).value = ang;
+  }
+  $('#buA', el).oninput = e => { ang = +e.target.value; draw(); };
+  draw();
+  return { set(s) { ang = s.ang ?? ang; draw(); } };
+};
+
+/* ===== 5. 環己烷椅式：直立鍵與平伏鍵 ===== */
+W.chair = el => {
+  let sub = 'me', f = 1, anim = 0;
+  const SUB = { me: { t: 'CH₃', dG: 7.6 }, tbu: { t: 'C(CH₃)₃', dG: 22.8 } };
+  el.innerHTML = `${seg('chairS', [['me', '甲基環己烷'], ['tbu', '第三丁基環己烷']], sub)}<div class="w-row"><button class="btn sm pri" type="button" id="chF">環翻轉 ⇄</button></div><div id="chairV"></div><div class="cards" id="chairK"></div><p class="note" id="chairN"></p>`;
+  const r = 1.35, h = 0.3, S = 62, cx = 190, cy = 115;
+  function geo(fl) {
+    return Array.from({ length: 6 }, (_, k) => { const t = k * Math.PI / 3, x = r * Math.cos(t), y = r * Math.sin(t), z = fl * (k % 2 ? -1 : 1) * h; return { x, y, z, t, sx: cx + x * S, sy: cy - (0.32 * y + z) * S }; });
+  }
+  function draw() {
+    const P = geo(f), axUp = f > 0, A = 0.85 * S;
+    const ring = P.map((p, i) => { const q = P[(i + 1) % 6]; return `<line class="b" x1="${p.sx}" y1="${p.sy}" x2="${q.sx}" y2="${q.sy}"/>`; }).join('');
+    const p0 = P[0], ax = [p0.sx, p0.sy - Math.sign(f || 1) * A * Math.abs(f)], eq = [p0.sx + A * 0.95, p0.sy - (-0.33 * Math.sign(f || 1)) * A * 0.5];
+    const t = (1 - f) / 2, sp = [ax[0] + (eq[0] - ax[0]) * t, ax[1] + (eq[1] - ax[1]) * t], hp = [eq[0] + (ax[0] - eq[0]) * t, eq[1] + (ax[1] - eq[1]) * t];
+    const axial = f > 0.2;
+    const hs = [2, 4].map(k => { const p = P[k], y2 = p.sy - Math.sign(f || 1) * A * 0.7 * Math.abs(f); return `<line class="b" x1="${p.sx}" y1="${p.sy}" x2="${p.sx}" y2="${y2}"/><text class="at${axial ? ' hl' : ''}" x="${p.sx}" y="${y2 - 6}" text-anchor="middle">H</text>${axial ? `<line class="clash" x1="${p.sx}" y1="${y2}" x2="${sp[0] - 14}" y2="${sp[1]}"/>` : ''}`; }).join('');
+    $('#chairV', el).innerHTML = `<svg viewBox="0 0 380 230" class="mol" role="img" aria-label="環己烷椅式">${ring}${hs}<line class="b" x1="${p0.sx}" y1="${p0.sy}" x2="${sp[0]}" y2="${sp[1]}"/><text class="at br" x="${sp[0] + (axial ? 0 : 30)}" y="${sp[1] + (axial ? -8 : 6)}" text-anchor="middle">${SUB[sub].t}</text><line class="b" x1="${p0.sx}" y1="${p0.sy}" x2="${hp[0]}" y2="${hp[1]}"/><text class="at" x="${hp[0] + (axial ? 12 : 0)}" y="${hp[1] + (axial ? 6 : -8)}" text-anchor="middle">H</text><text class="tk" x="${cx}" y="222" text-anchor="middle">${Math.abs(f) < 0.99 ? '翻轉中…' : axial ? '取代基在直立鍵（axial）' : '取代基在平伏鍵（equatorial）'}</text></svg>`;
+    const d = SUB[sub].dG, ratio = Math.exp(d * 1000 / (8.314 * 298)), pe = 100 * ratio / (1 + ratio);
+    $('#chairK', el).innerHTML = card('dg', '直立比平伏高', `${d} kJ/mol`) + card('pe', '平衡時平伏鍵構形', `${pe > 99.9 ? '> 99.9' : fx(pe, 1)}%`);
+    $('#chairN', el).innerHTML = axial ? `取代基在<b>直立鍵</b>：它和同一側、隔一個碳的兩個直立 H（C3、C5，紅色）靠得很近，這叫 <b>1,3-雙直立作用</b>。按「環翻轉」，所有直立鍵和平伏鍵互換。`
+      : `取代基在<b>平伏鍵</b>，指向環的外側，沒有 1,3-雙直立作用，比較穩定。${sub === 'me' ? '甲基' : '第三丁基'}在直立鍵時多出 ${d} kJ/mol 的能量，所以 25 °C 時約 ${pe > 99.9 ? '超過 99.9' : fx(pe, 0)}% 的分子處在平伏鍵構形。${sub === 'tbu' ? '第三丁基太大，等於把環「鎖」在這個構形。' : ''}`;
+    pressSeg(el, 'chairS', sub);
+  }
+  function flip() {
+    cancelAnimationFrame(anim); const f0 = f, f1 = f > 0 ? -1 : 1, t0 = performance.now();
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) { f = f1; draw(); return; }
+    const tick = now => { const t = Math.min(1, (now - t0) / 900); f = f0 + (f1 - f0) * (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2); draw(); if (t < 1) anim = requestAnimationFrame(tick); else { f = f1; draw(); } };
+    anim = requestAnimationFrame(tick);
+  }
+  bindSeg(el, 'chairS', v => { sub = v; draw(); });
+  $('#chF', el).onclick = flip;
+  draw();
+  return { set(s) { if (s.sub) sub = s.sub; if (s.axial != null) f = s.axial ? 1 : -1; draw(); } };
+};
+
 /* ---------- 後中化學：頁面框架（首頁、單元目錄、章節、練習題、進度） ---------- */
 const state = { done: store.get('done', {}) };
+const UORDER = UNITS.flatMap(p => p.items.map(i => i[0]));
+CH.sort((a, b) => UORDER.indexOf(a.unit) - UORDER.indexOf(b.unit));
 const chOf = id => CH.find(c => c.id === id), unitCh = u => CH.find(c => c.unit === u);
 const unitName = u => UNITS.flatMap(p => p.items).find(i => i[0] === u)[1];
 
