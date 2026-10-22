@@ -250,6 +250,15 @@ svg.ch, svg.mol, svg.en, svg.bk, svg.ions { width: 100%; height: auto; display: 
 .clash { stroke: var(--bad); stroke-width: 1.5; stroke-dasharray: 3 3; }
 .ice td:first-child { font-weight: 600; white-space: nowrap; }
 @media (max-width: 600px) { .rsgrid { grid-template-columns: minmax(0, 1fr); } }
+/* 動力學、酸鹼 */
+.og { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; }
+.og > div { border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; }
+.og .og-on { border-color: var(--accent); background: var(--soft); }
+.area { fill: var(--arrow); opacity: .25; }
+.en .catc { fill: none; stroke: var(--good); stroke-width: 2.4; stroke-dasharray: 6 4; }
+.bars.pk > div { grid-template-columns: minmax(110px, 160px) 1fr auto; }
+.bars [role=button] { cursor: pointer; border-radius: 4px; }
+.bars [role=button]:hover { background: var(--soft); }
 /* 練習題 */
 .q { border-top: 1px solid var(--line); padding: 14px 0; }
 .qt { font-weight: 500; margin: 0 0 8px; }
@@ -369,7 +378,8 @@ function indColor(key, pH) {
 /* ---------- 後中化學：分子與反應機構繪圖 ----------
    場景（scene）：
      atoms: { id: { x, y, t: 標籤（'' 為骨架頂點）, c: 電荷（'+' '−' 'δ+' 'δ−'）, lp: [孤對電子方向（度）], halo: 立體障礙半徑, hl: 強調色, hide } }
-     bonds: [[a, b, 型別]]  型別：'s' 單鍵、'd' 雙鍵、'w' 楔形（朝向讀者）、'h' 虛楔（遠離讀者）、'p' 部分鍵（過渡狀態）
+     bonds: [[a, b, 型別]]  型別：'s' 單鍵、'd' 雙鍵、't' 參鍵、'w' 楔形（朝向讀者）、'h' 虛楔（遠離讀者）、'p' 部分鍵（過渡狀態）、'sd' 實線＋虛線（共振混成）
+     rings: [{ x, y, r }]  環內圈（苯的共振混成）
      arrows: [{ f: { lp: [原子, 角度] } | { b: [a, b] }, t: { a: 原子 } | { m: [a, b] }, bend }]  彎箭頭：電子從哪裡流到哪裡
      orbs: [{ a: 原子, ang }]  空的 p 軌域（兩瓣）；ts: true 畫過渡狀態的括號；notes: [{ x, y, t, cls }]
    座標以鍵長為 1，y 朝上；MOL.svg(scene, { w, h, s: 每單位像素, cx, cy }) 畫出 SVG。 */
@@ -390,6 +400,8 @@ const MOL = (() => {
     if (k === 'w') return `<path class="bw" d="M${x1} ${y1}L${x2 + nx * 5} ${y2 + ny * 5}L${x2 - nx * 5} ${y2 - ny * 5}Z"/>`;
     if (k === 'h') return Array.from({ length: 6 }, (_, i) => { const t = (i + 0.5) / 6, w = 0.8 + 4.5 * t, px = x1 + (x2 - x1) * t, py = y1 + (y2 - y1) * t; return `<line class="bh" x1="${px + nx * w}" y1="${py + ny * w}" x2="${px - nx * w}" y2="${py - ny * w}"/>`; }).join('');
     if (k === 'p') return `<line class="bp" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+    if (k === 'sd') return `<line class="b" x1="${x1 + nx * 3}" y1="${y1 + ny * 3}" x2="${x2 + nx * 3}" y2="${y2 + ny * 3}"/><line class="bp" x1="${x1 - nx * 3}" y1="${y1 - ny * 3}" x2="${x2 - nx * 3}" y2="${y2 - ny * 3}"/>`;
+    if (k === 't') return `<line class="b" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/><line class="b" x1="${x1 + nx * 4}" y1="${y1 + ny * 4}" x2="${x2 + nx * 4}" y2="${y2 + ny * 4}"/><line class="b" x1="${x1 - nx * 4}" y1="${y1 - ny * 4}" x2="${x2 - nx * 4}" y2="${y2 - ny * 4}"/>`;
     if (k === 'd') return `<line class="b" x1="${x1 + nx * 3}" y1="${y1 + ny * 3}" x2="${x2 + nx * 3}" y2="${y2 + ny * 3}"/><line class="b" x1="${x1 - nx * 3}" y1="${y1 - ny * 3}" x2="${x2 - nx * 3}" y2="${y2 - ny * 3}"/>`;
     return `<line class="b" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
   }
@@ -425,6 +437,7 @@ const MOL = (() => {
     let body = (sc.orbs || []).map(x => orb(sc, G, x)).join('');
     body += ids.filter(i => sc.atoms[i].halo && !sc.atoms[i].hide).map(i => { const [x, y] = G.P(i); return `<circle class="halo" cx="${x}" cy="${y}" r="${sc.atoms[i].halo * G.S}"/>`; }).join('');
     body += (sc.bonds || []).map(b => bond(sc, G, b)).join('');
+    body += (sc.rings || []).map(r => `<circle class="bp" fill="none" cx="${(o.cx ?? o.w / 2) + r.x * G.S}" cy="${(o.cy ?? o.h / 2) - r.y * G.S}" r="${r.r * G.S}"/>`).join('');
     body += ids.map(i => atom(sc, G, i).replace(/<circle class="halo"[^>]*\/>/, '')).join('');
     body += (sc.arrows || []).map(a => arrow(sc, G, a)).join('');
     if (sc.ts) body += `<text class="ts" x="${o.w / 2 - G.S * 3.1}" y="${o.h / 2 + 14}">[</text><text class="ts" x="${o.w / 2 + G.S * 2.85}" y="${o.h / 2 + 14}">]</text><text class="tsd" x="${o.w / 2 + G.S * 3.15}" y="${o.h / 2 - 26}">‡</text>`;
@@ -449,14 +462,15 @@ const MOL = (() => {
 function energySVG(pts, at, o = {}) {
   const w = o.w || 300, h = o.h || 150, L = 26, B = 22, T = 10, R = 8;
   const X = v => L + v * (w - L - R), Y = v => h - B - v * (h - T - B);
-  const f = x => { // 分段餘弦內插：極大極小點都平滑
-    for (let i = 0; i < pts.length - 1; i++) { const [x0, y0] = pts[i], [x1, y1] = pts[i + 1]; if (x <= x1) { const t = (x - x0) / (x1 - x0); return y0 + (y1 - y0) * (1 - Math.cos(Math.PI * t)) / 2; } }
-    return pts[pts.length - 1][1];
+  const mk = P => x => { // 分段餘弦內插：極大極小點都平滑
+    for (let i = 0; i < P.length - 1; i++) { const [x0, y0] = P[i], [x1, y1] = P[i + 1]; if (x <= x1) { const t = (x - x0) / (x1 - x0); return y0 + (y1 - y0) * (1 - Math.cos(Math.PI * t)) / 2; } }
+    return P[P.length - 1][1];
   };
+  const f = mk(pts), alt = o.alt ? `<path class="catc" d="${path(Array.from({ length: 121 }, (_, i) => [X(i / 120), Y(mk(o.alt)(i / 120))]))}"/>` : '';
   const line = Array.from({ length: 121 }, (_, i) => [X(i / 120), Y(f(i / 120))]);
   const cur = at == null ? '' : `<circle class="edot" cx="${X(at)}" cy="${Y(f(at))}" r="6"/>`;
   const labs = (o.labels || []).map(([x, t, dy]) => `<text class="elab" x="${X(x) + (x < 0.1 ? 6 : 0)}" y="${Y(f(x)) - (dy || 10)}" text-anchor="${x < 0.1 ? 'start' : x > 0.9 ? 'end' : 'middle'}">${t}</text>`).join('');
-  return `<svg class="en" viewBox="0 0 ${w} ${h}" role="img" aria-label="反應能量圖"><line class="ax" x1="${L}" y1="${T}" x2="${L}" y2="${h - B}"/><line class="ax" x1="${L}" y1="${h - B}" x2="${w - R}" y2="${h - B}"/><text class="lab" transform="translate(12 ${(T + h - B) / 2}) rotate(-90)" text-anchor="middle">能量</text><text class="lab" x="${(L + w) / 2}" y="${h - 5}" text-anchor="middle">反應進行 →</text><path class="ecurve" d="${path(line)}"/>${labs}${cur}</svg>`;
+  return `<svg class="en" viewBox="0 0 ${w} ${h}" role="img" aria-label="反應能量圖"><line class="ax" x1="${L}" y1="${T}" x2="${L}" y2="${h - B}"/><line class="ax" x1="${L}" y1="${h - B}" x2="${w - R}" y2="${h - B}"/><text class="lab" transform="translate(12 ${(T + h - B) / 2}) rotate(-90)" text-anchor="middle">能量</text><text class="lab" x="${(L + w) / 2}" y="${h - 5}" text-anchor="middle">反應進行 →</text><path class="ecurve" d="${path(line)}"/>${alt}${labs}${cur}</svg>`;
 }
 
 /* 機構播放器：frames = [{ sc, cap, at }]；在 el 中畫出分子、說明、能量圖與控制鈕。回傳 { go(i), reset() } */
@@ -566,6 +580,52 @@ CH.push({
     ],
   });
 
+/* ---------- 後中化學：結構、鍵結與共振 ---------- */
+CH.push({
+  id: 'bonding', unit: 'o1', title: '結構、鍵結與共振',
+  lede: '有機反應全是電子在移動。這一章學會三件事：看出哪個原子帶電（形式電荷）、看出原子的形狀（混成），以及看出電子可以分散到哪裡（共振）。之後的酸鹼、反應機構都靠這三個工具。',
+  sections: [
+    { h: '形式電荷：哪個原子帶電', w: 'fc', body: `
+<p>路易斯結構裡，每個原子「名義上」擁有的電子 = 自己的孤對電子 + 每個鍵分一半。和它原本的價電子比較，就得到<b>形式電荷</b>：</p>
+<p class="eq">形式電荷 = 價電子數 − 非鍵電子數 − 鍵數</p>
+<p>有機化學裡只要記住幾個常見組合，一眼就能看出電荷在哪：</p>
+<table class="tbl"><thead><tr><th>原子</th><th>中性</th><th>帶 +1</th><th>帶 −1</th></tr></thead><tbody>
+<tr><td>C</td><td>4 鍵</td><td>3 鍵、無孤對（碳陽離子）</td><td>3 鍵、1 對孤對（碳陰離子）</td></tr>
+<tr><td>N</td><td>3 鍵、1 對孤對</td><td>4 鍵（銨）</td><td>2 鍵、2 對孤對</td></tr>
+<tr><td>O</td><td>2 鍵、2 對孤對</td><td>3 鍵、1 對孤對（H₃O⁺）</td><td>1 鍵、3 對孤對（HO⁻）</td></tr></tbody></table>
+<p>第二週期元素（C、N、O）周圍最多 8 個電子（八隅），這是判斷結構對不對的第一道檢查。</p>` },
+    { h: '混成：原子的形狀', w: 'hyb', body: `
+<p>先數原子周圍的<b>電子區域</b>：每個 σ 鍵算一個（雙鍵、參鍵也只算一個），每對孤對電子算一個。區域數決定混成與形狀：</p>
+<ul><li><b>4 個 → sp³</b>：四面體，約 109.5°。</li><li><b>3 個 → sp²</b>：平面三角形，120°，剩一個 p 軌域可以形成 π 鍵。</li><li><b>2 個 → sp</b>：直線，180°，剩兩個 p 軌域形成兩個 π 鍵。</li></ul>
+<p>兩個觀念之後一直會用到：</p>
+<ol><li><b>π 鍵在 p 軌域上，位於鍵軸的上下</b>，比 σ 鍵弱、離原子核遠，所以 π 電子容易被親電子試劑攻擊（烯烴加成的基礎）。</li>
+<li><b>s 性質越高，電子越靠近原子核、抓得越緊</b>：sp > sp² > sp³。這解釋了末端炔的酸性。</li></ol>` },
+    { h: '共振：電子可以分散到哪裡', w: 'reson', body: `
+<p>有些分子無法用一個路易斯結構正確描述，例如醋酸根的兩個 C–O 鍵長度完全相同。這時畫出幾個<b>共振結構</b>，真正的分子是它們的<b>共振混成</b>。</p>
+<p>畫共振結構的規則：</p>
+<ol><li><b>只移動電子（π 電子和孤對電子），原子不動</b>。σ 鍵不移動。</li>
+<li>用彎箭頭表示電子對從哪裡移到哪裡：從孤對或 π 鍵出發，指向原子之間（形成新鍵）或原子上（變成孤對）。</li>
+<li>每個結構都要遵守八隅（C、N、O 周圍不超過 8 個電子）。</li></ol>
+<p>判斷哪個共振結構貢獻較大：</p>
+<ul><li>所有原子都有八隅的優先；</li><li>電荷較少（電荷分離少）的優先；</li><li>負電荷落在電負度較大原子（O &gt; C）上的優先。</li></ul>
+<p>共振不是分子在幾個結構之間「切換」，而是電子同時分散在這些位置。<b>電荷或電子越能分散，分子越穩定</b>：這一句話會解釋酸性、鹼性、碳陽離子穩定度和芳香性。</p>` },
+  ],
+  quiz: [
+    { q: '一個氧原子形成 3 個鍵、有 1 對孤對電子，它的形式電荷是？', o: ['+1', '0', '−1', '+2'], a: 0,
+      why: '6 − 2 − 3 = +1，例如 H₃O⁺ 或質子化的醇。', show: { w: 'fc', set: { e: 'O', b: 3, lp: 1 } } },
+    { q: '碳陽離子（例如 (CH₃)₃C⁺）中心碳的混成和形狀為？', o: ['sp²，平面三角形', 'sp³，四面體', 'sp，直線', 'sp³，三角錐'], a: 0,
+      why: '碳陽離子有 3 個 σ 鍵、沒有孤對電子，3 個電子區域 → sp²、平面，剩下一個空的 p 軌域。這就是 SN1 可以從兩面進攻的原因。', show: { w: 'hyb', set: { h: 'sp2' } } },
+    { q: '畫共振結構時，下列何者正確？', o: ['只移動 π 電子與孤對電子，原子位置不變', '可以移動氫原子', 'σ 鍵電子可以自由移動', '共振結構之間會快速互相轉換'], a: 0,
+      why: '共振結構只差在電子的位置；移動原子得到的是不同的分子（異構物）。真正的分子是共振混成，不是在結構之間切換。', show: { w: 'reson', set: { ex: 'acetate', step: 0 } } },
+    { q: '醋酸根（CH₃COO⁻）中兩個 C–O 鍵的鍵長？', o: ['相同，介於單鍵與雙鍵之間', '一長一短', '都等於 C=O 雙鍵', '都等於 C–O 單鍵'], a: 0,
+      why: '兩個共振結構貢獻相同，兩個 C–O 鍵都是「一個半」鍵，負電荷平均分在兩個 O 上。', show: { w: 'reson', set: { ex: 'acetate', step: 2 } } },
+    { q: '為什麼醯胺的 C–N 鍵不能自由旋轉？', o: ['N 的孤對電子與 C=O 共振，使 C–N 具有部分雙鍵性質', 'N 太大', 'C–N 是參鍵', '醯胺有氫鍵'], a: 0,
+      why: '共振使 C–N 有部分 π 鍵性質，旋轉會破壞 p 軌域的重疊，所以醯胺（包括蛋白質的胜肽鍵）是平面的。', show: { w: 'reson', set: { ex: 'amide', step: 2 } } },
+    { q: '苯的六個 C–C 鍵長？', o: ['全部相同（約 139 pm）', '三長三短交替', '全部等於雙鍵', '全部等於單鍵'], a: 0,
+      why: '苯是兩個凱庫勒結構的共振混成，π 電子均勻分布在整個環上，六個鍵完全相同。', show: { w: 'reson', set: { ex: 'benzene', step: 2 } } },
+  ],
+});
+
 /* ---------- 後中化學：化學平衡 ---------- */
 CH.push({
   id: 'equilibrium', unit: 'g7', title: '化學平衡：K、Q 與勒沙特列原理',
@@ -622,6 +682,94 @@ CH.push({
       why: '催化劑同時降低正逆反應的活化能，兩個方向等比例加快，所以 K 和平衡組成都不變，只是更快到達平衡。' },
     { q: '某反應在 25 °C 的 ΔG° = −11.4 kJ/mol，其平衡常數 K 約為多少？', o: ['約 100', '約 0.01', '約 1', '約 11.4'], a: 0,
       why: 'K = e^(−ΔG°/RT) = e^(11400 ÷ (8.314 × 298)) = e^4.6 ≈ 100。也可以用「每 5.7 kJ/mol 差 10 倍」心算：11.4 是兩個 5.7，所以 K ≈ 10² 。', show: { w: 'kdg', set: { dG: -11.4, T: 298 } } },
+  ],
+});
+
+/* ---------- 後中化學：化學動力學 ---------- */
+CH.push({
+  id: 'kinetics', unit: 'g6', title: '化學動力學：反應有多快',
+  lede: '熱力學告訴你反應「會不會」發生，動力學告訴你「多快」發生。這一章從實驗數據推出速率式，看懂半生期與活化能，最後連到反應機構：SN1 和 SN2 的速率式就是這樣來的。',
+  sections: [
+    { h: '速率式要靠實驗決定', w: 'ratelaw', body: `
+<p>反應速率是單位時間內濃度的變化。對 aA + bB → 產物，<b>速率式</b>寫成：</p>
+<p class="eq">rate = k [A]<sup>m</sup> [B]<sup>n</sup></p>
+<p>m、n 是<b>反應級數</b>，<b>不一定等於方程式的係數</b>，必須由實驗決定；k 是速率常數，只受溫度與催化劑影響。</p>
+<p>最常用的方法是<b>初速率法</b>：每次只改變一種反應物的濃度，看初速率怎麼變。濃度變 2 倍時速率變 2 倍 → 一級；變 4 倍 → 二級；不變 → 零級。</p>
+<p>試著自己做實驗找出三個反應的速率式。後兩個就是上一章的 SN1 和 SN2：方程式長得幾乎一樣，速率式卻不同，因為反應機構不同。</p>` },
+    { h: '濃度隨時間怎麼變：積分速率式與半生期', w: 'order', body: `
+<p>把速率式積分，就得到濃度和時間的關係。三種級數各有一種「畫成直線」的方式：</p>
+<table class="tbl"><thead><tr><th>級數</th><th>直線關係</th><th>半生期</th></tr></thead><tbody>
+<tr><td>零級</td><td>[A] = [A]₀ − kt</td><td>[A]₀ ÷ 2k</td></tr>
+<tr><td>一級</td><td>ln[A] = ln[A]₀ − kt</td><td><b>0.693 ÷ k</b>（與濃度無關）</td></tr>
+<tr><td>二級</td><td>1/[A] = 1/[A]₀ + kt</td><td>1 ÷ (k[A]₀)</td></tr></tbody></table>
+<p><b>半生期</b>是濃度降到一半所需的時間。一級反應的半生期固定，所以經過 n 個半生期剩下 (1/2)ⁿ：這是放射性定年和藥物劑量計算的基礎。</p>` },
+    { h: '為什麼加熱會變快：活化能', w: 'arrh', body: `
+<p>分子要反應，必須以足夠的能量碰撞，越過能量障礙，這個最小能量就是<b>活化能 Ea</b>。阿瑞尼斯方程式：</p>
+<p class="eq">k = A e<sup>−Ea/RT</sup>　　ln(k₂/k₁) = (Ea/R)(1/T₁ − 1/T₂)</p>
+<p>同溫度的分子動能不全相同，而是一個分佈。只有分佈<b>尾巴</b>上能量超過 Ea 的分子能反應。溫度稍微升高，平均能量只多一點，但尾巴抬高很多，所以速率大增：Ea ≈ 50 kJ/mol 的反應，室溫附近每升高 10 °C 速率約加倍。</p>
+<p><b>催化劑</b>提供另一條活化能較低的路徑。它同樣降低正反應和逆反應的障礙，所以更快到達平衡，但<b>不改變 ΔH、ΔG 與平衡常數</b>。</p>` },
+    { h: '反應機構與速率決定步驟', w: 'rds', body: `
+<p>多數反應不是一步完成，而是由幾個<b>基本步驟</b>組成。基本步驟的速率式可以直接從係數寫出（例如 A + B → C 的速率 = k[A][B]），但整體反應不行。</p>
+<p>整體速率由<b>最慢的步驟</b>（速率決定步驟）決定，就像高速公路收費站最慢的那一關決定車流量。在能量圖上，看<b>最高的過渡狀態</b>。</p>
+<ul><li>過渡狀態：能量的最高點，無法分離，只存在一瞬間。</li><li><b>中間物</b>：兩個過渡狀態之間的能量低谷，壽命雖短但真實存在（例如碳陽離子）。</li></ul>
+<p>調整兩個過渡狀態的高度，看速率式怎麼跟著改變。用速率式「反推」機構，是研究反應機構最基本的方法。</p>` },
+  ],
+  quiz: [
+    { q: '某反應 A + B → C，[A] 加倍時初速率變為 4 倍，[B] 加倍時初速率不變。速率式為？', o: ['rate = k[A]²', 'rate = k[A][B]', 'rate = k[A]²[B]', 'rate = k[B]'], a: 0,
+      why: '[A] 變 2 倍速率變 4 倍 = 2²，對 A 是二級；[B] 不影響速率，對 B 是零級。' },
+    { q: '一級反應的半生期為 10 分鐘，經過 30 分鐘後剩下原來的多少？', o: ['1/8', '1/3', '1/6', '1/4'], a: 0,
+      why: '一級反應半生期固定：30 分鐘是 3 個半生期，剩下 (1/2)³ = 1/8。', show: { w: 'order', set: { n: 1 } } },
+    { q: '若某反應的 ln[A] 對時間作圖得到直線，這個反應對 A 是幾級？', o: ['一級', '零級', '二級', '無法判斷'], a: 0,
+      why: '一級反應：ln[A] = ln[A]₀ − kt，是斜率 −k 的直線。零級是 [A] 對 t 直線，二級是 1/[A] 對 t 直線。', show: { w: 'order', set: { n: 1 } } },
+    { q: '升高溫度使反應速率增加，最主要的原因是？', o: ['能量超過活化能的分子比例大幅增加', '活化能降低', '平衡常數變大', '分子碰撞次數加倍'], a: 0,
+      why: '升溫時碰撞次數只增加一點，但分佈尾巴上超過 Ea 的分子比例呈指數增加。活化能本身不變（改變活化能的是催化劑）。', show: { w: 'arrh', set: { T: 308, Ea: 50, cat: false } } },
+    { q: '關於催化劑，下列敘述何者錯誤？', o: ['催化劑會使平衡向產物方向移動', '催化劑降低活化能', '催化劑同時加快正逆反應', '催化劑在反應前後本身不被消耗'], a: 0,
+      why: '催化劑等比例加快正逆反應，只是更快到達平衡，不改變平衡常數或平衡組成。', show: { w: 'arrh', set: { cat: true } } },
+    { q: '兩步驟反應中，第一步慢、第二步快。下列何者正確？', o: ['整體速率式只包含第一步的反應物', '整體速率由第二步決定', '中間物會大量累積', '速率式和方程式係數一定相同'], a: 0,
+      why: '最慢的步驟決定整體速率。第一步慢時，中間物一生成就被消耗掉，不會累積；速率式只含第一步的反應物，例如 SN1 的 rate = k[RX]。', show: { w: 'rds', set: { h1: 0.9, h2: 0.65 } } },
+    { q: '反應能量圖中的「中間物」和「過渡狀態」有什麼不同？', o: ['中間物位於能量低谷、壽命雖短但真實存在；過渡狀態位於能量最高點、無法分離', '兩者是同一件事', '過渡狀態比中間物穩定', '中間物位於能量最高點'], a: 0,
+      why: '中間物（例如碳陽離子）在兩個障礙之間的低谷，可以被偵測甚至捕捉；過渡狀態是舊鍵將斷、新鍵將成的瞬間，只是能量曲線上的最高點。', show: { w: 'rds', set: { h1: 0.85, h2: 0.7 } } },
+  ],
+});
+
+/* ---------- 後中化學：有機酸鹼 ---------- */
+CH.push({
+  id: 'org-acid', unit: 'o2', title: '有機酸鹼：用 pKa 預測反應',
+  lede: '有機反應的第一步常常是酸鹼反應：誰把 H⁺ 給誰。這一章用一張 pKa 表預測反應方向，再用一個問題判斷任何分子的酸性強弱：拿走 H⁺ 之後，留下的負電荷穩不穩定？',
+  sections: [
+    { h: '用 pKa 預測反應方向', w: 'pkaeq', body: `
+<p>酸鹼反應 HA + B⁻ ⇌ A⁻ + HB，兩邊各有一個酸（HA 和 HB）。平衡永遠偏向<b>較弱的酸</b>（pKa 較大）那一側：</p>
+<p class="eq">K = 10<sup>(pKa of HB − pKa of HA)</sup></p>
+<p>pKa 每差 1，平衡常數差 10 倍。所以只要查兩個 pKa，就知道一個鹼能不能拿走某個 H⁺。這就是為什麼：</p>
+<ul><li>NaOH（共軛酸 H₂O，15.7）拿不走乙炔的 H（25），但 NaNH₂（共軛酸 NH₃，38）可以。</li>
+<li>碳酸氫鈉（共軛酸 H₂CO₃，6.35）能溶解羧酸（約 4–5），但不能溶解酚（10）：實驗室用這個差別把兩者分開。</li></ul>` },
+    { h: '什麼讓酸變強：看共軛鹼', w: 'ario', body: `
+<p>酸性強弱取決於<b>共軛鹼有多穩定</b>：拿走 H⁺ 後留下的負電荷越穩定，酸就越強。判斷負電荷穩定度依序看四個因素（重要性大致由高到低）：</p>
+<ol><li><b>原子</b>：負電荷在哪個原子上。同一族看大小（越大越穩定，HI 最強）；同一週期看電負度（越大越穩定，HF > H₂O > NH₃ > CH₄）。</li>
+<li><b>共振</b>：負電荷能不能分散到其他原子上（羧酸 > 酚 > 醇）。</li>
+<li><b>誘導</b>：附近有沒有拉電子基（例如 Cl、F、NO₂）幫忙分攤負電荷；越多越強、越近越強。</li>
+<li><b>軌域</b>：負電荷所在軌域的 s 性質（sp > sp² > sp³）。</li></ol>
+<p>逐一切換看看每個因素造成多大的差別。</p>` },
+    { h: '鹼性：看共軛酸的 pKa', w: 'basic', body: `
+<p>判斷鹼性強弱，比較它的共軛酸的 pKa（常寫成 pKaH）：<b>共軛酸越弱，鹼越強</b>。對胺類來說，關鍵是 N 上的孤對電子「有多自由」：</p>
+<ul><li>烷基推電子 → 孤對電子更容易給出，鹼性稍強；</li><li>孤對電子參與共振（苯胺、醯胺）→ 被分散掉，鹼性大幅下降；</li><li>孤對電子在 s 性質較高的軌域（吡啶的 sp²）→ 抓得較緊，鹼性較弱。</li></ul>
+<p>同樣的道理也解釋了好的離去基：離去基就是很弱的鹼（共軛酸很強），帶著電子對離開後很穩定。</p>` },
+  ],
+  quiz: [
+    { q: 'CH₃COOH（pKa 4.76）+ OH⁻ ⇌ CH₃COO⁻ + H₂O（pKa 15.7），平衡偏向哪一側？', o: ['右側，K 約 10¹¹', '左側', '兩側相當', '無法判斷'], a: 0,
+      why: '平衡偏向較弱的酸 H₂O（pKa 15.7）那一側，K = 10^(15.7 − 4.76) ≈ 10¹¹。', show: { w: 'pkaeq', set: { a: 2, b: 6 } } },
+    { q: '要把乙炔 HC≡CH（pKa 25）的 H 拿走，下列哪個鹼可以？', o: ['NaNH₂（NH₃ 的 pKa 38）', 'NaOH（H₂O 的 pKa 15.7）', 'NaHCO₃（H₂CO₃ 的 pKa 6.35）', 'CH₃COONa（醋酸 pKa 4.76）'], a: 0,
+      why: '鹼的共軛酸 pKa 必須大於 25，平衡才偏向產物。只有 NH₃（38）符合。', show: { w: 'pkaeq', set: { a: 8, b: 9 } } },
+    { q: '下列酸性由強到弱排列何者正確？', o: ['HI > HBr > HCl > HF', 'HF > HCl > HBr > HI', 'HCl > HF > HBr > HI', 'HF > HI > HBr > HCl'], a: 0,
+      why: '同一族由上到下原子變大，負電荷分散在較大體積、H–X 鍵變弱，酸性增強。大小的影響勝過電負度。', show: { w: 'ario', set: { t: 'col' } } },
+    { q: '為什麼醋酸（pKa 4.76）比乙醇（pKa 16）酸性強得多？', o: ['醋酸根的負電荷可以共振分散到兩個 O 上', '醋酸的分子量較大', '乙醇有氫鍵', '醋酸的 O–H 鍵比較長'], a: 0,
+      why: '乙氧離子的負電荷集中在一個 O；醋酸根的負電荷平均分在兩個 O 上，更穩定。', show: { w: 'ario', set: { t: 'res' } } },
+    { q: '下列羧酸何者酸性最強？', o: ['Cl₃CCOOH', 'Cl₂CHCOOH', 'ClCH₂COOH', 'CH₃COOH'], a: 0,
+      why: 'Cl 以誘導效應拉電子、分攤負電荷，Cl 越多酸性越強（pKa 0.65）。', show: { w: 'ario', set: { t: 'ind' } } },
+    { q: '下列化合物何者鹼性最弱？', o: ['乙醯胺 CH₃CONH₂', '甲胺 CH₃NH₂', '氨 NH₃', '苯胺 C₆H₅NH₂'], a: 0,
+      why: '醯胺 N 的孤對電子和 C=O 強烈共振，幾乎沒有鹼性（pKaH 約 −0.5）。苯胺的孤對電子和苯環共振，鹼性也弱（4.6），但仍比醯胺強得多。', show: { w: 'basic', set: { i: 5 } } },
+    { q: '下列何者是最好的離去基？', o: ['I⁻', 'F⁻', 'OH⁻', 'NH₂⁻'], a: 0,
+      why: '好的離去基是弱鹼：共軛酸越強越好。HI 的 pKa 約 −10，I⁻ 最穩定；NH₂⁻ 的共軛酸 NH₃ pKa 38，是極差的離去基。' },
   ],
 });
 
@@ -1274,6 +1422,254 @@ W.kdg = el => {
   $('#kgt', el).oninput = e => { st.T = +e.target.value; draw(); };
   draw();
   return { set(s) { Object.assign(st, s); draw(); } };
+};
+
+/* ---------- 後中化學：化學動力學的互動圖 ---------- */
+
+/* ===== 1. 初速率法：自己做實驗找出反應級數 ===== */
+W.ratelaw = el => {
+  const RX = {
+    no: { n: '2NO + O₂ → 2NO₂', A: 'NO', B: 'O₂', m: 2, n2: 1 },
+    sn1: { n: '(CH₃)₃CBr + OH⁻ → (CH₃)₃COH + Br⁻', A: '(CH₃)₃CBr', B: 'OH⁻', m: 1, n2: 0 },
+    sn2: { n: 'CH₃Br + OH⁻ → CH₃OH + Br⁻', A: 'CH₃Br', B: 'OH⁻', m: 1, n2: 1 },
+  };
+  let cur = 'no', A = 0.1, B = 0.1, rows = [], gm = null, gn = null;
+  el.innerHTML = `${seg('rlS', Object.entries(RX).map(([k, v]) => [k, v.n]), cur)}<div class="w-row" id="rlC"></div><div class="w-row"><button class="btn sm pri" type="button" id="rlGo">做實驗：量初速率</button><button class="btn sm ghost" type="button" id="rlR">清除紀錄</button></div><div id="rlT"></div><div class="w-row" id="rlG"></div><p class="note" id="rlN"></p>`;
+  const rate = (a, b) => { const r = RX[cur]; return a ** r.m * b ** r.n2; };
+  function draw() {
+    const r = RX[cur];
+    $('#rlC', el).innerHTML = [['A', r.A, A], ['B', r.B, B]].map(([k, lab, v]) => `<span class="small">[${lab}] = <b class="mono">${fx(v, 2)}</b> M</span><button class="btn sm" type="button" data-c="${k}" data-f="0.5">÷2</button><button class="btn sm" type="button" data-c="${k}" data-f="2">×2</button><span class="sp"></span>`).join('');
+    $$('[data-c]', el).forEach(b => { b.onclick = () => { const f = +b.dataset.f; if (b.dataset.c === 'A') A = clamp(A * f, 0.0125, 0.8); else B = clamp(B * f, 0.0125, 0.8); draw(); }; });
+    const r0 = rows[0];
+    $('#rlT', el).innerHTML = rows.length ? `<table class="tbl"><thead><tr><th>實驗</th><th>[${r.A}]（M）</th><th>[${r.B}]（M）</th><th>初速率（相對）</th></tr></thead><tbody>${rows.map((x, i) => `<tr><td>${i + 1}</td><td>${fx(x.a, 3)}</td><td>${fx(x.b, 3)}</td><td class="mono">${fx(x.r / r0.r, 2)}</td></tr>`).join('')}</tbody></table>` : '<p class="small mut">還沒有實驗紀錄。調整濃度後按「做實驗」。技巧：每次只改變一種反應物的濃度。</p>';
+    $('#rlG', el).innerHTML = `<span class="small">你的猜測：rate = k[${r.A}]</span>${[0, 1, 2].map(v => `<button class="btn sm${gm === v ? ' pri' : ''}" type="button" data-gm="${v}">${v}</button>`).join('')}<span class="small">[${r.B}]</span>${[0, 1, 2].map(v => `<button class="btn sm${gn === v ? ' pri' : ''}" type="button" data-gn="${v}">${v}</button>`).join('')}`;
+    $$('[data-gm]', el).forEach(b => { b.onclick = () => { gm = +b.dataset.gm; draw(); }; });
+    $$('[data-gn]', el).forEach(b => { b.onclick = () => { gn = +b.dataset.gn; draw(); }; });
+    let msg = '先做至少三次實驗：一次當基準，一次只把第一種反應物加倍，一次只把第二種加倍。';
+    if (gm != null && gn != null) msg = gm === r.m && gn === r.n2 ? `<span class="ok">✓ 正確</span>：rate = k[${r.A}]${r.m > 1 ? `<sup>${r.m}</sup>` : r.m ? '' : '⁰'}[${r.B}]${r.n2 > 1 ? `<sup>${r.n2}</sup>` : r.n2 ? '' : '⁰'}，總級數 ${r.m + r.n2}。${cur === 'sn1' ? '速率和 OH⁻ 無關：這正是 SN1，最慢的一步只有鹵烷參與。' : cur === 'sn2' ? '兩者都是一級：SN2 的過渡狀態同時包含兩者。' : '注意級數不等於方程式的係數也可以；這裡剛好相同，但必須由實驗決定。'}`
+      : `<span class="bad">還不對</span>。找兩次「只有 [${r.A}] 不同」的實驗：濃度變 2 倍時速率變幾倍？2¹ = 2 → 一級；2² = 4 → 二級；不變 → 零級。`;
+    $('#rlN', el).innerHTML = msg; pressSeg(el, 'rlS', cur);
+  }
+  bindSeg(el, 'rlS', v => { cur = v; rows = []; gm = gn = null; A = B = 0.1; draw(); });
+  $('#rlGo', el).onclick = () => { rows.push({ a: A, b: B, r: rate(A, B) }); if (rows.length > 8) rows.shift(); draw(); };
+  $('#rlR', el).onclick = () => { rows = []; draw(); };
+  draw();
+  return { set(s) { if (s.rx) { cur = s.rx; rows = []; } (s.rows || []).forEach(([a, b]) => rows.push({ a, b, r: rate(a, b) })); gm = s.gm ?? gm; gn = s.gn ?? gn; draw(); } };
+};
+
+/* ===== 2. 積分速率式：哪一種圖是直線 ===== */
+W.order = el => {
+  const st = { n: 1, k: 0.2 }, A0 = 1, T = 20;
+  el.innerHTML = `${seg('orS', [['0', '零級'], ['1', '一級'], ['2', '二級']], '1')}<div class="w-row"><label class="rng">速率常數 k <input type="range" id="ork" min="0.02" max="0.5" step="0.01"><output class="mono" id="oro"></output></label></div><div class="og" id="orG"></div><div class="cards" id="orK"></div><p class="note" id="orN"></p>`;
+  const Af = t => st.n === 0 ? Math.max(1e-4, A0 - st.k * t * 0.1) : st.n === 1 ? A0 * Math.exp(-st.k * t) : 1 / (1 / A0 + st.k * t);
+  function draw() {
+    const ts = Array.from({ length: 101 }, (_, i) => i * T / 100), k = st.n === 0 ? st.k * 0.1 : st.k;
+    const half = st.n === 0 ? A0 / (2 * k) : st.n === 1 ? Math.LN2 / k : 1 / (k * A0);
+    const hs = []; let a = A0, t = 0; for (let i = 0; i < 4; i++) { const h = st.n === 0 ? a / (2 * k) : st.n === 1 ? Math.LN2 / k : 1 / (k * a); t += h; a /= 2; if (t > T) break; hs.push([t, h]); }
+    const plots = [['[A]', v => v, [0, 1], '[A] 對時間'], ['ln[A]', v => Math.log(v), [-5, 0], 'ln[A] 對時間'], ['1/[A]', v => 1 / v, [0, 12], '1/[A] 對時間']];
+    $('#orG', el).innerHTML = plots.map(([lab, f, yr, ttl], i) => {
+      const straight = i === st.n;
+      return `<div class="${straight ? 'og-on' : ''}"><p class="lbl">${ttl}${straight ? '　← 直線' : ''}</p>${chart({ x: [0, T], y: yr, xt: [0, 10, 20], yt: yr, xlab: '時間', ylab: lab, h: 190, w: 300 }, (X, Y) => `<path class="${straight ? 'tline' : 'tline2'}" d="${path(ts.map(t => [X(t), Y(clamp(f(Af(t)), yr[0], yr[1]))]))}"/>${i === 0 ? hs.map(([tt]) => `<line class="mk" x1="${X(tt)}" x2="${X(tt)}" y1="${Y(0)}" y2="${Y(1)}"/>`).join('') : ''}`)}</div>`;
+    }).join('');
+    $('#orK', el).innerHTML = card('h', '第一個半生期', fx(half, 2)) + card('h2', '連續半生期', hs.map(h => fx(h[1], 1)).join('、') || '—');
+    $('#orN', el).innerHTML = [
+      `<b>零級</b>：rate = k，速率和濃度無關，[A] 隨時間<b>直線</b>下降：[A] = [A]₀ − kt。半生期 t½ = [A]₀ ÷ 2k，濃度越低半生期越短。常見於酵素飽和、表面催化。`,
+      `<b>一級</b>：rate = k[A]，<b>ln[A] 對時間是直線</b>，斜率 −k：ln[A] = ln[A]₀ − kt。半生期 <b>t½ = 0.693 ÷ k</b>，和起始濃度無關，所以連續的半生期都一樣長（左圖的虛線等間隔）。放射性衰變、多數藥物排除都是一級。`,
+      `<b>二級</b>：rate = k[A]²，<b>1/[A] 對時間是直線</b>，斜率 k：1/[A] = 1/[A]₀ + kt。半生期 t½ = 1 ÷ (k[A]₀)，濃度越低半生期越長。`][st.n] + ' 判斷級數的方法：把數據畫成三種圖，哪一種是直線，就是幾級。';
+    $('#oro', el).textContent = fx(st.k); $('#ork', el).value = st.k; pressSeg(el, 'orS', String(st.n));
+  }
+  bindSeg(el, 'orS', v => { st.n = +v; draw(); });
+  $('#ork', el).oninput = e => { st.k = +e.target.value; draw(); };
+  draw();
+  return { set(s) { if (s.n != null) st.n = s.n; draw(); } };
+};
+
+/* ===== 3. 活化能與溫度：能量分佈的尾巴 ===== */
+W.arrh = el => {
+  const st = { T: 298, Ea: 50, cat: false };
+  el.innerHTML = `<div class="w-row"><label class="rng">溫度（K）<input type="range" id="arT" min="250" max="450" step="1"><output class="mono" id="arTo"></output></label><label class="rng">活化能 Ea（kJ/mol）<input type="range" id="arE" min="10" max="120" step="1"><output class="mono" id="arEo"></output></label></div><label class="chk"><input type="checkbox" id="arC"> 加入催化劑（活化能降低 30 kJ/mol）</label><div class="bgrid"><div id="arD"></div><div id="arP"></div></div><div class="cards" id="arK"></div><p class="note" id="arN"></p>`;
+  const R = 8.314e-3, dens = (E, T) => 2 / Math.sqrt(Math.PI) * (R * T) ** -1.5 * Math.sqrt(E) * Math.exp(-E / (R * T));
+  function draw() {
+    const Ea = Math.max(5, st.Ea - (st.cat ? 30 : 0)), Emax = 140, es = Array.from({ length: 141 }, (_, i) => i * Emax / 140 + 0.01);
+    const lg = v => Math.max(-14, Math.log10(v));
+    $('#arD', el).innerHTML = chart({ x: [0, Emax], y: [-14, 0], xt: [0, 20, 40, 60, 80, 100, 120, 140], yt: [-12, -8, -4, 0], xlab: '分子的動能（kJ/mol）', ylab: '分子比例（對數刻度）', h: 230, label: '能量分佈' }, (X, Y) =>
+      `<path class="area" d="${path([[X(Ea), Y(-14)], ...es.filter(e => e >= Ea).map(e => [X(e), Y(lg(dens(e, st.T)))]), [X(Emax), Y(-14)]])}Z"/><path class="tline2" d="${path(es.map(e => [X(e), Y(lg(dens(e, 298)))]))}"/><path class="tline" d="${path(es.map(e => [X(e), Y(lg(dens(e, st.T)))]))}"/><line class="cur" x1="${X(Ea)}" x2="${X(Ea)}" y1="${Y(-14)}" y2="${Y(0)}"/><text class="tk" x="${X(Ea) + 4}" y="${Y(-1)}">Ea</text><text class="tk" x="${X(Emax) - 4}" y="${Y(-0.6)}" text-anchor="end">藍：${st.T} K　灰虛線：298 K</text>`);
+    $('#arP', el).innerHTML = energySVG([[0, 0.3], [0.5, Math.min(0.97, 0.3 + st.Ea / 180)], [1, 0.12]], null, { labels: [[0.5, `Ea = ${st.Ea}${st.cat ? '（綠：有催化劑）' : ''}`]], alt: st.cat ? [[0, 0.3], [0.5, Math.min(0.97, 0.3 + Ea / 180)], [1, 0.12]] : null }) + '<p class="small mut c">反應能量圖</p>';
+    const f = Math.exp(-Ea / (R * st.T)), f0 = Math.exp(-st.Ea / (R * 298)), ratio = f / f0, r10 = Math.exp(Ea / R * (1 / st.T - 1 / (st.T + 10)));
+    $('#arK', el).innerHTML = card('f', '能越過 Ea 的比例 ≈ e<sup>−Ea/RT</sup>', sci(f)) + card('r', '速率是 298 K 無催化劑的', `${ratio >= 100 ? sci(ratio, 1) : fx(ratio, 2)} 倍`) + card('r10', '再升溫 10 K，速率變為', `${fx(r10, 2)} 倍`);
+    $('#arN', el).innerHTML = `阿瑞尼斯方程式 k = A e<sup>−Ea/RT</sup>：只有能量超過 Ea 的碰撞才能反應。這些分子在分佈的<b>尾巴</b>上，所以溫度稍微升高，尾巴就抬高很多（縱軸是對數刻度）。Ea = ${Ea} kJ/mol 時，在 ${st.T} K 每升溫 10 K，速率約變為 ${fx(r10, 1)} 倍。${st.cat ? '催化劑提供另一條活化能較低的路徑，速率大增；但它同時加快正逆反應，<b>不改變平衡常數</b>。' : ''}`;
+    $('#arTo', el).textContent = st.T; $('#arEo', el).textContent = st.Ea; $('#arT', el).value = st.T; $('#arE', el).value = st.Ea; $('#arC', el).checked = st.cat;
+  }
+  $('#arT', el).oninput = e => { st.T = +e.target.value; draw(); };
+  $('#arE', el).oninput = e => { st.Ea = +e.target.value; draw(); };
+  $('#arC', el).onchange = e => { st.cat = e.target.checked; draw(); };
+  draw();
+  return { set(s) { Object.assign(st, s); draw(); } };
+};
+
+/* ===== 4. 多步驟反應：速率決定步驟 ===== */
+W.rds = el => {
+  const st = { h1: 0.85, h2: 0.65 };
+  el.innerHTML = `<p class="eq">步驟 1：A ⇌ I（中間物）　　步驟 2：I + B → P</p><div class="w-row"><label class="rng">過渡狀態 1 的高度 <input type="range" id="rd1" min="0.62" max="0.95" step="0.01"></label><label class="rng">過渡狀態 2 的高度 <input type="range" id="rd2" min="0.62" max="0.95" step="0.01"></label></div><div class="bgrid"><div id="rdE"></div><div><div class="verdict" id="rdV"></div></div></div><p class="note" id="rdN"></p>`;
+  function draw() {
+    const one = st.h1 >= st.h2;
+    $('#rdE', el).innerHTML = energySVG([[0, 0.3], [0.25, st.h1], [0.5, 0.55], [0.75, st.h2], [1, 0.1]], null, { labels: [[0.25, '過渡狀態 1'], [0.5, '中間物 I', 14], [0.75, '過渡狀態 2']], w: 320, h: 170 });
+    $('#rdV', el).innerHTML = `<span class="lbl">速率決定步驟</span><b class="big">步驟 ${one ? 1 : 2}</b><span class="lbl">速率式</span><b>${one ? 'rate = k₁[A]' : 'rate = k₂K₁[A][B]'}</b>`;
+    $('#rdN', el).innerHTML = one ? '過渡狀態 1 最高，第一步最慢：中間物一生成就被很快消耗，整體速率由第一步決定，<b>只和 A 有關</b>，B 的濃度不影響速率。SN1 就是這種情況（RX 先解離，親核基再快速加上）。'
+      : '過渡狀態 2 最高，第二步最慢：第一步很快達到平衡（[I] = K₁[A]），整體速率 = k₂[I][B] = k₂K₁[A][B]，<b>A 和 B 都出現在速率式中</b>。快速平衡之後的慢步驟，速率式會包含它之前所有步驟的反應物。';
+    $('#rd1', el).value = st.h1; $('#rd2', el).value = st.h2;
+  }
+  $('#rd1', el).oninput = e => { st.h1 = +e.target.value; draw(); };
+  $('#rd2', el).oninput = e => { st.h2 = +e.target.value; draw(); };
+  draw();
+  return { set(s) { Object.assign(st, s); draw(); } };
+};
+
+/* ---------- 後中化學：有機基礎（形式電荷、混成、共振、有機酸鹼）的互動圖 ---------- */
+
+/* ===== 1. 形式電荷 ===== */
+W.fc = el => {
+  const EL = { C: 4, N: 5, O: 6, X: 7 }, NAME = { C: '碳', N: '氮', O: '氧', X: '鹵素（F、Cl、Br、I）' };
+  const st = { e: 'N', b: 4, lp: 0 };
+  el.innerHTML = `<p class="lbl">原子</p>${seg('fcE', Object.entries(NAME), st.e)}<div class="w-row"><span class="small">鍵數（雙鍵算 2）</span>${[1, 2, 3, 4].map(v => `<button class="btn sm" type="button" data-b="${v}">${v}</button>`).join('')}<span class="sp"></span><span class="small">孤對電子對數</span>${[0, 1, 2, 3].map(v => `<button class="btn sm" type="button" data-l="${v}">${v}</button>`).join('')}</div><div class="bgrid"><div id="fcM"></div><div id="fcK"></div></div><p class="note" id="fcN"></p>`;
+  function draw() {
+    const v = EL[st.e], fc = v - 2 * st.lp - st.b, e = 2 * st.b + 2 * st.lp, lab = st.e === 'X' ? 'X' : st.e;
+    const angs = { 1: [0], 2: [0, 180], 3: [90, 210, 330], 4: [90, 0, 180, 270] }[st.b], lps = [45, 135, 225, 315].slice(0, st.lp);
+    const atoms = { A: { x: 0, y: 0, t: lab, lp: lps, c: fc > 0 ? '+' : fc < 0 ? '−' : '' } }, bonds = [];
+    angs.forEach((a, i) => { atoms['r' + i] = { x: Math.cos(a * Math.PI / 180) * 1.2, y: Math.sin(a * Math.PI / 180) * 1.2, t: 'R' }; bonds.push(['A', 'r' + i, 's']); });
+    $('#fcM', el).innerHTML = MOL.svg({ atoms, bonds }, { w: 220, h: 200, s: 56 });
+    $('#fcK', el).innerHTML = card('v', '價電子', v) + card('n', '− 非鍵電子', 2 * st.lp) + card('b', '− 鍵數', st.b) + card('f', '形式電荷', fc > 0 ? `+${fc}` : fc < 0 ? `−${-fc}` : '0') + card('o', '周圍電子', `${e}${e === 8 ? '（八隅）' : ''}`);
+    const common = { 'C4,0': '中性碳（最常見）', 'C3,0': '碳陽離子（只有 6 個電子，缺電子）', 'C3,1': '碳陰離子', 'N3,1': '中性氮（胺）', 'N4,0': '銨離子型的氮，帶 +1', 'N2,2': '帶 −1 的氮（例如 NH₂⁻）', 'O2,2': '中性氧（醇、醚）', 'O3,1': '鎓離子型的氧（例如 H₃O⁺、質子化的醇），帶 +1', 'O1,3': '帶 −1 的氧（例如 HO⁻、RO⁻）', 'X1,3': '中性鹵素', 'X0,4': '鹵離子' }[st.e + st.b + ',' + st.lp];
+    $('#fcN', el).innerHTML = `形式電荷 = 價電子 − 非鍵電子 − 鍵數 = ${v} − ${2 * st.lp} − ${st.b} = <b>${fc}</b>。${common ? `這是<b>${common}</b>。` : ''}${e > 8 && st.e !== 'X' ? '<span class="bad">第二週期元素周圍超過 8 個電子，不可能存在。</span>' : ''}<br>記住常見組合就不用每次算：碳 4 鍵中性、3 鍵帶電；氮 3 鍵中性、4 鍵 +1；氧 2 鍵中性、3 鍵 +1、1 鍵 −1。`;
+    pressSeg(el, 'fcE', st.e); $$('[data-b]', el).forEach(b => b.classList.toggle('pri', +b.dataset.b === st.b)); $$('[data-l]', el).forEach(b => b.classList.toggle('pri', +b.dataset.l === st.lp));
+  }
+  bindSeg(el, 'fcE', v => { st.e = v; draw(); });
+  $$('[data-b]', el).forEach(b => { b.onclick = () => { st.b = +b.dataset.b; draw(); }; });
+  $$('[data-l]', el).forEach(b => { b.onclick = () => { st.lp = +b.dataset.l; draw(); }; });
+  draw();
+  return { set(s) { Object.assign(st, s); draw(); } };
+};
+
+/* ===== 2. 混成與形狀 ===== */
+W.hyb = el => {
+  const H = {
+    sp3: { n: 'sp³（4 個電子區域）', ang: '109.5°', shape: '四面體', ex: 'CH₄、乙烷的碳；NH₃（1 對孤對，三角錐，107°）、H₂O（2 對孤對，彎曲，104.5°）',
+      sc: { atoms: { C: { x: 0, y: 0, t: 'C' }, a: { x: 0, y: 1.15, t: 'H' }, b: { x: 1.05, y: -0.4, t: 'H' }, c: { x: -0.95, y: -0.55, t: 'H' }, d: { x: -0.2, y: -1.1, t: 'H' } }, bonds: [['C', 'a', 's'], ['C', 'b', 's'], ['C', 'c', 'w'], ['C', 'd', 'h']] } },
+    sp2: { n: 'sp²（3 個電子區域）', ang: '120°', shape: '平面三角形', ex: '乙烯與羰基（C=O）的碳、苯的碳、碳陽離子；剩下一個未混成的 p 軌域形成 π 鍵',
+      sc: { atoms: { C: { x: 0, y: 0, t: 'C' }, a: { x: -1.1, y: 0.65, t: 'H' }, b: { x: -1.1, y: -0.65, t: 'H' }, c: { x: 1.25, y: 0, t: 'R' } }, bonds: [['C', 'a', 's'], ['C', 'b', 's'], ['C', 'c', 's']], orbs: [{ a: 'C', ang: 90 }] } },
+    sp: { n: 'sp（2 個電子區域）', ang: '180°', shape: '直線形', ex: '乙炔的碳、CO₂ 的碳、腈（C≡N）的碳；剩下兩個互相垂直的 p 軌域形成兩個 π 鍵',
+      sc: { atoms: { C: { x: 0, y: 0, t: 'C' }, a: { x: -1.3, y: 0, t: 'H' }, b: { x: 1.3, y: 0, t: 'R' } }, bonds: [['C', 'a', 's'], ['C', 'b', 's']], orbs: [{ a: 'C', ang: 90 }] } },
+  };
+  let cur = 'sp3';
+  el.innerHTML = `${seg('hyS', Object.entries(H).map(([k, v]) => [k, v.n]), cur)}<div class="bgrid"><div id="hyM"></div><div id="hyK"></div></div><p class="note" id="hyN"></p>`;
+  function draw() {
+    const h = H[cur];
+    $('#hyM', el).innerHTML = MOL.svg(h.sc, { w: 260, h: 200, s: 60 });
+    $('#hyK', el).innerHTML = card('a', '鍵角', h.ang) + card('s', '形狀', h.shape) + card('p', 's 性質', { sp3: '25%', sp2: '33%', sp: '50%' }[cur]);
+    $('#hyN', el).innerHTML = `電子區域數 = σ 鍵數 + 孤對電子對數（雙鍵、參鍵都只算一個區域）。例子：${h.ex}。<b>s 性質越高，軌域越靠近原子核</b>：sp 碳上的電子對抓得最緊，所以乙炔的 C–H 比乙烯、乙烷都更容易被拿走 H⁺（有機酸鹼一章會用到）。`;
+    pressSeg(el, 'hyS', cur);
+  }
+  bindSeg(el, 'hyS', v => { cur = v; draw(); });
+  draw();
+  return { set(s) { cur = s.h || cur; draw(); } };
+};
+
+/* ===== 3. 共振：電子在移動，原子不動 ===== */
+W.reson = el => {
+  const EX = {
+    acetate: { n: '醋酸根', frames: () => {
+      const base = { C: { x: 0, y: 0, t: 'C' }, Me: { x: -1.3, y: -0.45, t: 'CH₃' } };
+      const A = { atoms: { ...base, O1: { x: 0.75, y: 1.0, t: 'O', lp: [60, 150] }, O2: { x: 0.85, y: -0.85, t: 'O', c: '−', lp: [-30, -110, 30] } }, bonds: [['C', 'Me', 's'], ['C', 'O1', 'd'], ['C', 'O2', 's']], arrows: [{ f: { lp: ['O2', 30] }, t: { m: ['C', 'O2'] }, bend: -0.8 }, { f: { b: ['C', 'O1'] }, t: { a: 'O1' }, bend: -0.8 }] };
+      const B = { atoms: { ...base, O1: { x: 0.75, y: 1.0, t: 'O', c: '−', lp: [60, 150, 0] }, O2: { x: 0.85, y: -0.85, t: 'O', lp: [-30, -110] } }, bonds: [['C', 'Me', 's'], ['C', 'O1', 's'], ['C', 'O2', 'd']] };
+      const M = { atoms: { ...base, O1: { x: 0.75, y: 1.0, t: 'O', c: 'δ−' }, O2: { x: 0.85, y: -0.85, t: 'O', c: 'δ−' } }, bonds: [['C', 'Me', 's'], ['C', 'O1', 'sd'], ['C', 'O2', 'sd']] };
+      return [{ sc: A, cap: '共振結構 1：負電荷在下面的 O。彎箭頭：O 上的孤對電子移進來形成 π 鍵，同時原本 C=O 的 π 電子移到上面的 O。<b>只有電子在動，原子位置完全不變。</b>' },
+        { sc: B, cap: '共振結構 2：負電荷換到上面的 O。兩個結構能量相同，貢獻一樣多。' },
+        { sc: M, cap: '真正的醋酸根是兩者的<b>共振混成</b>：兩個 C–O 鍵都是「一個半」鍵（實驗測得鍵長相同，介於單鍵與雙鍵之間），負電荷平均分在兩個 O 上。電荷分散 → 醋酸根很穩定 → 醋酸的酸性比乙醇強很多。' }]; } },
+    allyl: { n: '烯丙基陽離子', frames: () => {
+      const at = (c1, c3) => ({ C1: { x: -1.2, y: -0.35, t: 'CH₂', c: c1 }, C2: { x: 0, y: 0.35, t: 'CH' }, C3: { x: 1.2, y: -0.35, t: 'CH₂', c: c3 } });
+      return [{ sc: { atoms: at('', '+'), bonds: [['C1', 'C2', 'd'], ['C2', 'C3', 's']], arrows: [{ f: { b: ['C1', 'C2'] }, t: { m: ['C2', 'C3'] }, bend: -0.7 }] }, cap: '正電荷在右邊的碳（只有 6 個電子）。左邊 C=C 的 π 電子可以移過來補它。' },
+        { sc: { atoms: at('+', ''), bonds: [['C1', 'C2', 's'], ['C2', 'C3', 'd']], arrows: [{ f: { b: ['C2', 'C3'] }, t: { m: ['C1', 'C2'] }, bend: -0.7 }] }, cap: '正電荷換到左邊的碳。' },
+        { sc: { atoms: at('δ+', 'δ+'), bonds: [['C1', 'C2', 'sd'], ['C2', 'C3', 'sd']] }, cap: '共振混成：正電荷分散在兩端，所以烯丙基陽離子比一般一級碳陽離子穩定得多。烯丙基鹵化物即使是一級，也能很快進行 SN1。' }]; } },
+    amide: { n: '醯胺', frames: () => {
+      const base = { C: { x: 0, y: 0, t: 'C' }, Me: { x: -1.2, y: -0.6, t: 'CH₃' } };
+      return [{ sc: { atoms: { ...base, O: { x: 0, y: 1.25, t: 'O', lp: [45, 135] }, N: { x: 1.2, y: -0.6, t: 'NH₂', lp: [90] } }, bonds: [['C', 'Me', 's'], ['C', 'O', 'd'], ['C', 'N', 's']], arrows: [{ f: { lp: ['N', 90] }, t: { m: ['C', 'N'] }, bend: 0.6 }, { f: { b: ['C', 'O'] }, t: { a: 'O' }, bend: 0.8 }] }, cap: '醯胺的 N 上有一對孤對電子，旁邊就是 C=O。孤對電子可以推進來形成 C=N，C=O 的 π 電子推到 O 上。' },
+        { sc: { atoms: { ...base, O: { x: 0, y: 1.25, t: 'O', c: '−', lp: [45, 135, 0] }, N: { x: 1.2, y: -0.6, t: 'NH₂', c: '+' } }, bonds: [['C', 'Me', 's'], ['C', 'O', 's'], ['C', 'N', 'd']] }, cap: '這個結構有電荷分離，貢獻比第一個少，但不能忽略。' },
+        { sc: { atoms: { ...base, O: { x: 0, y: 1.25, t: 'O', c: 'δ−' }, N: { x: 1.2, y: -0.6, t: 'NH₂', c: 'δ+' } }, bonds: [['C', 'Me', 's'], ['C', 'O', 'sd'], ['C', 'N', 'sd']] }, cap: '結果：C–N 鍵有部分雙鍵性質，<b>不能自由旋轉</b>，醯胺是平面的（蛋白質的胜肽鍵因此是平面）；N 的孤對電子被拉走，所以醯胺<b>幾乎沒有鹼性</b>。' }]; } },
+    benzene: { n: '苯', frames: () => {
+      const atoms = {}; for (let k = 0; k < 6; k++) { const a = (90 + 60 * k) * Math.PI / 180; atoms['a' + k] = { x: Math.cos(a) * 1.2, y: Math.sin(a) * 1.2, t: '' }; }
+      const ring = d => [0, 1, 2, 3, 4, 5].map(k => ['a' + k, 'a' + ((k + 1) % 6), (k + d) % 2 ? 's' : 'd']);
+      const arr = d => [0, 1, 2, 3, 4, 5].filter(k => (k + d) % 2 === 0).map(k => ({ f: { b: ['a' + k, 'a' + ((k + 1) % 6)] }, t: { m: ['a' + ((k + 1) % 6), 'a' + ((k + 2) % 6)] }, bend: 0.6 }));
+      return [{ sc: { atoms, bonds: ring(0), arrows: arr(0) }, cap: '苯的第一個凱庫勒結構。三個 π 鍵同時往旁邊移一格……' },
+        { sc: { atoms, bonds: ring(1) }, cap: '……就得到第二個凱庫勒結構。兩者能量相同。' },
+        { sc: { atoms, bonds: ring(0).map(b => [b[0], b[1], 's']), rings: [{ x: 0, y: 0, r: 0.72 }] }, cap: '真正的苯是共振混成：六個 C–C 鍵長完全相同（139 pm，介於單鍵 154 pm 與雙鍵 134 pm 之間），π 電子均勻分布在整個環上，常畫成六邊形中間一個圓。這種特別的穩定性稱為<b>芳香性</b>。' }]; } },
+  };
+  let cur = 'acetate', pl;
+  el.innerHTML = `${seg('reS', Object.entries(EX).map(([k, v]) => [k, v.n]), cur)}<div id="reP"></div>`;
+  pl = mechPlayer($('#reP', el), { frames: () => EX[cur].frames(), w: 420, h: 230, s: 56, label: '共振結構' });
+  bindSeg(el, 'reS', v => { cur = v; pressSeg(el, 'reS', v); pl.reset(); });
+  return { set(s) { if (s.ex) { cur = s.ex; pressSeg(el, 'reS', cur); pl.reset(); } pl.go(s.step ?? 0, false); } };
+};
+
+/* ===== 4. 用 pKa 預測酸鹼反應方向 ===== */
+const PKA = [
+  ['HCl', 'Cl⁻', -7], ['H₃O⁺', 'H₂O', -1.7], ['CH₃COOH', 'CH₃COO⁻', 4.76], ['H₂CO₃', 'HCO₃⁻', 6.35], ['NH₄⁺', 'NH₃', 9.25], ['C₆H₅OH（酚）', 'C₆H₅O⁻', 10.0],
+  ['H₂O', 'OH⁻', 15.7], ['CH₃CH₂OH', 'CH₃CH₂O⁻', 16], ['HC≡CH', 'HC≡C⁻', 25], ['NH₃', 'NH₂⁻', 38], ['CH₃CH₃', 'CH₃CH₂⁻', 50],
+];
+W.pkaeq = el => {
+  let ia = 8, ib = 6;
+  const PRE = [['NaOH 能拿走乙炔的 H 嗎？', 8, 6], ['NaNH₂ 呢？', 8, 9], ['碳酸氫鈉能溶解醋酸嗎？', 2, 3], ['碳酸氫鈉能溶解酚嗎？', 5, 3], ['乙醇與 NaOH', 7, 6]];
+  el.innerHTML = `<div class="w-row"><span class="small mut">試試：</span>${PRE.map((p, i) => `<button class="btn sm ghost" type="button" data-p="${i}">${p[0]}</button>`).join('')}</div>
+<div class="w-row"><label class="sel">酸 HA <select id="pkA">${PKA.map((p, i) => `<option value="${i}">${p[0]}（pKa ${p[2]}）</option>`).join('')}</select></label><label class="sel">鹼 B⁻ <select id="pkB">${PKA.map((p, i) => `<option value="${i}">${p[1]}（共軛酸 pKa ${p[2]}）</option>`).join('')}</select></label></div><div id="pkR"></div><div id="pkS"></div><p class="note" id="pkN"></p>`;
+  function draw() {
+    const A = PKA[ia], B = PKA[ib], d = B[2] - A[2], K = 10 ** d, right = d > 0;
+    $('#pkA', el).value = ia; $('#pkB', el).value = ib;
+    $('#pkR', el).innerHTML = `<p class="eq">${A[0]} + ${B[1]} ${right ? '<b>⟶</b>' : '⟵'} ${A[1]} + ${B[0]}<br><span class="small">pKa ${A[2]}　　　　　　　　　pKa ${B[2]}</span></p>`;
+    $('#pkS', el).innerHTML = chart({ x: [-10, 52], y: [0, 1], xt: [-10, 0, 10, 20, 30, 40, 50], yt: [], xlab: 'pKa（越左酸越強；共軛鹼越右越強）', h: 130 }, (X, Y) => PKA.map((p, i) => { const on = i === ia || i === ib, y = Y(0.25 + 0.55 * ((i % 3) / 2)); return `<line class="mk" x1="${X(p[2])}" x2="${X(p[2])}" y1="${Y(0)}" y2="${y}"/><circle class="${on ? 'dot' : 'dot3'}" cx="${X(p[2])}" cy="${y}" r="${on ? 6 : 4}"/><text class="tk${on ? ' hl' : ''}" x="${X(p[2])}" y="${y - 9}" text-anchor="middle">${p[0].replace(/（.*）/, '')}</text>`; }).join(''));
+    $('#pkN', el).innerHTML = ia === ib ? '選兩個不同的物種。' : `平衡常數 K = 10<sup>(pKa 右邊的酸 − pKa 左邊的酸)</sup> = 10<sup>${fx(d, 2)}</sup> ≈ ${sci(K, 1)}。平衡偏向<b>較弱的酸（pKa 較大）那一側</b>：${right ? `${B[0]}（${B[2]}）比 ${A[0]}（${A[2]}）弱，所以反應<b>向右</b>，${B[1]} 可以把 ${A[0]} 的 H⁺ 拿走。` : `${A[0]}（${A[2]}）比 ${B[0]}（${B[2]}）弱，反應<b>幾乎不往右走</b>：${B[1]} 不夠強，拿不走 ${A[0]} 的 H⁺。`}`;
+  }
+  $('#pkA', el).onchange = e => { ia = +e.target.value; draw(); };
+  $('#pkB', el).onchange = e => { ib = +e.target.value; draw(); };
+  $$('[data-p]', el).forEach(b => { b.onclick = () => { const p = PRE[+b.dataset.p]; ia = p[1]; ib = p[2]; draw(); }; });
+  draw();
+  return { set(s) { ia = s.a ?? ia; ib = s.b ?? ib; draw(); } };
+};
+
+/* ===== 5. 什麼讓酸變強：看共軛鹼的負電荷穩不穩 ===== */
+W.ario = el => {
+  const T = {
+    row: { n: '原子：同一週期', items: [['CH₄', 50], ['NH₃', 38], ['H₂O', 15.7], ['HF', 3.2]], why: '同一週期由左到右，電負度 C < N < O < F。負電荷落在電負度越大的原子上越穩定，所以 HF 最酸。' },
+    col: { n: '原子：同一族', items: [['HF', 3.2], ['HCl', -7], ['HBr', -9], ['HI', -10]], why: '同一族由上到下，原子越大，負電荷分散在越大的體積，越穩定；而且 H–X 鍵越長越弱。<b>大小比電負度重要</b>，所以 HI 最酸，雖然 I 的電負度最小。' },
+    res: { n: '共振', items: [['CH₃CH₂OH', 16], ['C₆H₅OH（酚）', 10.0], ['CH₃COOH', 4.76]], why: '乙氧離子的負電荷集中在一個 O 上；酚氧離子的負電荷可以分散到苯環上；醋酸根的負電荷平均分在兩個電負度大的 O 上（見上一章的共振）。<b>電荷越分散越穩定</b>。' },
+    ind: { n: '誘導：拉電子基數目', items: [['CH₃COOH', 4.76], ['ClCH₂COOH', 2.86], ['Cl₂CHCOOH', 1.29], ['Cl₃CCOOH', 0.65]], why: 'Cl 電負度大，透過 σ 鍵把電子往自己拉，幫忙分攤羧酸根的負電荷。Cl 越多，效果越強，酸性越強。' },
+    dist: { n: '誘導：距離', items: [['丁酸', 4.82], ['4-氯丁酸', 4.52], ['3-氯丁酸', 4.05], ['2-氯丁酸', 2.86]], why: '誘導效應隨距離快速減弱：Cl 越靠近 COOH，酸性越強；隔三個碳以後幾乎沒影響。' },
+    orb: { n: '混成軌域', items: [['CH₃CH₃（sp³）', 50], ['CH₂=CH₂（sp²）', 44], ['HC≡CH（sp）', 25]], why: '負電荷所在軌域的 s 性質越高（sp 50%、sp² 33%、sp³ 25%），電子越靠近原子核、越穩定。所以末端炔的 H 可以被 NaNH₂ 拿走，烯和烷不行。' },
+  };
+  let cur = 'row';
+  el.innerHTML = `${seg('arS', Object.entries(T).map(([k, v]) => [k, v.n]), cur)}<div id="arB"></div><p class="note" id="arN"></p>`;
+  function draw() {
+    const t = T[cur], lo = Math.min(...t.items.map(i => i[1])), hi = Math.max(...t.items.map(i => i[1]));
+    $('#arB', el).innerHTML = `<div class="bars pk">${t.items.map(([n, p]) => `<div><span>${n}</span><i class="ba" style="width:${8 + 92 * (hi - p) / Math.max(1, hi - lo)}%"></i><b class="mono">pKa ${p}</b></div>`).join('')}</div><p class="small mut">長條越長 = 酸性越強（pKa 越小）</p>`;
+    $('#arN', el).innerHTML = t.why + ' 判斷酸性強弱的萬用問題：<b>拿走 H⁺ 之後，留下的負電荷穩不穩定？</b>';
+    pressSeg(el, 'arS', cur);
+  }
+  bindSeg(el, 'arS', v => { cur = v; draw(); });
+  draw();
+  return { set(s) { cur = s.t || cur; draw(); } };
+};
+
+/* ===== 6. 鹼性：看共軛酸的 pKa ===== */
+W.basic = el => {
+  const B = [['二甲胺 (CH₃)₂NH', 10.73, '兩個甲基推電子，N 上的電子更多、更容易接 H⁺。'], ['甲胺 CH₃NH₂', 10.64, '烷基推電子，比氨稍強。'], ['氨 NH₃', 9.25, '參考標準。'],
+    ['吡啶', 5.25, 'N 的孤對電子在 sp² 軌域（s 性質較高），抓得比較緊，較不願意給出。'], ['苯胺 C₆H₅NH₂', 4.63, 'N 的孤對電子和苯環共振，被分散掉了，所以鹼性弱很多。'], ['醯胺 CH₃CONH₂', -0.5, 'N 的孤對電子和 C=O 共振（見共振一節），幾乎沒有鹼性；質子化發生在 O 上。']];
+  let cur = 0;
+  el.innerHTML = `<div class="bars pk" id="bsB"></div><p class="small mut">點一下看原因。長條越長 = 鹼性越強（共軛酸 pKaH 越大）</p><p class="note" id="bsN"></p>`;
+  function draw() {
+    $('#bsB', el).innerHTML = B.map(([n, p], i) => `<div class="${i === cur ? 'on' : ''}" data-i="${i}" role="button" tabindex="0"><span>${n}</span><i class="bha" style="width:${6 + 94 * (p + 1) / 12}%"></i><b class="mono">${p}</b></div>`).join('');
+    $$('[data-i]', el).forEach(d => { d.onclick = d.onkeydown = e => { if (e.type === 'keydown' && e.key !== 'Enter') return; cur = +d.dataset.i; draw(); }; });
+    $('#bsN', el).innerHTML = `<b>${B[cur][0]}</b>：共軛酸 pKaH = ${B[cur][1]}。${B[cur][2]} 原則：<b>共軛酸越弱（pKaH 越大），鹼就越強</b>；孤對電子越「自由」，越容易接 H⁺。`;
+  }
+  draw();
+  return { set(s) { cur = s.i ?? cur; draw(); } };
 };
 
 /* ---------- 後中化學：立體化學與構形的互動圖 ----------

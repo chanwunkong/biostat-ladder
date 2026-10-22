@@ -169,6 +169,15 @@ svg.ch, svg.mol, svg.en, svg.bk, svg.ions { width: 100%; height: auto; display: 
 .clash { stroke: var(--bad); stroke-width: 1.5; stroke-dasharray: 3 3; }
 .ice td:first-child { font-weight: 600; white-space: nowrap; }
 @media (max-width: 600px) { .rsgrid { grid-template-columns: minmax(0, 1fr); } }
+/* 動力學、酸鹼 */
+.og { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; }
+.og > div { border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; }
+.og .og-on { border-color: var(--accent); background: var(--soft); }
+.area { fill: var(--arrow); opacity: .25; }
+.en .catc { fill: none; stroke: var(--good); stroke-width: 2.4; stroke-dasharray: 6 4; }
+.bars.pk > div { grid-template-columns: minmax(110px, 160px) 1fr auto; }
+.bars [role=button] { cursor: pointer; border-radius: 4px; }
+.bars [role=button]:hover { background: var(--soft); }
 /* 練習題 */
 .q { border-top: 1px solid var(--line); padding: 14px 0; }
 .qt { font-weight: 500; margin: 0 0 8px; }

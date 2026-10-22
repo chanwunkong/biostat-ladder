@@ -1,7 +1,8 @@
 /* ---------- 後中化學：分子與反應機構繪圖 ----------
    場景（scene）：
      atoms: { id: { x, y, t: 標籤（'' 為骨架頂點）, c: 電荷（'+' '−' 'δ+' 'δ−'）, lp: [孤對電子方向（度）], halo: 立體障礙半徑, hl: 強調色, hide } }
-     bonds: [[a, b, 型別]]  型別：'s' 單鍵、'd' 雙鍵、'w' 楔形（朝向讀者）、'h' 虛楔（遠離讀者）、'p' 部分鍵（過渡狀態）
+     bonds: [[a, b, 型別]]  型別：'s' 單鍵、'd' 雙鍵、't' 參鍵、'w' 楔形（朝向讀者）、'h' 虛楔（遠離讀者）、'p' 部分鍵（過渡狀態）、'sd' 實線＋虛線（共振混成）
+     rings: [{ x, y, r }]  環內圈（苯的共振混成）
      arrows: [{ f: { lp: [原子, 角度] } | { b: [a, b] }, t: { a: 原子 } | { m: [a, b] }, bend }]  彎箭頭：電子從哪裡流到哪裡
      orbs: [{ a: 原子, ang }]  空的 p 軌域（兩瓣）；ts: true 畫過渡狀態的括號；notes: [{ x, y, t, cls }]
    座標以鍵長為 1，y 朝上；MOL.svg(scene, { w, h, s: 每單位像素, cx, cy }) 畫出 SVG。 */
@@ -22,6 +23,8 @@ const MOL = (() => {
     if (k === 'w') return `<path class="bw" d="M${x1} ${y1}L${x2 + nx * 5} ${y2 + ny * 5}L${x2 - nx * 5} ${y2 - ny * 5}Z"/>`;
     if (k === 'h') return Array.from({ length: 6 }, (_, i) => { const t = (i + 0.5) / 6, w = 0.8 + 4.5 * t, px = x1 + (x2 - x1) * t, py = y1 + (y2 - y1) * t; return `<line class="bh" x1="${px + nx * w}" y1="${py + ny * w}" x2="${px - nx * w}" y2="${py - ny * w}"/>`; }).join('');
     if (k === 'p') return `<line class="bp" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+    if (k === 'sd') return `<line class="b" x1="${x1 + nx * 3}" y1="${y1 + ny * 3}" x2="${x2 + nx * 3}" y2="${y2 + ny * 3}"/><line class="bp" x1="${x1 - nx * 3}" y1="${y1 - ny * 3}" x2="${x2 - nx * 3}" y2="${y2 - ny * 3}"/>`;
+    if (k === 't') return `<line class="b" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/><line class="b" x1="${x1 + nx * 4}" y1="${y1 + ny * 4}" x2="${x2 + nx * 4}" y2="${y2 + ny * 4}"/><line class="b" x1="${x1 - nx * 4}" y1="${y1 - ny * 4}" x2="${x2 - nx * 4}" y2="${y2 - ny * 4}"/>`;
     if (k === 'd') return `<line class="b" x1="${x1 + nx * 3}" y1="${y1 + ny * 3}" x2="${x2 + nx * 3}" y2="${y2 + ny * 3}"/><line class="b" x1="${x1 - nx * 3}" y1="${y1 - ny * 3}" x2="${x2 - nx * 3}" y2="${y2 - ny * 3}"/>`;
     return `<line class="b" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
   }
@@ -57,6 +60,7 @@ const MOL = (() => {
     let body = (sc.orbs || []).map(x => orb(sc, G, x)).join('');
     body += ids.filter(i => sc.atoms[i].halo && !sc.atoms[i].hide).map(i => { const [x, y] = G.P(i); return `<circle class="halo" cx="${x}" cy="${y}" r="${sc.atoms[i].halo * G.S}"/>`; }).join('');
     body += (sc.bonds || []).map(b => bond(sc, G, b)).join('');
+    body += (sc.rings || []).map(r => `<circle class="bp" fill="none" cx="${(o.cx ?? o.w / 2) + r.x * G.S}" cy="${(o.cy ?? o.h / 2) - r.y * G.S}" r="${r.r * G.S}"/>`).join('');
     body += ids.map(i => atom(sc, G, i).replace(/<circle class="halo"[^>]*\/>/, '')).join('');
     body += (sc.arrows || []).map(a => arrow(sc, G, a)).join('');
     if (sc.ts) body += `<text class="ts" x="${o.w / 2 - G.S * 3.1}" y="${o.h / 2 + 14}">[</text><text class="ts" x="${o.w / 2 + G.S * 2.85}" y="${o.h / 2 + 14}">]</text><text class="tsd" x="${o.w / 2 + G.S * 3.15}" y="${o.h / 2 - 26}">‡</text>`;
@@ -81,14 +85,15 @@ const MOL = (() => {
 function energySVG(pts, at, o = {}) {
   const w = o.w || 300, h = o.h || 150, L = 26, B = 22, T = 10, R = 8;
   const X = v => L + v * (w - L - R), Y = v => h - B - v * (h - T - B);
-  const f = x => { // 分段餘弦內插：極大極小點都平滑
-    for (let i = 0; i < pts.length - 1; i++) { const [x0, y0] = pts[i], [x1, y1] = pts[i + 1]; if (x <= x1) { const t = (x - x0) / (x1 - x0); return y0 + (y1 - y0) * (1 - Math.cos(Math.PI * t)) / 2; } }
-    return pts[pts.length - 1][1];
+  const mk = P => x => { // 分段餘弦內插：極大極小點都平滑
+    for (let i = 0; i < P.length - 1; i++) { const [x0, y0] = P[i], [x1, y1] = P[i + 1]; if (x <= x1) { const t = (x - x0) / (x1 - x0); return y0 + (y1 - y0) * (1 - Math.cos(Math.PI * t)) / 2; } }
+    return P[P.length - 1][1];
   };
+  const f = mk(pts), alt = o.alt ? `<path class="catc" d="${path(Array.from({ length: 121 }, (_, i) => [X(i / 120), Y(mk(o.alt)(i / 120))]))}"/>` : '';
   const line = Array.from({ length: 121 }, (_, i) => [X(i / 120), Y(f(i / 120))]);
   const cur = at == null ? '' : `<circle class="edot" cx="${X(at)}" cy="${Y(f(at))}" r="6"/>`;
   const labs = (o.labels || []).map(([x, t, dy]) => `<text class="elab" x="${X(x) + (x < 0.1 ? 6 : 0)}" y="${Y(f(x)) - (dy || 10)}" text-anchor="${x < 0.1 ? 'start' : x > 0.9 ? 'end' : 'middle'}">${t}</text>`).join('');
-  return `<svg class="en" viewBox="0 0 ${w} ${h}" role="img" aria-label="反應能量圖"><line class="ax" x1="${L}" y1="${T}" x2="${L}" y2="${h - B}"/><line class="ax" x1="${L}" y1="${h - B}" x2="${w - R}" y2="${h - B}"/><text class="lab" transform="translate(12 ${(T + h - B) / 2}) rotate(-90)" text-anchor="middle">能量</text><text class="lab" x="${(L + w) / 2}" y="${h - 5}" text-anchor="middle">反應進行 →</text><path class="ecurve" d="${path(line)}"/>${labs}${cur}</svg>`;
+  return `<svg class="en" viewBox="0 0 ${w} ${h}" role="img" aria-label="反應能量圖"><line class="ax" x1="${L}" y1="${T}" x2="${L}" y2="${h - B}"/><line class="ax" x1="${L}" y1="${h - B}" x2="${w - R}" y2="${h - B}"/><text class="lab" transform="translate(12 ${(T + h - B) / 2}) rotate(-90)" text-anchor="middle">能量</text><text class="lab" x="${(L + w) / 2}" y="${h - 5}" text-anchor="middle">反應進行 →</text><path class="ecurve" d="${path(line)}"/>${alt}${labs}${cur}</svg>`;
 }
 
 /* 機構播放器：frames = [{ sc, cap, at }]；在 el 中畫出分子、說明、能量圖與控制鈕。回傳 { go(i), reset() } */
