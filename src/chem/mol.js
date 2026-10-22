@@ -102,9 +102,12 @@ function mechPlayer(el, o) {
   el.innerHTML = `<div class="mech"><div class="mech-view"></div><div class="mech-side">${o.energy ? '<div class="mech-en"></div>' : ''}<p class="mech-cap" aria-live="polite"></p></div></div>
 <div class="w-row mech-ctl"><button class="btn sm" type="button" data-m="0">⟲ 重來</button><button class="btn sm" type="button" data-m="-1">‹ 上一步</button><button class="btn sm pri" type="button" data-m="1">下一步 ›</button><span class="mech-step mono small mut"></span></div>`;
   const view = $('.mech-view', el), cap = $('.mech-cap', el), en = $('.mech-en', el), step = $('.mech-step', el), W = o.w || 520, H = o.h || 260;
+  // 能量圖設定可以是固定值，或依目前選項變化的函式 () => ({ pts, alt, labels })
+  const EG = () => (typeof o.energy === 'function' ? o.energy() : { pts: o.energy, labels: o.elabels });
+  const eDraw = at => { const g = EG(); return energySVG(g.pts, at, { labels: g.labels, alt: g.alt }); };
   const draw = (sc, f) => {
-    view.innerHTML = MOL.svg(sc, { w: W, h: H, s: o.s || 56, label: o.label });
-    if (f) { cap.innerHTML = f.cap; if (en) en.innerHTML = energySVG(o.energy, f.at, { labels: o.elabels }); step.textContent = `${i + 1} / ${frames.length}`; }
+    view.innerHTML = MOL.svg(sc, { w: W, h: H, s: o.s || 56, cy: o.cy, label: o.label });
+    if (f) { cap.innerHTML = f.cap; if (en) en.innerHTML = eDraw(f.at); step.textContent = `${i + 1} / ${frames.length}`; }
     $('[data-m="1"]', el).disabled = i >= frames.length - 1; $('[data-m="-1"]', el).disabled = i <= 0;
   };
   const show = () => draw(frames[i].sc, frames[i]);
@@ -114,8 +117,8 @@ function mechPlayer(el, o) {
     const a = frames[i].sc, b = frames[n].sc, t0 = performance.now(), D = 900;
     const tick = now => {
       const t = Math.min(1, (now - t0) / D), e = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
-      view.innerHTML = MOL.svg(MOL.lerp(a, b, e), { w: W, h: H, s: o.s || 56 });
-      if (en) en.innerHTML = energySVG(o.energy, frames[i].at + (frames[n].at - frames[i].at) * e, { labels: o.elabels });
+      view.innerHTML = MOL.svg(MOL.lerp(a, b, e), { w: W, h: H, s: o.s || 56, cy: o.cy });
+      if (en) en.innerHTML = eDraw(frames[i].at + (frames[n].at - frames[i].at) * e);
       if (t < 1) anim = requestAnimationFrame(tick); else { i = n; show(); }
     };
     anim = requestAnimationFrame(tick);

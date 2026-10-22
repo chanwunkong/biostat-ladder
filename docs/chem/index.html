@@ -259,6 +259,15 @@ svg.ch, svg.mol, svg.en, svg.bk, svg.ions { width: 100%; height: auto; display: 
 .bars.pk > div { grid-template-columns: minmax(110px, 160px) 1fr auto; }
 .bars [role=button] { cursor: pointer; border-radius: 4px; }
 .bars [role=button]:hover { background: var(--soft); }
+/* 熱力學、加成表 */
+.lvl { stroke: var(--ink); stroke-width: 2.5; }
+.harr { stroke: var(--arrow); stroke-width: 2.2; } .harr2 { stroke: var(--acid); stroke-width: 2.6; }
+.bar { fill: var(--acid); opacity: .75; } .barhl { fill: var(--arrow); }
+.gas { fill: var(--acid); }
+.tscroll { overflow-x: auto; }
+.sel-tbl tbody tr { cursor: pointer; }
+.sel-tbl tbody tr:hover { background: var(--soft); }
+.sel-tbl tbody tr.on { background: var(--soft); outline: 2px solid var(--accent); outline-offset: -2px; }
 /* 練習題 */
 .q { border-top: 1px solid var(--line); padding: 14px 0; }
 .qt { font-weight: 500; margin: 0 0 8px; }
@@ -479,9 +488,12 @@ function mechPlayer(el, o) {
   el.innerHTML = `<div class="mech"><div class="mech-view"></div><div class="mech-side">${o.energy ? '<div class="mech-en"></div>' : ''}<p class="mech-cap" aria-live="polite"></p></div></div>
 <div class="w-row mech-ctl"><button class="btn sm" type="button" data-m="0">⟲ 重來</button><button class="btn sm" type="button" data-m="-1">‹ 上一步</button><button class="btn sm pri" type="button" data-m="1">下一步 ›</button><span class="mech-step mono small mut"></span></div>`;
   const view = $('.mech-view', el), cap = $('.mech-cap', el), en = $('.mech-en', el), step = $('.mech-step', el), W = o.w || 520, H = o.h || 260;
+  // 能量圖設定可以是固定值，或依目前選項變化的函式 () => ({ pts, alt, labels })
+  const EG = () => (typeof o.energy === 'function' ? o.energy() : { pts: o.energy, labels: o.elabels });
+  const eDraw = at => { const g = EG(); return energySVG(g.pts, at, { labels: g.labels, alt: g.alt }); };
   const draw = (sc, f) => {
-    view.innerHTML = MOL.svg(sc, { w: W, h: H, s: o.s || 56, label: o.label });
-    if (f) { cap.innerHTML = f.cap; if (en) en.innerHTML = energySVG(o.energy, f.at, { labels: o.elabels }); step.textContent = `${i + 1} / ${frames.length}`; }
+    view.innerHTML = MOL.svg(sc, { w: W, h: H, s: o.s || 56, cy: o.cy, label: o.label });
+    if (f) { cap.innerHTML = f.cap; if (en) en.innerHTML = eDraw(f.at); step.textContent = `${i + 1} / ${frames.length}`; }
     $('[data-m="1"]', el).disabled = i >= frames.length - 1; $('[data-m="-1"]', el).disabled = i <= 0;
   };
   const show = () => draw(frames[i].sc, frames[i]);
@@ -491,8 +503,8 @@ function mechPlayer(el, o) {
     const a = frames[i].sc, b = frames[n].sc, t0 = performance.now(), D = 900;
     const tick = now => {
       const t = Math.min(1, (now - t0) / D), e = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
-      view.innerHTML = MOL.svg(MOL.lerp(a, b, e), { w: W, h: H, s: o.s || 56 });
-      if (en) en.innerHTML = energySVG(o.energy, frames[i].at + (frames[n].at - frames[i].at) * e, { labels: o.elabels });
+      view.innerHTML = MOL.svg(MOL.lerp(a, b, e), { w: W, h: H, s: o.s || 56, cy: o.cy });
+      if (en) en.innerHTML = eDraw(frames[i].at + (frames[n].at - frames[i].at) * e);
       if (t < 1) anim = requestAnimationFrame(tick); else { i = n; show(); }
     };
     anim = requestAnimationFrame(tick);
@@ -580,6 +592,55 @@ CH.push({
     ],
   });
 
+/* ---------- 後中化學：烯烴與炔烴 ---------- */
+CH.push({
+  id: 'alkene', unit: 'o5', title: '烯烴與炔烴：親電子加成',
+  lede: '雙鍵的 π 電子是分子裡最容易被拿到的電子，所以烯烴最典型的反應是「加成」：雙鍵打開，兩邊各接上一個基團。看懂碳陽離子和溴鎓離子這兩種中間物，十幾種加成反應的產物就能自己推出來。',
+  sections: [
+    { h: 'HBr 加成：馬可尼可夫規則從哪裡來', w: 'hbr', body: `
+<p>π 鍵的電子位於鍵軸上下，離原子核較遠，容易被<b>親電子試劑</b>（缺電子、帶正電或部分正電的物種）吸引。HBr 加成分兩步：</p>
+<ol><li>π 電子攻擊 H⁺，生成碳陽離子（慢步驟）；</li><li>Br⁻ 加到碳陽離子上（快）。</li></ol>
+<p>不對稱的烯（例如丙烯）有兩種加法。比較兩條路：H 加到 CH₂ 會得到<b>二級</b>碳陽離子，加到 CH 會得到<b>一級</b>碳陽離子。由於碳陽離子穩定度三級 > 二級 > 一級（SN1 那一節學過的超共軛），第一條路的過渡狀態低得多，幾乎所有產物都走這條路。</p>
+<p>這就是<b>馬可尼可夫規則</b>：H 加到原本 H 較多的碳上。但真正要記的是背後的原因：<b>反應會經過較穩定的碳陽離子</b>。這個說法在規則失效的地方（例如有拉電子基時）仍然正確。</p>` },
+    { h: '碳陽離子會重排', w: 'shift', body: `
+<p>碳陽離子生成之後，如果隔壁的碳上有 H（或甲基）移過來能讓正電荷落在更穩定的位置，它就會移過來：H 帶著鍵上的兩個電子一起移動，稱為 <b>1,2-氫移位</b>（甲基移動則稱 1,2-甲基移位）。</p>
+<p>所以 3-甲基-1-丁烯加 HBr，主產物是 2-溴-<b>2</b>-甲基丁烷：正電荷從二級碳移到三級碳之後，Br⁻ 才加上去。</p>
+<p>判斷原則：<b>只要反應經過碳陽離子，就檢查能不能變得更穩定</b>。SN1、E1、酸催化水合都適用。</p>` },
+    { h: '加 Br₂：溴鎓離子與反式加成', w: 'brom', body: `
+<p>Br₂ 本身沒有極性，但靠近富含電子的雙鍵時被極化。π 電子攻擊近端的 Br，生成三元環的<b>溴鎓離子</b>，而不是開放的碳陽離子。</p>
+<p>溴鎓離子把雙鍵的一面擋住，Br⁻ 只能從另一面進攻，像 SN2 一樣從背面打開三元環。結果兩個 Br 在相反兩側：<b>反式加成</b>。環己烯加 Br₂ 只得到 trans-1,2-二溴環己烷。</p>
+<p>因為沒有自由的碳陽離子，溴的加成<b>不會重排</b>。如果溶劑是水，大量的水分子會搶先打開溴鎓離子，得到鹵醇（OH 和 Br 反式），OH 接在較多取代、較能承受正電荷的那個碳上。</p>` },
+    { h: '加成反應總整理：看中間物推產物', w: 'addn', body: `
+<p>烯烴的加成反應很多，但只要知道<b>經過什麼中間物</b>，區域選擇和立體化學就跟著決定：</p>
+<ul><li><b>碳陽離子</b>（HX、酸催化水合）：馬可尼可夫、可能重排、沒有立體選擇。</li>
+<li><b>三元環離子</b>（Br₂、Br₂/H₂O）：反式加成、不重排。</li>
+<li><b>同時從同一側加上</b>（氫化、硼氫化、OsO₄）：同側（syn）加成。</li>
+<li><b>自由基</b>（HBr + 過氧化物）：反馬可尼可夫，因為先加上去的是 Br·，生成較穩定的自由基。</li></ul>
+<p>硼氫化–氧化和自由基 HBr 加成是兩個「反馬可尼可夫」的方法，常一起出題比較。</p>` },
+    { h: '炔烴：兩次加成與酸性', body: `
+<p>參鍵有兩個 π 鍵，可以加成兩次。重點有三個：</p>
+<ol><li><b>加成</b>：加 1 當量 HX 或 X₂ 得到烯，加 2 當量得到兩個 X 在同一碳（HX）或四鹵化物（X₂）。用 <b>林德拉觸媒</b>（Lindlar）氫化只加一次，得到<b>順式</b>烯；用 Na/液態 NH₃ 還原得到<b>反式</b>烯。</li>
+<li><b>水合</b>：酸與 Hg²⁺ 催化下加水，先生成<b>烯醇</b>（OH 接在雙鍵碳上），烯醇立刻互變成較穩定的<b>酮</b>（酮–烯醇互變異構）。末端炔水合得到甲基酮。</li>
+<li><b>酸性</b>：末端炔的 H 在 sp 軌域上（pKa 25），可以被 NaNH₂ 拿走，生成乙炔負離子。它是很好的親核基，可以對一級鹵烷做 SN2，延長碳鏈。這是有機合成中「接碳」的重要方法。</li></ol>` },
+  ],
+  quiz: [
+    { q: '丙烯和 HBr 反應的主產物是？', o: ['2-溴丙烷', '1-溴丙烷', '1,2-二溴丙烷', '丙烷'], a: 0,
+      why: 'H 加到 CH₂ 上，生成較穩定的二級碳陽離子，Br⁻ 再加上中間的碳。', show: { w: 'hbr', set: { path: 'M', step: 2 } } },
+    { q: '馬可尼可夫規則的根本原因是？', o: ['反應經過較穩定的碳陽離子', 'H 原子比較小', 'Br 比較喜歡末端碳', '反應是 SN2'], a: 0,
+      why: '決定速率的第一步生成碳陽離子；生成較穩定碳陽離子的路徑過渡狀態較低，所以成為主產物。', show: { w: 'hbr', set: { path: 'A', step: 1 } } },
+    { q: '3-甲基-1-丁烯和 HBr 反應，主產物是？', o: ['2-溴-2-甲基丁烷', '2-溴-3-甲基丁烷', '1-溴-3-甲基丁烷', '3-甲基-1-丁醇'], a: 0,
+      why: '先生成的二級碳陽離子經 1,2-氫移位變成三級碳陽離子，Br⁻ 再加到三級碳上。', show: { w: 'shift', set: { step: 1 } } },
+    { q: '環己烯和 Br₂ 反應的產物是？', o: ['trans-1,2-二溴環己烷', 'cis-1,2-二溴環己烷', '1,1-二溴環己烷', 'cis 與 trans 各半'], a: 0,
+      why: '經過溴鎓離子，Br⁻ 從背面進攻，兩個 Br 在環的兩側：反式加成。', show: { w: 'brom', set: { step: 2 } } },
+    { q: '要從丙烯製備 1-丙醇，應使用哪一個方法？', o: ['① BH₃ ② H₂O₂, NaOH', 'H₂O, H₂SO₄', 'Br₂, H₂O', 'OsO₄'], a: 0,
+      why: '硼氫化–氧化是反馬可尼可夫加水：OH 接在取代較少的末端碳。酸催化水合會得到 2-丙醇。', show: { w: 'addn', set: { i: 5 } } },
+    { q: '下列哪一個加成反應是同側（syn）加成？', o: ['催化氫化（H₂, Pt）', 'Br₂ 加成', 'Br₂/H₂O 生成鹵醇', 'HBr 加成'], a: 0,
+      why: '氫化時兩個 H 從金屬表面同一側加上去。Br₂ 與 Br₂/H₂O 經過溴鎓離子，是反式加成；HBr 經過平面碳陽離子，沒有立體選擇。', show: { w: 'addn', set: { i: 4 } } },
+    { q: '1-丙炔在 H₂SO₄、HgSO₄ 催化下加水，主產物是？', o: ['丙酮', '丙醛', '1-丙醇', '丙烯醇'], a: 0,
+      why: '依馬可尼可夫規則，OH 加到中間的碳，生成烯醇；烯醇再互變成較穩定的酮，所以得到丙酮（甲基酮）。' },
+  ],
+});
+
 /* ---------- 後中化學：結構、鍵結與共振 ---------- */
 CH.push({
   id: 'bonding', unit: 'o1', title: '結構、鍵結與共振',
@@ -623,6 +684,50 @@ CH.push({
       why: '共振使 C–N 有部分 π 鍵性質，旋轉會破壞 p 軌域的重疊，所以醯胺（包括蛋白質的胜肽鍵）是平面的。', show: { w: 'reson', set: { ex: 'amide', step: 2 } } },
     { q: '苯的六個 C–C 鍵長？', o: ['全部相同（約 139 pm）', '三長三短交替', '全部等於雙鍵', '全部等於單鍵'], a: 0,
       why: '苯是兩個凱庫勒結構的共振混成，π 電子均勻分布在整個環上，六個鍵完全相同。', show: { w: 'reson', set: { ex: 'benzene', step: 2 } } },
+  ],
+});
+
+/* ---------- 後中化學：醛與酮 ---------- */
+CH.push({
+  id: 'carbonyl', unit: 'o8', title: '醛與酮：羰基的親核加成',
+  lede: '羰基 C=O 是有機化學的十字路口：碳帶正電、可以被親核基加成；旁邊的 α-氫有酸性、可以變成親核基。這一章只用這兩個性質，就能推出還原、格任亞、縮醛、亞胺、醛醇縮合等反應。',
+  sections: [
+    { h: '羰基碳是親電子中心：親核加成', w: 'nucadd', body: `
+<p>O 的電負度大，C=O 的電子偏向 O，碳帶部分正電。加上羰基碳是平面的，上下兩面都敞開，親核基很容易靠近。</p>
+<p>親核加成的兩步：</p>
+<ol><li>親核基攻擊羰基碳，π 電子推到 O 上，生成四面體的烷氧離子（sp² → sp³）；</li><li>O 接上 H⁺，得到醇。</li></ol>
+<p>和鹵烷不同：醛、酮的羰基碳上沒有好的離去基（H⁻ 和 R⁻ 是極強的鹼，不會離開），所以反應停在<b>加成</b>，不會變成取代。這一點在下一章的羧酸衍生物（有離去基）會完全不同。</p>
+<p>平面的羰基被親核基從上或下進攻，機會相等；如果產物生成新的掌性中心，會得到外消旋混合物。</p>` },
+    { h: '為什麼醛比酮活潑', w: 'hydrate', body: `
+<p>同樣的反應，醛通常比酮快、平衡也更偏向加成產物。兩個原因：</p>
+<ul><li><b>立體</b>：醛的羰基碳上有一個 H，比烷基小得多。加成後碳變成四面體，四個基團擠在一起，酮擠得更厲害。</li>
+<li><b>電子</b>：烷基會推電子，讓羰基碳的正電性變小。酮有兩個烷基，醛只有一個。</li></ul>
+<p>反過來，接上拉電子基（例如 CF₃）會讓羰基更活潑。用「加水變成水合物的程度」最能看出差別。</p>` },
+    { h: '加成之後還能脫去：縮醛與亞胺', w: 'carbtable', body: `
+<p>有些親核基加上去之後，四面體中間物還能失去水，形成新的雙鍵或再接一個親核基：</p>
+<ul><li><b>醇</b>（酸催化）：先成<b>半縮醛</b>，OH 質子化後以水離開，形成碳陽離子（被 O 的孤對電子共振穩定），再接上第二個醇，得到<b>縮醛</b>。整個過程可逆：去除水就形成縮醛，加大量水就分解。縮醛在鹼性中很穩定，所以常用來暫時「保護」羰基。葡萄糖的環狀結構就是分子內的半縮醛。</li>
+<li><b>一級胺</b>：加成後脫去水，形成 <b>C=N</b> 的亞胺（席夫鹼）。體內許多酵素（例如胺基轉移酶的維生素 B₆）都用亞胺來抓住受質。</li></ul>
+<p>表中點一列看每個反應的重點。判斷可逆與否的原則：加上去的親核基如果也是不錯的離去基（ROH、H₂O、CN⁻），反應就可逆；H⁻、R⁻ 加上去就不會再離開。</p>` },
+    { h: 'α-氫的酸性：烯醇與醛醇縮合', w: 'alphaH', body: `
+<p>和羰基相鄰的碳叫 α 碳，上面的 H 意外地酸（丙酮約 pKa 19，一般 C–H 約 50），因為拿走 H⁺ 後的負電荷可以共振到 O 上，形成<b>烯醇離子</b>。</p>
+<p>烯醇離子是很好的親核基（碳那一端進攻）。它攻擊另一分子的羰基碳，就是<b>醛醇加成</b>：兩個醛接成 β-羥基醛，加熱再脫去水，得到 α,β-不飽和醛（<b>醛醇縮合</b>）。這是形成 C–C 鍵的核心反應，也是體內醣解作用中醛縮酶的反應。</p>
+<p>另外，醛、酮和它的<b>烯醇</b>形式（C=C–OH）之間存在<b>互變異構</b>平衡，通常強烈偏向酮式。炔烴水合會先得到烯醇，然後立刻變成酮，就是這個原因。</p>` },
+  ],
+  quiz: [
+    { q: '醛與酮最典型的反應類型是？', o: ['親核加成', '親核取代', '親電子加成', '自由基取代'], a: 0,
+      why: '羰基碳帶部分正電、是平面的，親核基進攻後生成四面體中間物；因為沒有好的離去基，反應停在加成。', show: { w: 'nucadd', set: { nu: 'h', step: 0 } } },
+    { q: '丙酮與 CH₃MgBr 反應後再酸處理，產物是？', o: ['2-甲基-2-丙醇（三級醇）', '2-丙醇（二級醇）', '1-丙醇', '丁酮'], a: 0,
+      why: '甲基負離子加到羰基碳上，碳上變成三個甲基加一個 OH：三級醇。', show: { w: 'nucadd', set: { nu: 'me', step: 2 } } },
+    { q: 'NaBH₄ 還原丁醛（CH₃CH₂CH₂CHO）得到？', o: ['1-丁醇', '2-丁醇', '丁酸', '丁烷'], a: 0,
+      why: '醛被 H⁻ 還原成一級醇；酮才會得到二級醇。', show: { w: 'nucadd', set: { nu: 'h', step: 2 } } },
+    { q: '下列何者在水中最容易形成水合物？', o: ['甲醛', '乙醛', '丙酮', '二乙基酮'], a: 0,
+      why: '甲醛羰基碳上兩個都是 H，最不擠、也沒有烷基推電子，幾乎 100% 水合。', show: { w: 'hydrate', set: { i: 0 } } },
+    { q: '為什麼常把醛、酮轉成縮醛來「保護」羰基？', o: ['縮醛在鹼性與親核試劑中穩定，之後加酸和水可以變回羰基', '縮醛不能再變回羰基', '縮醛比羰基更容易被還原', '縮醛是強酸'], a: 0,
+      why: '縮醛沒有 C=O，不受格任亞、LiAlH₄、鹼的影響；形成是可逆的，酸性水溶液就能把它還原成原本的醛、酮。', show: { w: 'carbtable', set: { i: 4 } } },
+    { q: '醛、酮與一級胺生成亞胺的反應，為什麼在弱酸（pH 約 4–5）下最快？', o: ['太酸會使胺質子化失去親核性，太鹼則 OH 無法質子化成好的離去基', '亞胺在強鹼中會爆炸', '弱酸會還原羰基', 'pH 對反應沒有影響'], a: 0,
+      why: '加成需要自由的胺（不能被完全質子化），脫水需要把 OH 質子化成 H₂O 離開。兩個需求折衷，在弱酸性最快。', show: { w: 'carbtable', set: { i: 5 } } },
+    { q: '丙酮 α-H 的 pKa 約 19，遠比一般 C–H（約 50）酸，原因是？', o: ['共軛鹼（烯醇離子）的負電荷可以共振到 O 上', 'α 碳是 sp 混成', 'O 直接連在 H 上', '丙酮是強酸'], a: 0,
+      why: '拿走 α-H 後的負電荷不只在碳上，也能共振到電負度大的 O，大幅穩定共軛鹼。', show: { w: 'alphaH', set: { i: 2 } } },
   ],
 });
 
@@ -889,6 +994,54 @@ CH.push({
       why: '反式是交錯式，而且兩個甲基離得最遠，沒有扭轉張力也沒有立體擁擠。', show: { w: 'butane', set: { ang: 180 } } },
     { q: '甲基環己烷在室溫下，甲基主要位於？', o: ['平伏鍵（約 95%）', '直立鍵（約 95%）', '兩者各半', '環平面上'], a: 0,
       why: '甲基在直立鍵時有 1,3-雙直立作用，能量高約 7.6 kJ/mol，所以約 95% 的分子處在甲基平伏的構形。', show: { w: 'chair', set: { sub: 'me', axial: true } } },
+  ],
+});
+
+/* ---------- 後中化學：熱化學與熱力學 ---------- */
+CH.push({
+  id: 'thermo', unit: 'g5', title: '熱化學與熱力學：ΔH、ΔS、ΔG',
+  lede: '反應會不會自己發生？放熱不是答案（冰在室溫會吸熱融化）。這一章把三個量串起來：ΔH 是熱、ΔS 是分散程度、ΔG = ΔH − TΔS 才是最後的判準。它也解釋了平衡常數、加熱為什麼有利於脫去反應，以及電池的電壓。',
+  sections: [
+    { h: '焓與赫斯定律', w: 'hess', body: `
+<p>在定壓下，反應吸收或放出的熱稱為<b>焓變化 ΔH</b>：ΔH &lt; 0 放熱、ΔH &gt; 0 吸熱。</p>
+<p>焓是<b>狀態函數</b>：只和起點、終點有關，和走哪條路無關。所以反應可以拆成幾步，ΔH 相加不變，這就是<b>赫斯定律</b>。最常用的兩種算法：</p>
+<ul><li><b>生成焓</b>：ΔH°反應 = Σ n ΔH°f(產物) − Σ n ΔH°f(反應物)。元素在標準狀態（O₂(g)、C(石墨)、H₂(g)…）的 ΔH°f 定義為 0。</li>
+<li><b>鍵能</b>（估算）：ΔH ≈ Σ 斷開的鍵能 − Σ 生成的鍵能。斷鍵吸熱、成鍵放熱。</li></ul>
+<p>注意方程式倒過來，ΔH 變號；係數乘 n，ΔH 也乘 n。</p>` },
+    { h: '熵：能量分散的程度', w: 'entropy', body: `
+<p>為什麼有些吸熱反應還是會自己發生？因為還有另一個驅動力：<b>熵 S</b>，量度能量和粒子能以多少種方式分散。自然界自發地往「排法數更多」的方向走，就像打開隔板後，氣體不會自己全部擠回一邊。</p>
+<p>預測 ΔS 的正負，看「自由度」有沒有增加：</p>
+<ul><li>固體 → 液體 → 氣體：ΔS &gt; 0；</li><li>氣體分子數增加：ΔS &gt; 0（例如 CaCO₃(s) → CaO(s) + CO₂(g)）；</li><li>溶解、混合、升溫：通常 ΔS &gt; 0；</li><li>一個分子拆成兩個（例如脫去反應）：ΔS &gt; 0。</li></ul>` },
+    { h: '自由能：ΔG = ΔH − TΔS', w: 'gibbs', body: `
+<p>在定溫定壓下，判斷反應能不能自發只看一個量：</p>
+<p class="eq">ΔG = ΔH − TΔS　　ΔG &lt; 0 自發；ΔG &gt; 0 不自發（逆反應自發）；ΔG = 0 平衡</p>
+<table class="tbl"><thead><tr><th>ΔH</th><th>ΔS</th><th>結果</th></tr></thead><tbody>
+<tr><td>−</td><td>+</td><td>任何溫度都自發</td></tr><tr><td>+</td><td>−</td><td>任何溫度都不自發</td></tr>
+<tr><td>−</td><td>−</td><td>低溫自發</td></tr><tr><td>+</td><td>+</td><td>高溫自發</td></tr></tbody></table>
+<p>後兩種情況有一個<b>轉折溫度 T = ΔH ÷ ΔS</b>。冰的熔化（ΔH、ΔS 都為正）轉折在 273 K：高於 0 °C 熔化自發，低於則結冰自發。</p>
+<p>「自發」只代表熱力學上可以發生，不代表快：鑽石變石墨是自發的，但慢到看不出來。快慢是動力學（活化能）的問題。</p>` },
+    { h: 'ΔG 把所有章節串起來', body: `
+<p>ΔG 會在後面一再出現：</p>
+<ul><li><b>平衡常數</b>：ΔG° = −RT ln K。ΔG° 越負，K 越大（化學平衡一章）。</li>
+<li><b>任意狀態</b>：ΔG = ΔG° + RT ln Q。Q &lt; K 時 ΔG &lt; 0，反應向右；Q = K 時 ΔG = 0，正是平衡。</li>
+<li><b>溫度對 K 的影響</b>：因為 ΔG° = ΔH° − TΔS°，吸熱反應升溫 K 變大。</li>
+<li><b>脫去反應喜歡加熱</b>：一個分子變成多個，ΔS &gt; 0，T 越大 −TΔS 越負（E1／E2 一節）。</li>
+<li><b>電化學</b>：ΔG° = −nFE°。電池電壓為正，代表反應自發。</li>
+<li><b>生物體</b>：ATP 水解（ΔG°' 約 −30.5 kJ/mol）和不自發的反應偶合，讓總 ΔG &lt; 0。</li></ul>` },
+  ],
+  quiz: [
+    { q: '已知 C(s) + ½O₂ → CO，ΔH = −110.5 kJ；C(s) + O₂ → CO₂，ΔH = −393.5 kJ。則 CO + ½O₂ → CO₂ 的 ΔH 為？', o: ['−283.0 kJ', '−504.0 kJ', '+283.0 kJ', '−110.5 kJ'], a: 0,
+      why: '用第二式減第一式：−393.5 − (−110.5) = −283.0 kJ。焓是狀態函數，路徑不影響總和。', show: { w: 'hess', set: { ex: 'co', mode: 'steps' } } },
+    { q: '下列哪一個過程的 ΔS 為負？', o: ['N₂(g) + 3H₂(g) → 2NH₃(g)', 'CaCO₃(s) → CaO(s) + CO₂(g)', 'H₂O(l) → H₂O(g)', 'NaCl(s) 溶於水'], a: 0,
+      why: '4 莫耳氣體變成 2 莫耳氣體，分子數減少，能分散的方式變少，ΔS < 0。', show: { w: 'gibbs', set: { p: 'nh3', T: 298 } } },
+    { q: 'ΔH > 0 且 ΔS > 0 的反應，何時自發？', o: ['高溫時', '低溫時', '任何溫度', '永不自發'], a: 0,
+      why: 'ΔG = ΔH − TΔS，溫度夠高時 TΔS 超過 ΔH，ΔG 變負。例如 CaCO₃ 分解要在約 1110 K 以上才自發。', show: { w: 'gibbs', set: { p: 'caco3', T: 1200 } } },
+    { q: '冰熔化的 ΔH = +6.01 kJ/mol、ΔS = +22.0 J/(K·mol)，轉折溫度約為？', o: ['273 K', '298 K', '373 K', '0.27 K'], a: 0,
+      why: 'T = ΔH ÷ ΔS = 6010 ÷ 22.0 ≈ 273 K，正是熔點。記得把 kJ 換成 J。', show: { w: 'gibbs', set: { p: 'ice', T: 273 } } },
+    { q: '某反應 ΔG° < 0，下列何者正確？', o: ['K > 1', 'K < 1', 'K = 1', '反應一定很快'], a: 0,
+      why: 'ΔG° = −RT ln K，ΔG° 為負代表 ln K 為正，K > 1。自發與速率無關。' },
+    { q: '為什麼加熱有利於脫去反應（相對於取代）？', o: ['脫去使分子數增加、ΔS > 0，高溫時 −TΔS 更有利', '加熱降低脫去的 ΔH', '加熱使鹼變弱', '加熱讓取代反應的 ΔS 變大'], a: 0,
+      why: '脫去把一個分子變成烯、H–B、X⁻ 三個分子，熵增加；溫度越高，ΔG = ΔH − TΔS 越負。', show: { w: 'entropy', set: { N: 20 } } },
   ],
 });
 
@@ -1290,6 +1443,177 @@ W.decide = el => {
   $('#dh', el).onchange = e => { st.heat = e.target.checked; draw(); };
   draw();
   return { set(s) { Object.assign(st, s); draw(); } };
+};
+
+/* ---------- 後中化學：烯烴與炔烴的互動圖 ---------- */
+
+/* ===== 1. 丙烯 + HBr：兩條路徑比較（馬可尼可夫規則） ===== */
+W.hbr = el => {
+  let path2 = 'M', pl;
+  el.innerHTML = `${seg('hbS', [['M', 'H 加到 CH₂（生成二級碳陽離子）'], ['A', 'H 加到 CH（生成一級碳陽離子）']], path2)}<div id="hbP"></div>`;
+  const frames = () => {
+    const M = path2 === 'M';
+    const base = { C1: { x: -0.65, y: 0, t: 'CH₂' }, C2: { x: 0.65, y: 0, t: 'CH' }, C3: { x: 1.75, y: -0.65, t: 'CH₃' } };
+    const hx = M ? -0.65 : 0.65;
+    const F0 = { atoms: { ...base, H: { x: hx, y: 1.55, t: 'H' }, Br: { x: hx, y: 2.75, t: 'Br', lp: [0, 90, 180] } }, bonds: [['C1', 'C2', 'd'], ['C2', 'C3', 's'], ['H', 'Br', 's']],
+      arrows: [{ f: { b: ['C1', 'C2'] }, t: { a: 'H' }, bend: M ? 0.5 : -0.5 }, { f: { b: ['H', 'Br'] }, t: { a: 'Br' }, bend: -0.8 }], notes: [{ x: 0, y: -1.6, t: '丙烯 + HBr' }] };
+    const cat = M ? { C1: { ...base.C1, t: 'CH₃' }, C2: { ...base.C2, c: '+' } } : { C1: { ...base.C1, c: '+' }, C2: { ...base.C2, t: 'CH₂' } };
+    const bx = M ? 1.55 : -1.55;
+    const F1 = { atoms: { ...base, ...cat, H: { x: hx, y: 1.05, t: 'H', hide: true }, Br: { x: bx, y: 1.9, t: 'Br', c: '−', lp: [0, 90, 180, 270] } }, bonds: [['C1', 'C2', 's'], ['C2', 'C3', 's']],
+      arrows: [{ f: { lp: ['Br', M ? 270 : 270] }, t: { a: M ? 'C2' : 'C1' }, bend: M ? 0.3 : -0.3 }], notes: [{ x: 0, y: -1.6, t: M ? '二級碳陽離子（較穩定）' : '一級碳陽離子（很不穩定）' }] };
+    const F2 = { atoms: { ...base, ...cat, C1: { ...cat.C1, c: '' }, C2: { ...cat.C2, c: '' }, H: { x: hx, y: 1.05, t: 'H', hide: true }, Br: { x: M ? 0.65 : -0.65, y: 1.25, t: 'Br', lp: [0, 90, 180] } }, bonds: [['C1', 'C2', 's'], ['C2', 'C3', 's'], [M ? 'C2' : 'C1', 'Br', 's']], notes: [{ x: 0, y: -1.6, t: M ? '2-溴丙烷（主產物）' : '1-溴丙烷（幾乎不生成）' }] };
+    return [
+      { sc: F0, at: 0, cap: 'C=C 的 π 電子是分子裡最容易被拿到的電子。它們去攻擊 HBr 上帶部分正電的 H（親電子），同時 H–Br 的電子對移到 Br 上。' },
+      { sc: F1, at: 0.42, cap: M ? 'H 加到 CH₂ 上，正電荷留在中間的碳：<b>二級碳陽離子</b>，兩邊各有一個碳幫忙穩定（超共軛）。這一步最慢，但過渡狀態比另一條路低。' : 'H 加到中間的 CH 上，正電荷落在末端：<b>一級碳陽離子</b>，只有一個碳相鄰，很不穩定。這條路的過渡狀態高得多（看綠色虛線比較）。' },
+      { sc: F2, at: 1, cap: M ? 'Br⁻ 很快加到碳陽離子上，得到 2-溴丙烷。<b>馬可尼可夫規則</b>：H 加到原本 H 較多的碳上——真正的原因是這樣會生成較穩定的碳陽離子。' : '理論上會得到 1-溴丙烷，但因為一級碳陽離子太難生成，實際上幾乎不走這條路。' }];
+  };
+  const prof = { M: [[0, 0.35], [0.22, 0.78], [0.42, 0.55], [0.6, 0.6], [1, 0.12]], A: [[0, 0.35], [0.22, 0.95], [0.42, 0.78], [0.6, 0.82], [1, 0.14]] };
+  pl = mechPlayer($('#hbP', el), { frames, energy: () => ({ pts: prof[path2], alt: prof[path2 === 'M' ? 'A' : 'M'], labels: [[0.42, path2 === 'M' ? '二級碳陽離子' : '一級碳陽離子', 14]] }), w: 460, h: 290, s: 54, cy: 190, label: 'HBr 加成' });
+  bindSeg(el, 'hbS', v => { path2 = v; pressSeg(el, 'hbS', v); pl.reset(); });
+  return { set(s) { if (s.path) { path2 = s.path; pressSeg(el, 'hbS', path2); pl.reset(); } pl.go(s.step || 0, false); } };
+};
+
+/* ===== 2. 碳陽離子重排：1,2-氫移位 ===== */
+W.shift = el => {
+  el.innerHTML = '<div id="shP"></div>';
+  const frames = () => {
+    const base = { C1: { x: -1.95, y: 0, t: 'CH₃' }, C2: { x: -0.65, y: 0, t: 'CH', c: '+' }, C3: { x: 0.65, y: 0, t: 'C' }, H3: { x: 0.65, y: 1.05, t: 'H', hl: 1 }, M1: { x: 1.4, y: -0.9, t: 'CH₃' }, M2: { x: 1.9, y: 0.35, t: 'CH₃' } };
+    const bonds = [['C1', 'C2', 's'], ['C2', 'C3', 's'], ['C3', 'M1', 's'], ['C3', 'M2', 's']];
+    const F0 = { atoms: base, bonds: [...bonds, ['C3', 'H3', 's']], arrows: [{ f: { b: ['C3', 'H3'] }, t: { a: 'C2' }, bend: 0.5 }], notes: [{ x: 0, y: -1.7, t: '3-甲基-1-丁烯 + H⁺ → 二級碳陽離子' }] };
+    const F1 = { atoms: { ...base, C2: { ...base.C2, t: 'CH', c: '' }, C3: { ...base.C3, c: '+' }, H3: { x: -0.65, y: 1.05, t: 'H', hl: 1 }, Br: { x: 0.5, y: 2.1, t: 'Br', c: '−', lp: [0, 90, 180, 270] } }, bonds: [...bonds, ['C2', 'H3', 's']], arrows: [{ f: { lp: ['Br', 270] }, t: { a: 'C3' }, bend: 0.2 }], notes: [{ x: 0, y: -1.7, t: '三級碳陽離子（更穩定）' }] };
+    const F2 = { atoms: { ...F1.atoms, C3: { ...base.C3, c: '' }, Br: { x: 0.65, y: 1.2, t: 'Br', lp: [0, 90, 180] } }, bonds: [...bonds, ['C2', 'H3', 's'], ['C3', 'Br', 's']], notes: [{ x: 0, y: -1.7, t: '2-溴-2-甲基丁烷（主產物）' }] };
+    return [
+      { sc: F0, cap: 'H⁺ 先加到末端，生成<b>二級</b>碳陽離子。但隔壁的碳是三級的：它上面的 H 可以<b>帶著 C–H 鍵的兩個電子</b>（氫負離子）移過來。' },
+      { sc: F1, cap: '<b>1,2-氫移位</b>完成：正電荷移到三級碳上，更穩定。碳陽離子只要能變得更穩定，就會重排（也可能是甲基移位）。' },
+      { sc: F2, cap: 'Br⁻ 加到三級碳上。主產物是 2-溴-2-甲基丁烷，而不是直接加成的 2-溴-3-甲基丁烷。<b>凡是經過碳陽離子的反應（SN1、E1、HX 加成、酸催化水合）都要檢查會不會重排。</b>' }];
+  };
+  const pl = mechPlayer($('#shP', el), { frames, w: 460, h: 230, s: 54, label: '碳陽離子重排' });
+  return { set(s) { pl.go(s.step || 0, false); } };
+};
+
+/* ===== 3. 溴的加成：溴鎓離子與反式加成 ===== */
+W.brom = el => {
+  el.innerHTML = '<div id="brP"></div>';
+  const frames = () => {
+    const sub = (dy1, dy2) => ({ R1: { x: -1.6, y: 0.35 + dy1, t: 'R' }, H1: { x: -1.45, y: -0.55 + dy1, t: 'H' }, R2: { x: 1.6, y: 0.35 + dy2, t: 'R' }, H2: { x: 1.45, y: -0.55 + dy2, t: 'H' } });
+    const sb = [['C1', 'R1', 's'], ['C1', 'H1', 's'], ['C2', 'R2', 's'], ['C2', 'H2', 's']];
+    const F0 = { atoms: { C1: { x: -0.65, y: 0, t: 'C' }, C2: { x: 0.65, y: 0, t: 'C' }, ...sub(0, 0), Ba: { x: 0, y: 1.45, t: 'Br', lp: [0, 180] }, Bb: { x: 0, y: 2.7, t: 'Br', lp: [0, 90, 180] } }, bonds: [['C1', 'C2', 'd'], ['Ba', 'Bb', 's'], ...sb], arrows: [{ f: { b: ['C1', 'C2'] }, t: { a: 'Ba' }, bend: -0.3 }, { f: { b: ['Ba', 'Bb'] }, t: { a: 'Bb' }, bend: 0.8 }], notes: [{ x: 0, y: -1.6, t: 'R 代表環或其他碳鏈' }] };
+    const F1 = { atoms: { C1: { x: -0.65, y: 0, t: 'C' }, C2: { x: 0.65, y: 0, t: 'C' }, ...sub(0, 0), Ba: { x: 0, y: 1.05, t: 'Br', c: '+', lp: [90] }, Bb: { x: 0.95, y: -1.75, t: 'Br', c: '−', lp: [0, 180, 270, 90] } }, bonds: [['C1', 'C2', 's'], ['Ba', 'C1', 's'], ['Ba', 'C2', 's'], ...sb], arrows: [{ f: { lp: ['Bb', 90] }, t: { a: 'C2' }, bend: 0.25 }, { f: { b: ['Ba', 'C2'] }, t: { a: 'Ba' }, bend: -0.6 }], notes: [{ x: -1.9, y: -1.6, t: '溴鎓離子' }] };
+    const F2 = { atoms: { C1: { x: -0.65, y: 0, t: 'C' }, C2: { x: 0.65, y: 0, t: 'C' }, ...sub(-0.15, 0.55), Ba: { x: -0.65, y: 1.25, t: 'Br', lp: [0, 90, 180] }, Bb: { x: 0.65, y: -1.25, t: 'Br', lp: [0, 180, 270] } }, bonds: [['C1', 'C2', 's'], ['Ba', 'C1', 's'], ['Bb', 'C2', 's'], ...sb], notes: [{ x: 0, y: -2.1, t: '一個 Br 在上、一個在下：反式（anti）加成' }] };
+    return [
+      { sc: F0, cap: 'Br₂ 靠近富含電子的 π 鍵時被極化：靠近的 Br 帶部分正電。π 電子攻擊它，Br–Br 鍵斷開。' },
+      { sc: F1, cap: '生成三元環的<b>溴鎓離子</b>（不是開放的碳陽離子），它從上方把雙鍵的一面整個擋住。Br⁻ 只能從<b>下方（背面）</b>進攻，像 SN2 一樣把環打開。' },
+      { sc: F2, cap: '結果兩個 Br 分別在雙鍵的兩側：<b>反式加成</b>。環己烯加 Br₂ 只得到 trans-1,2-二溴環己烷。因為沒有自由的碳陽離子，這個反應也<b>不會重排</b>。' }];
+  };
+  const pl = mechPlayer($('#brP', el), { frames, w: 440, h: 300, s: 54, cy: 175, label: '溴加成機構' });
+  return { set(s) { pl.go(s.step || 0, false); } };
+};
+
+/* ===== 4. 烯烴加成反應總整理 ===== */
+W.addn = el => {
+  const R = [
+    ['HBr', 'HX', '2-溴丙烷', '馬可尼可夫', '—（經碳陽離子，可能重排）', '碳陽離子'],
+    ['H₂O, H₂SO₄（催化）', '酸催化水合', '2-丙醇', '馬可尼可夫', '—（可能重排）', '碳陽離子'],
+    ['Br₂', '鹵化', '1,2-二溴丙烷', '—', '反式（anti）', '溴鎓離子'],
+    ['Br₂, H₂O', '鹵醇', '1-溴-2-丙醇（OH 在較多取代的碳）', '馬可尼可夫', '反式', '溴鎓離子'],
+    ['H₂, Pt／Pd', '氫化', '丙烷', '—', '同側（syn）', '金屬表面'],
+    ['① BH₃ ② H₂O₂, NaOH', '硼氫化–氧化', '1-丙醇', '<b>反馬可尼可夫</b>', '同側（syn）', '四中心過渡狀態（無碳陽離子）'],
+    ['HBr, ROOR（過氧化物）', '自由基加成', '1-溴丙烷', '<b>反馬可尼可夫</b>', '—', '自由基（較穩定的二級自由基）'],
+    ['OsO₄ 或冷稀 KMnO₄', '雙羥基化', '1,2-丙二醇', '—', '同側（syn）', '環狀酯中間物'],
+    ['① O₃ ② Zn 或 (CH₃)₂S', '臭氧分解', '乙醛 + 甲醛（雙鍵斷開）', '—', '—', '臭氧化物'],
+  ];
+  let cur = 0;
+  el.innerHTML = `<p class="small mut">以丙烯 CH₂=CH–CH₃ 為例。點一列看重點。</p><div class="tscroll"><table class="tbl sel-tbl" id="adT"><thead><tr><th>試劑</th><th>反應</th><th>產物</th><th>區域選擇</th><th>立體</th><th>關鍵中間物</th></tr></thead><tbody>${R.map((r, i) => `<tr data-i="${i}" tabindex="0"><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td></tr>`).join('')}</tbody></table></div><p class="note" id="adN"></p>`;
+  const WHY = [
+    'π 電子攻擊 H⁺，生成較穩定的二級碳陽離子，Br⁻ 再加上去。',
+    '和 HBr 同一個道理，只是加上來的是水，再失去 H⁺。這是 E1 的逆反應：加熱、去除水則平衡偏向烯。',
+    '經過溴鎓離子，Br⁻ 從背面打開，所以兩個 Br 在相反兩側。',
+    '溴鎓離子被大量存在的水打開；水攻擊「比較能承受正電荷」的較多取代碳，所以 OH 在中間的碳。',
+    '兩個 H 從金屬表面同一側加上去。',
+    'B 加到取代較少的碳（立體較空、B 也偏好那裡），之後 B 被換成 OH，位置與構型不變。結果 OH 在末端：和酸催化水合相反。',
+    '過氧化物產生 Br 自由基，Br· 先加到末端，生成較穩定的二級自由基。只有 HBr 有這個效果（HCl、HI 不行）。',
+    'OsO₄ 從同一側同時接上兩個 O，所以兩個 OH 在同側。',
+    'C=C 完全斷開，每個碳變成 C=O。用產物的羰基位置可以反推原本雙鍵在哪裡。',
+  ];
+  function draw() { $$('#adT tbody tr', el).forEach((t, i) => t.classList.toggle('on', i === cur)); $('#adN', el).innerHTML = `<b>${R[cur][1]}</b>：${WHY[cur]}`; }
+  $$('#adT tbody tr', el).forEach(t => { t.onclick = t.onkeydown = e => { if (e.type === 'keydown' && e.key !== 'Enter') return; cur = +t.dataset.i; draw(); }; });
+  draw();
+  return { set(s) { cur = s.i ?? cur; draw(); } };
+};
+
+/* ---------- 後中化學：醛與酮的互動圖 ---------- */
+
+/* ===== 1. 親核加成：選親核基 ===== */
+W.nucadd = el => {
+  const NU = {
+    h: { n: 'NaBH₄（H⁻）', nu: 'H', nuc: '−', sub: ['CH₃', 'CH₃'], prod: '2-丙醇（二級醇）', note: '硼氫化鈉提供氫負離子 H⁻，把酮還原成二級醇；醛則還原成一級醇。' },
+    me: { n: 'CH₃MgBr（格任亞）', nu: 'CH₃', nuc: '−', sub: ['CH₃', 'CH₃'], prod: '2-甲基-2-丙醇（三級醇）', note: '格任亞試劑的 C–Mg 鍵極性很大，碳帶負電，像碳負離子一樣進攻。這是形成新 C–C 鍵最重要的方法之一：甲醛 → 一級醇、其他醛 → 二級醇、酮 → 三級醇。' },
+    cn: { n: 'HCN（CN⁻）', nu: 'CN', nuc: '−', sub: ['CH₃', 'CH₃'], prod: '丙酮氰醇', note: 'CN⁻ 進攻後質子化得到氰醇。這一步可逆；氰醇的 CN 之後可以水解成 COOH，等於多接一個碳。' },
+  };
+  let cur = 'h', pl;
+  el.innerHTML = `${seg('naS', Object.entries(NU).map(([k, v]) => [k, v.n]), cur)}<div id="naP"></div>`;
+  const frames = () => {
+    const d = NU[cur], base = { C: { x: 0, y: 0, t: 'C' }, R1: { x: -1.05, y: -0.65, t: d.sub[0] }, R2: { x: 1.05, y: -0.65, t: d.sub[1] } };
+    const F0 = { atoms: { ...base, C: { ...base.C, c: 'δ+' }, O: { x: 0, y: 1.25, t: 'O', c: 'δ−', lp: [45, 135] }, N: { x: -2.4, y: 0.2, t: d.nu, c: '−', lp: d.nu === 'H' || d.nu === 'CH₃' ? [] : [0] } }, bonds: [['C', 'R1', 's'], ['C', 'R2', 's'], ['C', 'O', 'd']],
+      arrows: [{ f: d.nu === 'CN' ? { lp: ['N', 0] } : { lp: ['N', 0] }, t: { a: 'C' }, bend: -0.3 }, { f: { b: ['C', 'O'] }, t: { a: 'O' }, bend: -0.8 }], notes: [{ x: 0, y: -1.7, t: '丙酮（平面，sp²）' }] };
+    const F1 = { atoms: { ...base, R1: { x: -0.95, y: -0.75, t: d.sub[0] }, R2: { x: 0.95, y: -0.75, t: d.sub[1] }, O: { x: 0.35, y: 1.2, t: 'O', c: '−', lp: [0, 90, 150] }, N: { x: -1.15, y: 0.45, t: d.nu }, Hs: { x: 2.0, y: 1.75, t: 'H₃O⁺' } }, bonds: [['C', 'R1', 's'], ['C', 'R2', 'w'], ['C', 'O', 's'], ['C', 'N', 's']],
+      arrows: [{ f: { lp: ['O', 0] }, t: { a: 'Hs' }, bend: -0.3 }], notes: [{ x: 0, y: -1.7, t: '四面體的烷氧離子（sp³）' }] };
+    const F2 = { atoms: { ...F1.atoms, O: { x: 0.35, y: 1.2, t: 'OH', lp: [] }, Hs: { x: 2.0, y: 1.75, t: 'H₂O' } }, bonds: F1.bonds, notes: [{ x: 0, y: -1.7, t: d.prod }] };
+    return [
+      { sc: F0, cap: 'C=O 的電子偏向 O，碳帶部分正電，而且是平面的，上下兩面都沒有遮擋。親核基的電子對攻擊羰基碳，同時 π 電子被推到 O 上。' },
+      { sc: F1, cap: '碳從平面的 sp² 變成四面體的 sp³，O 帶負電（烷氧離子）。這就是<b>親核加成</b>：加上去，不是取代。' },
+      { sc: F2, cap: `加酸處理，O 接上 H⁺，得到${d.prod}。${d.note}` }];
+  };
+  pl = mechPlayer($('#naP', el), { frames, w: 460, h: 230, s: 54, label: '親核加成' });
+  bindSeg(el, 'naS', v => { cur = v; pressSeg(el, 'naS', v); pl.reset(); });
+  return { set(s) { if (s.nu) { cur = s.nu; pressSeg(el, 'naS', cur); pl.reset(); } pl.go(s.step || 0, false); } };
+};
+
+/* ===== 2. 醛 vs 酮：水合的程度 ===== */
+W.hydrate = el => {
+  const D = [['甲醛 HCHO', 99.9, '兩邊都是 H：最空、羰基碳最缺電子。'], ['乙醛 CH₃CHO', 50, '一個甲基：推電子讓羰基碳較不缺電子，也較擋路。'], ['丙酮 (CH₃)₂CO', 0.1, '兩個甲基：推電子更多、更擠；而且加成後四個基團擠在一起。'], ['六氟丙酮 (CF₃)₂CO', 99.9, 'CF₃ 強烈拉電子，羰基碳非常缺電子，幾乎完全水合。']];
+  let cur = 1;
+  el.innerHTML = `<p class="eq">R₂C=O + H₂O ⇌ R₂C(OH)₂（水合物）</p><div class="bars pk" id="hyB"></div><p class="small mut">水溶液中以水合物形式存在的比例（約略值）</p><p class="note" id="hyN"></p>`;
+  function draw() {
+    $('#hyB', el).innerHTML = D.map(([n, p], i) => `<div class="${i === cur ? 'on' : ''}" data-i="${i}" role="button" tabindex="0"><span>${n}</span><i class="ba" style="width:${Math.max(1, p)}%"></i><b class="mono">${p}%</b></div>`).join('');
+    $$('[data-i]', el).forEach(d => { d.onclick = d.onkeydown = e => { if (e.type === 'keydown' && e.key !== 'Enter') return; cur = +d.dataset.i; draw(); }; });
+    $('#hyN', el).innerHTML = `<b>${D[cur][0]}</b>：${D[cur][2]} 兩個原因讓醛比酮活潑：<b>立體</b>（H 比烷基小，進攻和生成的四面體都比較不擠）與<b>電子</b>（烷基推電子，降低羰基碳的正電性）。`;
+  }
+  draw();
+  return { set(s) { cur = s.i ?? cur; draw(); } };
+};
+
+/* ===== 3. 羰基反應總整理 ===== */
+W.carbtable = el => {
+  const R = [
+    ['NaBH₄ 或 LiAlH₄，再加 H₃O⁺', 'H⁻', '醇（醛→一級、酮→二級）', '不可逆', '還原。LiAlH₄ 更強，也能還原酯與羧酸。'],
+    ['RMgBr（格任亞），再加 H₃O⁺', 'R⁻', '醇（多接一個碳）', '不可逆', '形成 C–C 鍵。格任亞遇水、醇、酸會被破壞，要在無水乙醚中進行。'],
+    ['HCN／CN⁻', 'CN⁻', '氰醇', '可逆', '多接一個碳，CN 可再水解成 COOH。'],
+    ['H₂O（酸或鹼催化）', 'H₂O', '水合物（偕二醇）', '可逆', '通常平衡偏向羰基，甲醛例外。'],
+    ['2 ROH，酸催化，去除水', 'ROH', '縮醛（R₂C(OR)₂）', '可逆', '先成半縮醛，再取代掉 OH。縮醛在鹼中穩定，常用來<b>保護</b>羰基；加酸與水即可還原。醣類的環狀結構就是分子內的半縮醛。'],
+    ['RNH₂（一級胺），弱酸（pH 約 4–5）', 'RNH₂', '亞胺（C=N–R）', '可逆', '加成後脫去水。pH 太低胺被質子化失去親核性，太高則 OH 無法質子化離開，所以有最適 pH。'],
+    ['Ph₃P=CHR（維蒂希）', '磷葉立德', '烯（C=O 換成 C=CHR）', '不可逆', '雙鍵的位置完全確定，是合成烯的重要方法。'],
+  ];
+  let cur = 0;
+  el.innerHTML = `<div class="tscroll"><table class="tbl sel-tbl" id="ctT"><thead><tr><th>試劑</th><th>親核基</th><th>產物</th><th>可逆？</th></tr></thead><tbody>${R.map((r, i) => `<tr data-i="${i}" tabindex="0"><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td></tr>`).join('')}</tbody></table></div><p class="note" id="ctN"></p>`;
+  function draw() { $$('#ctT tbody tr', el).forEach((t, i) => t.classList.toggle('on', i === cur)); $('#ctN', el).innerHTML = `<b>${R[cur][2]}</b>：${R[cur][4]}`; }
+  $$('#ctT tbody tr', el).forEach(t => { t.onclick = t.onkeydown = e => { if (e.type === 'keydown' && e.key !== 'Enter') return; cur = +t.dataset.i; draw(); }; });
+  draw();
+  return { set(s) { cur = s.i ?? cur; draw(); } };
+};
+
+/* ===== 4. α-氫的酸性與烯醇離子 ===== */
+W.alphaH = el => {
+  const D = [['丙烷的 C–H', 50, '一般烷基的 C–H：負電荷只能待在碳上。'], ['乙炔的 C–H', 25, 'sp 軌域的 s 性質高。'], ['丙酮的 α-H', 19.3, '拿走 α-H 後，負電荷可以共振到 O 上（烯醇離子），所以比一般 C–H 酸 30 個數量級。'], ['乙醯乙酸乙酯的 α-H（兩個羰基之間）', 10.7, '負電荷可以分散到兩個 O 上，更穩定。'], ['2,4-戊二酮的 α-H', 9, '兩個酮基夾著的 CH₂，酸性和酚差不多。']];
+  let cur = 2;
+  el.innerHTML = `<div class="bars pk" id="ahB"></div><p class="small mut">長條越長 = 越酸（pKa 越小）</p><p class="note" id="ahN"></p>`;
+  function draw() {
+    $('#ahB', el).innerHTML = D.map(([n, p], i) => `<div class="${i === cur ? 'on' : ''}" data-i="${i}" role="button" tabindex="0"><span>${n}</span><i class="ba" style="width:${6 + 94 * (52 - p) / 44}%"></i><b class="mono">pKa ${p}</b></div>`).join('');
+    $$('[data-i]', el).forEach(d => { d.onclick = d.onkeydown = e => { if (e.type === 'keydown' && e.key !== 'Enter') return; cur = +d.dataset.i; draw(); }; });
+    $('#ahN', el).innerHTML = `<b>${D[cur][0]}</b>：${D[cur][2]}`;
+  }
+  draw();
+  return { set(s) { cur = s.i ?? cur; draw(); } };
 };
 
 /* ---------- 後中化學：化學平衡的互動圖 ----------
@@ -1851,6 +2175,71 @@ W.chair = el => {
   $('#chF', el).onclick = flip;
   draw();
   return { set(s) { if (s.sub) sub = s.sub; if (s.axial != null) f = s.axial ? 1 : -1; draw(); } };
+};
+
+/* ---------- 後中化學：熱力學的互動圖 ---------- */
+
+/* ===== 1. 赫斯定律：焓是狀態函數 ===== */
+W.hess = el => {
+  const EX = {
+    co: { n: '碳燃燒：直接 vs 經過 CO', lv: [['C(s) + O₂(g)', 0], ['CO(g) + ½O₂(g)', -110.5], ['CO₂(g)', -393.5]], steps: [[0, 1, 'C + ½O₂ → CO'], [1, 2, 'CO + ½O₂ → CO₂']], direct: [0, 2, 'C + O₂ → CO₂'] },
+    ch4: { n: '甲烷燃燒：用生成焓', lv: [['CH₄(g) + 2O₂(g)', -74.8], ['C(s) + 2H₂(g) + 2O₂(g)（元素）', 0], ['CO₂(g) + 2H₂O(l)', -965.1]], steps: [[0, 1, '拆成元素：−ΔH°f(CH₄) = +74.8'], [1, 2, '組成產物：ΔH°f(CO₂) + 2ΔH°f(H₂O) = −393.5 + 2(−285.8)']], direct: [0, 2, 'CH₄ + 2O₂ → CO₂ + 2H₂O'] },
+  };
+  let cur = 'co', mode = 'steps';
+  el.innerHTML = `${seg('heS', Object.entries(EX).map(([k, v]) => [k, v.n]), cur)}${seg('heM', [['steps', '分步走'], ['direct', '直接走']], mode)}<div id="heD"></div><p class="note" id="heN"></p>`;
+  function draw() {
+    const e = EX[cur], lo = Math.min(...e.lv.map(l => l[1])), hi = Math.max(...e.lv.map(l => l[1])), W0 = 520, H0 = 300, Y = v => 30 + (hi - v) / (hi - lo) * (H0 - 70), X0 = 150;
+    const lvl = e.lv.map(([t, v], i) => `<line class="lvl" x1="${X0 - 70 + i * 20}" x2="${X0 + 230 + i * 20}" y1="${Y(v)}" y2="${Y(v)}"/><text class="tk hl" x="${X0 + 236 + i * 20}" y="${Y(v) + 4}">${t}</text>`).join('');
+    const arr = (a, b, t, x, cls) => `<line class="${cls}" x1="${x}" x2="${x}" y1="${Y(e.lv[a][1])}" y2="${Y(e.lv[b][1]) - (e.lv[b][1] < e.lv[a][1] ? 6 : -6)}" marker-end="url(#hm)"/><text class="tk" x="${x + 6}" y="${(Y(e.lv[a][1]) + Y(e.lv[b][1])) / 2}">${t}：${fx(e.lv[b][1] - e.lv[a][1], 1)}</text>`;
+    const body = mode === 'steps' ? e.steps.map(([a, b, t], i) => arr(a, b, t, X0 - 40 + i * 120, 'harr')).join('') : arr(e.direct[0], e.direct[1], e.direct[2], X0 + 20, 'harr2');
+    $('#heD', el).innerHTML = `<svg viewBox="0 0 ${W0 + 120} ${H0}" class="ch" role="img" aria-label="焓的能階圖"><defs><marker id="hm" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--arrow)"/></marker></defs>${lvl}${body}<text class="lab" x="20" y="20">H（kJ）</text></svg>`;
+    const tot = e.lv[e.direct[1]][1] - e.lv[e.direct[0]][1];
+    $('#heN', el).innerHTML = `不論分幾步走，起點和終點相同，ΔH 就相同：<b>ΔH = ${fx(tot, 1)} kJ</b>。${cur === 'co' ? '直接量 C → CO 的熱很難（碳燒起來一定有部分變成 CO₂），但可以用兩個好量的反應相減得到：這就是赫斯定律的用處。' : '用生成焓計算：ΔH°反應 = Σ ΔH°f(產物) − Σ ΔH°f(反應物) = [−393.5 + 2(−285.8)] − (−74.8) = −890.3 kJ。元素的 ΔH°f 定義為 0（O₂ 也是）。'}`;
+    pressSeg(el, 'heS', cur); pressSeg(el, 'heM', mode);
+  }
+  bindSeg(el, 'heS', v => { cur = v; draw(); }); bindSeg(el, 'heM', v => { mode = v; draw(); });
+  draw();
+  return { set(s) { if (s.ex) cur = s.ex; if (s.mode) mode = s.mode; draw(); } };
+};
+
+/* ===== 2. 熵：分子怎麼分布 ===== */
+W.entropy = el => {
+  let N = 10;
+  el.innerHTML = `<div class="w-row"><label class="rng">氣體分子數 <input type="range" id="enN" min="2" max="40" step="1"><output class="mono" id="enO"></output></label></div><div class="bgrid"><div id="enB"></div><div id="enC"></div></div><p class="note" id="enT"></p>`;
+  const C = (n, k) => { let r = 1; for (let i = 1; i <= k; i++) r = r * (n - k + i) / i; return r; };
+  function draw() {
+    const ks = Array.from({ length: N + 1 }, (_, k) => k), tot = 2 ** N, pk = ks.map(k => C(N, k) / tot), mx = Math.max(...pk);
+    $('#enC', el).innerHTML = chart({ x: [-0.5, N + 0.5], y: [0, mx * 1.1], xt: [0, Math.round(N / 2), N], yt: [], xlab: '左半邊的分子數', ylab: '機率', h: 210, label: '分子分布的機率' }, (X, Y) => pk.map((p, k) => `<rect class="${k === N ? 'barhl' : 'bar'}" x="${X(k - 0.4)}" y="${Y(p)}" width="${X(k + 0.4) - X(k - 0.4)}" height="${Y(0) - Y(p)}"/>`).join(''));
+    const dots = Array.from({ length: N }, (_, i) => { const left = i < Math.round(N / 2); return `<circle class="gas" cx="${(left ? 20 : 140) + (i * 37 % 100)}" cy="${20 + (i * 53 % 110)}" r="5"/>`; }).join('');
+    $('#enB', el).innerHTML = `<svg viewBox="0 0 260 150" class="bk" role="img" aria-label="兩格容器"><rect x="10" y="10" width="240" height="130" fill="none" stroke="var(--muted)" stroke-width="2"/><line x1="130" x2="130" y1="10" y2="140" stroke="var(--muted)" stroke-dasharray="4 4"/>${dots}</svg><p class="small mut c">打開隔板後，分子自由分布在兩邊</p>`;
+    $('#enO', el).textContent = N; $('#enN', el).value = N;
+    $('#enT', el).innerHTML = `${N} 個分子分在左右兩邊，總共有 2<sup>${N}</sup> = ${sci(tot, 2)} 種排法。「全部在左邊」只有 1 種，機率 ${sci(1 / tot, 2)}；「各半」有 ${sci(C(N, Math.round(N / 2)), 2)} 種，最常出現。分子越多，分布越集中在「均勻」附近：1 莫耳氣體自己全部跑回一邊的機率小到永遠看不到。<br><b>熵</b> S = k ln W（W 是排法數）量度的就是能量與粒子能分散的方式有多少。自發過程朝 W 變大（熵增加）的方向進行。`;
+  }
+  $('#enN', el).oninput = e => { N = +e.target.value; draw(); };
+  draw();
+  return { set(s) { N = s.N ?? N; draw(); } };
+};
+
+/* ===== 3. ΔG = ΔH − TΔS ===== */
+W.gibbs = el => {
+  const PRE = { ice: ['冰熔化', 6.01, 22.0], caco3: ['CaCO₃ 分解', 178.3, 160.6], nh3: ['N₂ + 3H₂ → 2NH₃', -92.2, -198.7], comb: ['葡萄糖氧化', -2803, 259] };
+  const st = { dH: 6.01, dS: 22.0, T: 298 };
+  el.innerHTML = `<div class="w-row"><span class="small mut">例子：</span>${Object.entries(PRE).map(([k, p]) => `<button class="btn sm ghost" type="button" data-p="${k}">${p[0]}</button>`).join('')}</div><div class="w-row"><label class="rng">ΔH（kJ/mol）<input type="range" id="gH" min="-200" max="200" step="0.5"><output class="mono" id="gHo"></output></label><label class="rng">ΔS（J/K·mol）<input type="range" id="gS" min="-300" max="300" step="0.5"><output class="mono" id="gSo"></output></label></div><div class="w-row"><label class="rng">溫度（K）<input type="range" id="gT" min="0" max="1500" step="1"><output class="mono" id="gTo"></output></label></div><div id="gC"></div><div class="cards" id="gK"></div><p class="note" id="gN"></p>`;
+  function draw() {
+    const { dH, dS, T } = st, G = t => dH - t * dS / 1000, g = G(T), Tc = dS !== 0 ? dH / (dS / 1000) : NaN, lim = Math.max(30, Math.abs(dH) * 1.3, Math.abs(G(1500)) * 1.1);
+    $('#gC', el).innerHTML = chart({ x: [0, 1500], y: [-lim, lim], xt: [0, 300, 600, 900, 1200, 1500], yt: [-Math.round(lim), 0, Math.round(lim)], xlab: '溫度（K）', ylab: 'ΔG（kJ/mol）', h: 230, label: 'ΔG 對溫度' }, (X, Y) =>
+      `<rect class="buf" x="${X(0)}" y="${Y(0)}" width="${X(1500) - X(0)}" height="${Y(-lim) - Y(0)}"/><text class="tk" x="${X(1490)}" y="${Y(-lim) - 6}" text-anchor="end">ΔG &lt; 0：自發</text><line class="mk" x1="${X(0)}" x2="${X(1500)}" y1="${Y(0)}" y2="${Y(0)}"/><line class="tline" x1="${X(0)}" y1="${Y(clamp(G(0), -lim, lim))}" x2="${X(1500)}" y2="${Y(clamp(G(1500), -lim, lim))}"/>${Tc > 0 && Tc < 1500 ? `<circle class="dot2" cx="${X(Tc)}" cy="${Y(0)}" r="5"/><text class="tk" x="${X(Tc)}" y="${Y(0) - 8}" text-anchor="middle">T = ${fx(Tc, 0)} K</text>` : ''}<circle class="dot" cx="${X(T)}" cy="${Y(clamp(g, -lim, lim))}" r="7"/>`);
+    $('#gK', el).innerHTML = card('g', `ΔG（${T} K）`, `${fx(g, 1)} kJ/mol`) + card('t', '−TΔS', `${fx(-T * dS / 1000, 1)}`) + card('c', '轉折溫度 ΔH ÷ ΔS', Tc > 0 ? `${fx(Tc, 0)} K` : '無');
+    const q = dH < 0 && dS > 0 ? 'ΔH < 0、ΔS > 0：任何溫度都自發。' : dH > 0 && dS < 0 ? 'ΔH > 0、ΔS < 0：任何溫度都不自發。' : dH < 0 ? 'ΔH < 0、ΔS < 0：<b>低溫</b>自發（焓有利、熵不利，溫度低時 TΔS 影響小）。' : 'ΔH > 0、ΔS > 0：<b>高溫</b>自發（靠熵推動，溫度要夠高）。';
+    $('#gN', el).innerHTML = `${q} 在 ${T} K，ΔG = ${fx(dH, 1)} − ${T} × (${fx(dS, 1)} ÷ 1000) = <b>${fx(g, 1)} kJ/mol</b>，${g < 0 ? '自發' : '不自發'}。注意 ΔS 的單位是 J，要先除以 1000 才能和 kJ 的 ΔH 相減。`;
+    $('#gHo', el).textContent = fx(dH, 1); $('#gSo', el).textContent = fx(dS, 1); $('#gTo', el).textContent = T; $('#gH', el).value = clamp(dH, -200, 200); $('#gS', el).value = clamp(dS, -300, 300); $('#gT', el).value = T;
+  }
+  $('#gH', el).oninput = e => { st.dH = +e.target.value; draw(); };
+  $('#gS', el).oninput = e => { st.dS = +e.target.value; draw(); };
+  $('#gT', el).oninput = e => { st.T = +e.target.value; draw(); };
+  $$('[data-p]', el).forEach(b => { b.onclick = () => { const p = PRE[b.dataset.p]; st.dH = p[1]; st.dS = p[2]; draw(); }; });
+  draw();
+  return { set(s) { if (s.p) { const p = PRE[s.p]; st.dH = p[1]; st.dS = p[2]; } if (s.T != null) st.T = s.T; draw(); } };
 };
 
 /* ---------- 後中化學：頁面框架（首頁、單元目錄、章節、練習題、進度） ---------- */

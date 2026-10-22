@@ -178,6 +178,15 @@ svg.ch, svg.mol, svg.en, svg.bk, svg.ions { width: 100%; height: auto; display: 
 .bars.pk > div { grid-template-columns: minmax(110px, 160px) 1fr auto; }
 .bars [role=button] { cursor: pointer; border-radius: 4px; }
 .bars [role=button]:hover { background: var(--soft); }
+/* 熱力學、加成表 */
+.lvl { stroke: var(--ink); stroke-width: 2.5; }
+.harr { stroke: var(--arrow); stroke-width: 2.2; } .harr2 { stroke: var(--acid); stroke-width: 2.6; }
+.bar { fill: var(--acid); opacity: .75; } .barhl { fill: var(--arrow); }
+.gas { fill: var(--acid); }
+.tscroll { overflow-x: auto; }
+.sel-tbl tbody tr { cursor: pointer; }
+.sel-tbl tbody tr:hover { background: var(--soft); }
+.sel-tbl tbody tr.on { background: var(--soft); outline: 2px solid var(--accent); outline-offset: -2px; }
 /* 練習題 */
 .q { border-top: 1px solid var(--line); padding: 14px 0; }
 .qt { font-weight: 500; margin: 0 0 8px; }
