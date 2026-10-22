@@ -268,6 +268,21 @@ svg.ch, svg.mol, svg.en, svg.bk, svg.ions { width: 100%; height: auto; display: 
 .sel-tbl tbody tr { cursor: pointer; }
 .sel-tbl tbody tr:hover { background: var(--soft); }
 .sel-tbl tbody tr.on { background: var(--soft); outline: 2px solid var(--accent); outline-offset: -2px; }
+/* 原子、分子形狀、芳香族 */
+.lvl.on { stroke: var(--arrow); stroke-width: 3; }
+.orbf { fill: var(--acid); fill-opacity: .35; stroke: var(--acid); } .orbf.b { fill: var(--base); stroke: var(--base); }
+.axl { stroke: var(--line); stroke-dasharray: 3 3; }
+.boxes { display: flex; flex-wrap: wrap; gap: 10px 16px; margin: 8px 0; }
+.boxes .sub { display: grid; gap: 2px; justify-items: center; }
+.boxes .sub > div { display: flex; }
+.box { width: 30px; height: 30px; border: 1.5px solid var(--ink); margin-left: -1.5px; display: grid; place-items: center; font-size: 15px; letter-spacing: -3px; }
+.ptab { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; margin: 8px 0 14px; }
+.pcell { border-radius: 6px; padding: 4px 2px; text-align: center; background: color-mix(in srgb, var(--accent) calc(var(--v) * 85%), var(--surface)); border: 1px solid var(--line); font-size: 12px; line-height: 1.25; }
+.pcell b { display: block; font-size: 14px; } .pcell small { font-family: var(--mono); font-size: 10.5px; }
+.mol .lp.big { r: 3.2px; }
+.netd { stroke: var(--arrow); stroke-width: 3.5; }
+.checks { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 14px; }
+.spin { font-size: 15px; fill: var(--ink); font-weight: 700; }
 /* 練習題 */
 .q { border-top: 1px solid var(--line); padding: 14px 0; }
 .qt { font-weight: 500; margin: 0 0 8px; }
@@ -638,6 +653,99 @@ CH.push({
       why: '氫化時兩個 H 從金屬表面同一側加上去。Br₂ 與 Br₂/H₂O 經過溴鎓離子，是反式加成；HBr 經過平面碳陽離子，沒有立體選擇。', show: { w: 'addn', set: { i: 4 } } },
     { q: '1-丙炔在 H₂SO₄、HgSO₄ 催化下加水，主產物是？', o: ['丙酮', '丙醛', '1-丙醇', '丙烯醇'], a: 0,
       why: '依馬可尼可夫規則，OH 加到中間的碳，生成烯醇；烯醇再互變成較穩定的酮，所以得到丙酮（甲基酮）。' },
+  ],
+});
+
+/* ---------- 後中化學：芳香族化合物 ---------- */
+CH.push({
+  id: 'aromatic', unit: 'o6', title: '芳香族化合物：芳香性與親電子取代',
+  lede: '苯有三個雙鍵，卻不像烯烴那樣容易加成。這一章解釋苯為什麼特別穩定（芳香性），為什麼它只做取代不做加成，以及環上已有的取代基如何決定新基團接在哪裡。',
+  sections: [
+    { h: '芳香性：4n + 2 個 π 電子', w: 'huckel', body: `
+<p>苯的共振混成讓 π 電子分布在整個環上，額外穩定（氫化熱比三個獨立雙鍵少約 150 kJ/mol）。不是所有環狀共軛分子都有這種穩定性，判斷<b>芳香性</b>要同時符合四個條件：</p>
+<ol><li>環狀；</li><li>平面；</li><li>環上每個原子都有 p 軌域（完全共軛）；</li><li>π 電子數為 <b>4n + 2</b>（2、6、10…），稱為<b>休克耳規則</b>。</li></ol>
+<p>前三項符合但 π 電子為 4n（4、8…）是<b>反芳香性</b>，比一般更不穩定；只要有一項不符合，就是<b>非芳香性</b>。</p>
+<p>數 π 電子時要小心雜原子：吡咯的 N 孤對電子在 p 軌域、算進 π 系統；吡啶的 N 孤對電子在 sp² 軌域、不算。這也決定了誰有鹼性。右邊的弗羅斯特圓顯示：4n + 2 時所有成鍵軌域剛好填滿。</p>` },
+    { h: '親電子芳香取代：加成之後再脫去', w: 'eas', body: `
+<p>苯的 π 電子雖然穩定，遇到很強的親電子試劑還是會反應。機構和烯烴加成的第一步很像，但第二步不同：</p>
+<ol><li>π 電子攻擊親電子試劑 E⁺，生成帶正電的 <b>σ 錯合物</b>（慢，因為芳香性暫時被破壞）；</li>
+<li>鹼拿走接 E 那個碳上的 H⁺，恢復芳香性（快）。</li></ol>
+<p>整體結果是 H 被 E 取代。常見的反應只差在怎麼產生 E⁺：</p>
+<table class="tbl"><thead><tr><th>反應</th><th>試劑</th><th>親電子試劑</th></tr></thead><tbody>
+<tr><td>鹵化</td><td>Br₂／FeBr₃、Cl₂／FeCl₃</td><td>Br⁺、Cl⁺</td></tr><tr><td>硝化</td><td>HNO₃／H₂SO₄</td><td>NO₂⁺（硝醯離子）</td></tr>
+<tr><td>磺化</td><td>SO₃／H₂SO₄</td><td>SO₃H⁺</td></tr><tr><td>傅–克烷基化</td><td>RCl／AlCl₃</td><td>R⁺（會重排）</td></tr>
+<tr><td>傅–克醯基化</td><td>RCOCl／AlCl₃</td><td>RCO⁺（醯基離子，不重排）</td></tr></tbody></table>` },
+    { h: '取代基決定速度與位置', w: 'directing', body: `
+<p>環上已經有取代基時，它會影響兩件事：</p>
+<ul><li><b>速度</b>：推電子基讓環更富電子，反應變快（活化）；拉電子基讓反應變慢（鈍化）。</li>
+<li><b>位置</b>：關鍵在 σ 錯合物的正電荷落在哪裡。鄰位或對位進攻時，正電荷會出現在<b>接著取代基的那個碳</b>上：推電子基能穩定它 → 鄰對位；拉電子基讓它更不穩定 → 改走間位。</li></ul>
+<table class="tbl"><thead><tr><th>類型</th><th>取代基</th></tr></thead><tbody>
+<tr><td>活化、鄰對位</td><td>–NH₂、–OH、–OR、–NHCOR、–R</td></tr>
+<tr><td>鈍化、鄰對位</td><td>–F、–Cl、–Br、–I</td></tr>
+<tr><td>鈍化、間位</td><td>–NO₂、–CN、–SO₃H、–CHO、–COR、–COOH、–COOR、–NR₃⁺、–CF₃</td></tr></tbody></table>
+<p>規律：取代基接在環上的原子如果有孤對電子（O、N、鹵素），都是鄰對位；如果接環的原子帶正電或連著電負度大的原子（C=O、N⁺），就是間位。</p>` },
+  ],
+  quiz: [
+    { q: '下列何者具有芳香性？', o: ['環戊二烯負離子', '環丁二烯', '環辛四烯', '環戊二烯陽離子'], a: 0,
+      why: '環戊二烯負離子是平面、完全共軛的環，有 6 個 π 電子（4n + 2，n = 1）。環丁二烯 4 個 π 電子是反芳香性；環辛四烯不平面；環戊二烯陽離子只有 4 個 π 電子。', show: { w: 'huckel', set: { r: 'cp' } } },
+    { q: '吡咯（pyrrole）的 N 為什麼幾乎沒有鹼性？', o: ['N 的孤對電子參與芳香 π 系統，接 H⁺ 會破壞芳香性', 'N 帶正電', 'N 沒有孤對電子', '吡咯不是平面'], a: 0,
+      why: '吡咯需要 N 的兩個電子才湊滿 6 個 π 電子；質子化會用掉這對電子、失去芳香性。吡啶的孤對電子不在 π 系統中，所以吡啶有鹼性。', show: { w: 'huckel', set: { r: 'pyrrole' } } },
+    { q: '苯和 Br₂/FeBr₃ 反應的產物是溴苯而非二溴環己二烯，主要原因是？', o: ['取代可以恢復芳香性，加成則會永久失去芳香性', 'Br 太大', '加成的速率比較快', 'FeBr₃ 會阻止加成'], a: 0,
+      why: 'σ 錯合物失去 H⁺ 就能回到穩定的芳香環；若改成加成，產物不再是芳香族，能量上不利。', show: { w: 'eas', set: { step: 4 } } },
+    { q: '親電子芳香取代反應中，速率決定步驟是？', o: ['生成 σ 錯合物（破壞芳香性）', '失去 H⁺', '生成親電子試劑', '產物離開'], a: 0,
+      why: '第一步破壞了芳香性，活化能最高；第二步失去 H⁺ 恢復芳香性，很快。', show: { w: 'eas', set: { step: 1 } } },
+    { q: '甲苯硝化的主產物是？', o: ['鄰硝基甲苯與對硝基甲苯', '間硝基甲苯', '只有對硝基甲苯', '硝基苯'], a: 0,
+      why: '甲基是活化、鄰對位定位基：鄰位約 63%、對位約 34%、間位只有 3%。', show: { w: 'directing', set: { g: 'CH3' } } },
+    { q: '硝基苯再硝化，主產物是？', o: ['間二硝基苯', '鄰二硝基苯', '對二硝基苯', '不會反應'], a: 0,
+      why: '硝基強烈拉電子，是鈍化、間位定位基（間位約 91%）。反應需要更激烈的條件。', show: { w: 'directing', set: { g: 'NO2' } } },
+    { q: '氯苯在親電子芳香取代中的表現是？', o: ['比苯慢，但定位在鄰對位', '比苯快，定位在鄰對位', '比苯慢，定位在間位', '比苯快，定位在間位'], a: 0,
+      why: '鹵素的誘導效應拉電子使反應變慢；但孤對電子能共振穩定鄰、對位進攻的正電荷，所以仍是鄰對位。', show: { w: 'directing', set: { g: 'Cl' } } },
+  ],
+});
+
+/* ---------- 後中化學：原子結構與週期性 ---------- */
+CH.push({
+  id: 'atom', unit: 'g1', title: '原子結構與週期性',
+  lede: '化學性質由電子決定。這一章從氫原子的光譜看見「能階是一格一格的」，再用量子數描述軌域、把電子一個個填進去，最後解釋週期表上半徑、游離能、電負度的規律。',
+  sections: [
+    { h: '光譜告訴我們：能量是一格一格的', w: 'hspec', body: `
+<p>把氫氣通電，發出的光經過稜鏡不是連續的彩虹，而是幾條特定顏色的<b>線</b>。這代表電子只能待在某些特定能量（能階），從高能階掉到低能階時，放出的光子能量剛好等於能階差：</p>
+<p class="eq">Eₙ = −13.6 eV ÷ n²　　ΔE = hν = hc ÷ λ</p>
+<p>能量越大，波長越短。氫原子掉到 n = 2 的幾條線落在可見光（656 nm 紅線、486 nm 藍綠線…），掉到 n = 1 的在紫外光。n → ∞ 時能量為 0，代表電子脫離原子（游離）。</p>` },
+    { h: '量子數與軌域', w: 'qn', body: `
+<p>電子的狀態用四個量子數描述：</p>
+<table class="tbl"><thead><tr><th>量子數</th><th>可能值</th><th>決定什麼</th></tr></thead><tbody>
+<tr><td>主量子數 n</td><td>1, 2, 3…</td><td>殼層、能量與大小</td></tr>
+<tr><td>角量子數 ℓ</td><td>0 到 n−1（s、p、d、f）</td><td>軌域形狀</td></tr>
+<tr><td>磁量子數 mℓ</td><td>−ℓ 到 +ℓ</td><td>軌域方向（副層有 2ℓ+1 個軌域）</td></tr>
+<tr><td>自旋量子數 ms</td><td>+½、−½</td><td>每個軌域最多兩個電子</td></tr></tbody></table>
+<p>s 軌域是球形，p 軌域是啞鈴形（三個方向 px、py、pz），d 軌域多為四葉形。波函數有正負號（圖中深淺兩色），這在形成鍵結時很重要：同號的瓣重疊才會成鍵。</p>` },
+    { h: '電子組態：把電子一個個填進去', w: 'econf', body: `
+<p>多電子原子中，同一層的副層能量不同：s &lt; p &lt; d。填電子的順序是 1s → 2s → 2p → 3s → 3p → <b>4s → 3d</b> → 4p，遵守三個規則：</p>
+<ol><li><b>構築原理</b>：先填能量低的軌域。</li><li><b>包立不相容原理</b>：每個軌域最多兩個電子，自旋相反。</li><li><b>洪德定則</b>：同一副層的軌域，先每格各填一個、自旋平行，再成對。</li></ol>
+<p>要記的例外：<b>Cr</b>（[Ar]3d⁵4s¹）和 <b>Cu</b>（[Ar]3d¹⁰4s¹），半滿、全滿的 d 副層特別穩定。過渡金屬形成離子時，先失去 4s 電子。</p>
+<p>未成對電子數決定磁性：有未成對電子的物質會被磁場吸引（順磁性）。</p>` },
+    { h: '週期趨勢：有效核電荷', w: 'trend', body: `
+<p>週期表上的規律都能用一個概念解釋：<b>有效核電荷</b>（最外層電子實際感受到的原子核吸引力 ≈ 質子數 − 內層電子的遮蔽）。</p>
+<ul><li>同週期由左到右：質子變多，但新增電子在同一層、遮蔽效果差 → 有效核電荷變大 → <b>半徑變小、游離能變大、電負度變大</b>。</li>
+<li>同族由上到下：多一層電子，最外層離原子核越來越遠 → <b>半徑變大、游離能變小</b>。</li></ul>
+<p>游離能在 Be→B、N→O 的兩個凹陷是經典考題：它們證明了副層能量不同，以及成對電子之間的排斥。</p>` },
+  ],
+  quiz: [
+    { q: '氫原子的電子從 n = 3 掉到 n = 2，放出的光是什麼顏色？', o: ['紅色（656 nm）', '紫外光', '紅外光', '藍色（434 nm）'], a: 0,
+      why: 'ΔE = 13.6 × (1/4 − 1/9) = 1.89 eV，λ = 1240 ÷ 1.89 ≈ 656 nm，是巴耳末系的紅線。', show: { w: 'hspec', set: { ni: 3, nf: 2 } } },
+    { q: '下列哪一組量子數不可能存在？', o: ['n = 2, ℓ = 2, mℓ = 0', 'n = 3, ℓ = 2, mℓ = −2', 'n = 2, ℓ = 1, mℓ = 1', 'n = 1, ℓ = 0, mℓ = 0'], a: 0,
+      why: 'ℓ 必須小於 n，n = 2 時 ℓ 只能是 0 或 1，所以沒有 2d 軌域。', show: { w: 'qn', set: { n: 2, l: 1, m: 0 } } },
+    { q: 'n = 3 的殼層最多可以容納幾個電子？', o: ['18', '8', '9', '32'], a: 0,
+      why: 'n = 3 有 3s、3p、3d 共 1 + 3 + 5 = 9 個軌域，每個 2 個電子，共 18 個（2n²）。', show: { w: 'qn', set: { n: 3, l: 2, m: 0 } } },
+    { q: '氮原子（Z = 7）有幾個未成對電子？', o: ['3', '1', '2', '5'], a: 0,
+      why: '1s² 2s² 2p³，依洪德定則三個 2p 電子各占一個軌域、自旋平行，所以 3 個未成對。', show: { w: 'econf', set: { Z: 7 } } },
+    { q: 'Cu（Z = 29）的基態電子組態為？', o: ['[Ar] 3d¹⁰ 4s¹', '[Ar] 3d⁹ 4s²', '[Ar] 3d¹⁰ 4s²', '[Ar] 4s² 4p⁹'], a: 0,
+      why: '銅是例外：從 4s 借一個電子讓 3d 全滿，3d¹⁰ 4s¹ 較穩定。', show: { w: 'econf', set: { Z: 29 } } },
+    { q: '第二週期中，為什麼 O 的第一游離能比 N 低？', o: ['O 的 2p 有一個軌域放了兩個電子，互相排斥，較容易移走一個', 'O 的有效核電荷較小', 'O 的半徑比 N 大', 'O 的電子在 3s 軌域'], a: 0,
+      why: 'N 的 2p³ 三個電子各占一個軌域；O 的 2p⁴ 有一對電子共用軌域，排斥使其中一個較容易被拿走。', show: { w: 'trend', set: { p: 'ie' } } },
+    { q: '下列原子半徑由大到小何者正確？', o: ['K > Na > Mg > Cl', 'Cl > Mg > Na > K', 'Na > K > Mg > Cl', 'Mg > Na > K > Cl'], a: 0,
+      why: '同族由上到下變大（K > Na），同週期由左到右變小（Na > Mg > Cl）。', show: { w: 'trend', set: { p: 'r' } } },
   ],
 });
 
@@ -1042,6 +1150,51 @@ CH.push({
       why: 'ΔG° = −RT ln K，ΔG° 為負代表 ln K 為正，K > 1。自發與速率無關。' },
     { q: '為什麼加熱有利於脫去反應（相對於取代）？', o: ['脫去使分子數增加、ΔS > 0，高溫時 −TΔS 更有利', '加熱降低脫去的 ΔH', '加熱使鹼變弱', '加熱讓取代反應的 ΔS 變大'], a: 0,
       why: '脫去把一個分子變成烯、H–B、X⁻ 三個分子，熵增加；溫度越高，ΔG = ΔH − TΔS 越負。', show: { w: 'entropy', set: { N: 20 } } },
+  ],
+});
+
+/* ---------- 後中化學：化學鍵與分子形狀 ---------- */
+CH.push({
+  id: 'vsepr', unit: 'g2', title: '化學鍵、分子形狀與分子間作用力',
+  lede: '原子怎麼結合、分子長什麼形狀，決定了它是否有極性、沸點高低、能不能溶於水。這一章從電負度出發，用 VSEPR 預測形狀，再推到分子之間的吸引力。',
+  sections: [
+    { h: '電負度差決定鍵的類型', w: 'bondtype', body: `
+<p>兩個原子共用電子時，電負度較大的一方把電子拉得較近。電負度差（ΔEN）決定鍵的性質：</p>
+<ul><li>ΔEN 很小：<b>非極性共價鍵</b>（H–H、C–C、C–H）；</li><li>ΔEN 中等：<b>極性共價鍵</b>，一端 δ+、一端 δ−（O–H、C–O、C–Cl）；</li><li>ΔEN 很大：電子幾乎完全轉移，<b>離子鍵</b>（Na⁺Cl⁻）。</li></ul>
+<p>有機化學裡，極性鍵就是反應發生的地方：δ+ 的碳被親核基攻擊，δ− 的原子被親電子試劑攻擊。C–H 幾乎沒有極性，所以烷類很不活潑。</p>` },
+    { h: 'VSEPR：電子區域互相排斥', w: 'vsepr', body: `
+<p><b>價殼層電子對互斥理論（VSEPR）</b>：中心原子周圍的電子區域（每個單鍵、雙鍵、參鍵各算一個，每對孤對電子算一個）彼此排斥，會盡量遠離。步驟：</p>
+<ol><li>畫路易斯結構，數中心原子的電子區域數 → 決定<b>電子區域排列</b>（直線、平面三角、四面體、三角雙錐、八面體）。</li>
+<li>看其中有幾對是孤對電子 → 決定<b>分子形狀</b>（只看原子位置）。</li></ol>
+<p>孤對電子只被一個原子核拉住，佔的空間比鍵結電子大，排斥力：孤對–孤對 &gt; 孤對–鍵結 &gt; 鍵結–鍵結。所以 NH₃、H₂O 的鍵角比 109.5° 小。</p>
+<p>電子區域數也對應中心原子的混成：2 → sp、3 → sp²、4 → sp³（有機一章會用到）。</p>` },
+    { h: '分子極性：形狀決定偶極能否抵消', w: 'dipole', body: `
+<p>分子有沒有極性，要把每個鍵的偶極當作<b>向量</b>相加：</p>
+<ul><li>形狀對稱、周圍原子相同（CO₂、BF₃、CH₄、CCl₄）：鍵偶極互相抵消，<b>非極性</b>。</li>
+<li>有孤對電子造成不對稱（H₂O、NH₃），或周圍原子不同（CH₃Cl）：<b>極性分子</b>。</li></ul>
+<p>極性決定溶解度（「相似相溶」：極性溶於極性、非極性溶於非極性），也影響沸點。</p>` },
+    { h: '分子間作用力：沸點從哪裡來', w: 'imf', body: `
+<p>分子之間的吸引力由弱到強：</p>
+<ol><li><b>分散力</b>（倫敦力）：所有分子都有。電子雲瞬間不均勻產生暫時偶極。分子越大、電子越多、接觸面積越大，分散力越強（正戊烷沸點高於新戊烷）。</li>
+<li><b>偶極–偶極力</b>：極性分子之間，δ+ 端吸引另一分子的 δ− 端。</li>
+<li><b>氫鍵</b>：H 接在 N、O、F 上時，這個 H 被另一分子 N、O、F 的孤對電子強烈吸引。氫鍵是 DNA 雙股、蛋白質二級結構的基礎。</li></ol>
+<p>比較氫化物的沸點就能看到三者的效果。另外，<b>離子–偶極力</b>讓鹽類溶於水：水分子的 δ− 端包圍陽離子、δ+ 端包圍陰離子。</p>` },
+  ],
+  quiz: [
+    { q: '下列哪一個鍵的極性最大？', o: ['H–F', 'H–Cl', 'C–H', 'H–Br'], a: 0,
+      why: 'F 的電負度最大（3.98），H–F 的 ΔEN = 1.78，最大。', show: { w: 'bondtype', set: { a: 'H', b: 'F' } } },
+    { q: 'NH₃ 的分子形狀為何？', o: ['三角錐', '平面三角形', '正四面體', 'T 形'], a: 0,
+      why: 'N 有 3 個鍵 + 1 對孤對 = 4 個電子區域，排成四面體；只看原子位置是三角錐。', show: { w: 'vsepr', set: { d: 4, lp: 1 } } },
+    { q: 'XeF₄ 的形狀為何？', o: ['平面四方形', '正四面體', '蹺蹺板', '四角錐'], a: 0,
+      why: 'Xe 有 4 個鍵 + 2 對孤對 = 6 個區域（八面體排列），兩對孤對在相對位置，剩下四個 F 在同一平面。', show: { w: 'vsepr', set: { d: 6, lp: 2 } } },
+    { q: 'CH₄、NH₃、H₂O 的鍵角大小順序為？', o: ['CH₄ > NH₃ > H₂O', 'H₂O > NH₃ > CH₄', '三者相同', 'NH₃ > CH₄ > H₂O'], a: 0,
+      why: '三者都是四面體排列，孤對電子越多，對鍵結電子的排斥越大，鍵角越小：109.5° > 107° > 104.5°。', show: { w: 'vsepr', set: { d: 4, lp: 2 } } },
+    { q: '下列何者為非極性分子？', o: ['CCl₄', 'CH₃Cl', 'H₂O', 'NH₃'], a: 0,
+      why: 'CCl₄ 是正四面體，四個 C–Cl 鍵偶極完全抵消。', show: { w: 'dipole', set: { m: 'ccl4' } } },
+    { q: '為什麼 H₂O 的沸點（100 °C）遠高於 H₂S（−60 °C）？', o: ['H₂O 分子間有氫鍵', 'H₂O 分子量較大', 'H₂S 是離子化合物', 'H₂O 的分散力較強'], a: 0,
+      why: 'O 電負度大、半徑小，水分子之間形成氫鍵。H₂S 分子量其實較大，分散力較強，但沒有明顯氫鍵。', show: { w: 'imf' } },
+    { q: '下列分子間作用力何者通常最強？', o: ['氫鍵', '分散力（小分子）', '偶極–偶極力', '都一樣'], a: 0,
+      why: '對小分子而言，氫鍵最強（約 10–40 kJ/mol）。但大分子的分散力總和可以很大，所以要看分子大小。' },
   ],
 });
 
@@ -1539,6 +1692,200 @@ W.addn = el => {
   $$('#adT tbody tr', el).forEach(t => { t.onclick = t.onkeydown = e => { if (e.type === 'keydown' && e.key !== 'Enter') return; cur = +t.dataset.i; draw(); }; });
   draw();
   return { set(s) { cur = s.i ?? cur; draw(); } };
+};
+
+/* ---------- 後中化學：芳香族化合物的互動圖 ---------- */
+
+/* ===== 1. 休克耳規則與弗羅斯特圓 ===== */
+W.huckel = el => {
+  const R = {
+    benzene: { n: '苯', size: 6, pi: 6, planar: true, conj: true, note: '六個 sp² 碳各提供一個 p 電子。' },
+    cbd: { n: '環丁二烯', size: 4, pi: 4, planar: true, conj: true, note: '4 個 π 電子（4n，n = 1），有兩個電子落在未成對的軌域上：反芳香性，極不穩定。' },
+    cot: { n: '環辛四烯', size: 8, pi: 8, planar: false, conj: true, note: '8 個 π 電子（4n），但分子會折成澡盆形避免反芳香性，雙鍵不共軛：非芳香性，行為像一般的烯。' },
+    cp: { n: '環戊二烯負離子', size: 5, pi: 6, planar: true, conj: true, note: '帶負電的碳是 sp²，孤對電子在 p 軌域上參與共軛，共 6 個 π 電子。所以環戊二烯（pKa 約 16）對一個 C–H 來說非常酸。' },
+    trop: { n: '環庚三烯陽離子', size: 7, pi: 6, planar: true, conj: true, note: '帶正電的碳有空的 p 軌域，讓整個環共軛，6 個 π 電子。' },
+    pyrrole: { n: '吡咯', size: 5, pi: 6, planar: true, conj: true, note: 'N 的孤對電子在 p 軌域上參與 π 系統（兩個 C=C 共 4 個 + N 的 2 個）。因此吡咯的 N 幾乎沒有鹼性：孤對電子被用掉了。' },
+    pyridine: { n: '吡啶', size: 6, pi: 6, planar: true, conj: true, note: '和苯一樣 6 個 π 電子；N 的孤對電子在 sp² 軌域上、指向環外，不參與 π 系統，所以吡啶有鹼性。' },
+  };
+  let cur = 'benzene';
+  el.innerHTML = `${seg('hkS', Object.entries(R).map(([k, v]) => [k, v.n]), cur)}<div class="bgrid"><div id="hkR"></div><div id="hkF"></div></div><ul class="checks" id="hkC"></ul><p class="note" id="hkN"></p>`;
+  function draw() {
+    const r = R[cur], n = r.size, aro = r.planar && r.conj && (r.pi - 2) % 4 === 0, anti = r.planar && r.conj && r.pi % 4 === 0;
+    // 環
+    const atoms = {}, bonds = [];
+    for (let k = 0; k < n; k++) { const a = (90 + 360 * k / n) * Math.PI / 180; atoms['a' + k] = { x: Math.cos(a) * 1.1, y: Math.sin(a) * 1.1, t: '' }; }
+    if (cur === 'pyrrole') atoms.a0 = { ...atoms.a0, t: 'NH', lp: [90] };
+    if (cur === 'pyridine') atoms.a0 = { ...atoms.a0, t: 'N', lp: [90] };
+    if (cur === 'cp') atoms.a0 = { ...atoms.a0, c: '−' };
+    if (cur === 'trop') atoms.a0 = { ...atoms.a0, c: '+' };
+    const dbl = { benzene: [0, 2, 4], cbd: [0, 2], cot: [0, 2, 4, 6], cp: [1, 3], trop: [1, 3, 5], pyrrole: [1, 3], pyridine: [0, 2, 4] }[cur];
+    for (let k = 0; k < n; k++) bonds.push(['a' + k, 'a' + ((k + 1) % n), dbl.includes(k) ? 'd' : 's']);
+    $('#hkR', el).innerHTML = MOL.svg({ atoms, bonds }, { w: 220, h: 200, s: 62 }) + `<p class="small mut c">${r.n}（${r.pi} 個 π 電子）</p>`;
+    // 弗羅斯特圓：正多邊形頂點朝下內接於圓，每個頂點的高度就是一個分子軌域的能量
+    const cx = 120, cy = 100, rad = 70, lv = Array.from({ length: n }, (_, k) => cy + rad * Math.cos(2 * Math.PI * k / n));
+    const levels = [...new Set(lv.map(v => Math.round(v * 10) / 10))].sort((a, b) => b - a);
+    let left = r.pi; const fill = levels.map(y => { const deg = lv.filter(v => Math.round(v * 10) / 10 === y).length, e = Math.min(left, 2 * deg); left -= e; return [y, deg, e]; });
+    const pts = Array.from({ length: n }, (_, k) => { const a = 2 * Math.PI * k / n; return [cx + rad * Math.sin(a), cy + rad * Math.cos(a)]; });
+    // 洪德定則：同一能階先每個軌域放一個，再成對
+    const occ = (e, deg, j) => (e > deg ? (j < e - deg ? 2 : 1) : (j < e ? 1 : 0));
+    const lvl = fill.map(([y, deg, e]) => Array.from({ length: deg }, (_, j) => { const x0 = cx + (j - (deg - 1) / 2) * 46, ue = occ(e, deg, j); return `<line class="lvl" x1="${x0 - 16}" x2="${x0 + 16}" y1="${y}" y2="${y}"/>${ue >= 1 ? `<text class="spin" x="${x0 - 7}" y="${y - 3}">↑</text>` : ''}${ue >= 2 ? `<text class="spin" x="${x0 + 2}" y="${y - 3}">↓</text>` : ''}`; }).join('')).join('');
+    $('#hkF', el).innerHTML = r.planar ? `<svg viewBox="0 0 240 200" class="ch" role="img" aria-label="弗羅斯特圓"><circle cx="${cx}" cy="${cy}" r="${rad}" fill="none" stroke="var(--line)"/><polygon points="${pts.map(p => p.join(',')).join(' ')}" fill="none" stroke="var(--muted)" stroke-dasharray="3 3"/>${lvl}<line class="mk" x1="20" x2="220" y1="${cy}" y2="${cy}"/><text class="tk" x="222" y="${cy + 4}">非鍵</text></svg><p class="small mut c">π 分子軌域能階（弗羅斯特圓）</p>` : '<p class="note">分子不是平面，p 軌域無法連續重疊，不形成環狀 π 系統。</p>';
+    $('#hkC', el).innerHTML = [['環狀', true], ['平面', r.planar], ['每個環原子都有 p 軌域（完全共軛）', r.conj], [`π 電子數 ${r.pi} = 4n + 2？`, (r.pi - 2) % 4 === 0]].map(([t, ok]) => `<li class="${ok ? 'ok' : 'bad'}">${ok ? '✓' : '✕'} ${t}</li>`).join('');
+    $('#hkN', el).innerHTML = `<b>${aro ? '芳香性' : anti ? '反芳香性' : '非芳香性'}</b>。${r.note}${aro ? '弗羅斯特圓上，所有成鍵軌域都剛好填滿成對，沒有電子落在非鍵或反鍵軌域：這就是 4n + 2 特別穩定的原因。' : anti ? '弗羅斯特圓上，最後兩個電子只能分別放進兩個簡併的非鍵軌域，未成對：不穩定。' : ''}`;
+    pressSeg(el, 'hkS', cur);
+  }
+  bindSeg(el, 'hkS', v => { cur = v; draw(); });
+  draw();
+  return { set(s) { cur = s.r || cur; draw(); } };
+};
+
+/* ===== 2. 親電子芳香取代：苯的溴化 ===== */
+W.eas = el => {
+  el.innerHTML = '<div id="eaP"></div>';
+  const ring = () => { const a = {}; for (let k = 0; k < 6; k++) { const t = (90 + 60 * k) * Math.PI / 180; a['a' + k] = { x: Math.cos(t) * 1.1 - 0.6, y: Math.sin(t) * 1.1, t: '' }; } return a; };
+  const rb = d => [0, 1, 2, 3, 4, 5].map(k => ['a' + k, 'a' + ((k + 1) % 6), d.includes(k) ? 'd' : 's']);
+  const frames = () => {
+    const A = ring();
+    const F0 = { atoms: { ...A, H: { x: 0.35, y: 0.95, t: 'H' }, E: { x: 1.9, y: 0.35, t: 'Br', c: '+' } }, bonds: [...rb([5, 1, 3]), ['a5', 'H', 's']], arrows: [{ f: { b: ['a4', 'a5'] }, t: { a: 'E' }, bend: -0.4 }], notes: [{ x: 0, y: -1.7, t: 'Br₂ + FeBr₃ → Br⁺（親電子試劑）' }] };
+    const sig = (d, cc) => ({ atoms: { ...A, [cc]: { ...A[cc], c: '+' }, H: { x: 0.2, y: 1.15, t: 'H' }, E: { x: 0.75, y: 0.15, t: 'Br' } }, bonds: [...rb(d), ['a5', 'H', 's'], ['a5', 'E', 's']] });
+    const F1 = { ...sig([1, 3], 'a4'), arrows: [{ f: { b: ['a3', 'a2'] }, t: { m: ['a3', 'a4'] }, bend: 0.5 }], notes: [{ x: 0, y: -1.7, t: 'σ 錯合物（芳烴正離子）：芳香性暫時被破壞' }] };
+    const F2 = { ...sig([0, 3], 'a2'), notes: [{ x: 0, y: -1.7, t: '正電荷可以共振到三個位置（鄰位、對位）' }] };
+    const F3 = { ...sig([0, 3], 'a2'), atoms: { ...sig([0, 3], 'a2').atoms, B: { x: -0.2, y: 2.3, t: 'FeBr₄', c: '−', lp: [] } }, arrows: [{ f: { b: ['a5', 'H'] }, t: { m: ['a4', 'a5'] }, bend: 0.6 }], notes: [{ x: 0, y: -1.7, t: '鹼拿走 H⁺，電子回到環上' }] };
+    const F4 = { atoms: { ...A, E: { x: 0.35, y: 0.95, t: 'Br' } }, bonds: [...rb([5, 1, 3]), ['a5', 'E', 's']], notes: [{ x: 0, y: -1.7, t: '溴苯 + HBr + FeBr₃：芳香性恢復' }] };
+    return [
+      { sc: F0, at: 0, cap: 'Br₂ 和路易斯酸 FeBr₃ 生成很強的親電子試劑（可視為 Br⁺）。苯的 π 電子很穩定，必須用這麼強的親電子試劑才會反應。' },
+      { sc: F1, at: 0.45, cap: '<b>第一步（慢）</b>：π 電子攻擊 Br⁺，接上 Br 的碳變成 sp³，生成帶正電的 <b>σ 錯合物</b>。芳香性被破壞，所以這一步的活化能很高。' },
+      { sc: F2, at: 0.45, cap: '正電荷可以共振到三個碳上（相對於 Br 的鄰位與對位）。這一點決定了下一節取代基的定位效應。' },
+      { sc: F3, at: 0.45, cap: '<b>第二步（快）</b>：鹼（FeBr₄⁻）拿走接 Br 那個碳上的 H⁺，C–H 的電子回到環上。' },
+      { sc: F4, at: 1, cap: '芳香性恢復。注意結果是<b>取代</b>（H 被 Br 取代），不是像烯烴那樣的加成：加成會永久失去芳香性，能量上不划算。' }];
+  };
+  const pl = mechPlayer($('#eaP', el), { frames, energy: [[0, 0.3], [0.25, 0.9], [0.45, 0.62], [0.65, 0.7], [1, 0.2]], elabels: [[0.25, '過渡狀態 1'], [0.45, 'σ 錯合物', 16]], w: 460, h: 250, s: 54, label: '苯的溴化' });
+  return { set(s) { pl.go(s.step || 0, false); } };
+};
+
+/* ===== 3. 取代基的活化與定位效應（硝化的產物分布） ===== */
+W.directing = el => {
+  // McMurry 表：取代苯硝化的鄰／間／對位百分比
+  const S = {
+    OH: { n: '–OH', d: [50, 0, 50], k: '強活化，鄰對位', why: 'O 的孤對電子可以共振給環（推電子），而且能直接穩定鄰、對位進攻時的正電荷（多一個所有原子都滿八隅的共振結構）。' },
+    CH3: { n: '–CH₃', d: [63, 3, 34], k: '弱活化，鄰對位', why: '烷基經誘導與超共軛推電子；鄰、對位進攻時正電荷落在接甲基的碳上（三級碳陽離子），較穩定。' },
+    Cl: { n: '–Cl', d: [35, 1, 64], k: '弱鈍化，鄰對位', why: '鹵素的誘導效應（拉電子）讓整個環變慢；但孤對電子仍能共振穩定鄰、對位的正電荷，所以定位在鄰對位。這是唯一「鈍化卻鄰對位」的一類。' },
+    COOH: { n: '–COOH', d: [22, 76, 2], k: '鈍化，間位', why: '羰基拉電子。鄰、對位進攻時正電荷會落在接羰基的碳上，緊鄰另一個缺電子的碳，非常不穩定；間位進攻避開了這種情況。' },
+    NO2: { n: '–NO₂', d: [7, 91, 2], k: '強鈍化，間位', why: '硝基強烈拉電子（N 帶正電）。鄰、對位進攻會讓兩個正電荷相鄰；只剩間位可行，而且整體反應很慢。' },
+  };
+  let cur = 'CH3';
+  el.innerHTML = `${seg('drS', Object.entries(S).map(([k, v]) => [k, v.n]), cur)}<div class="bars pk" id="drB"></div><p class="small mut">取代苯硝化時，硝基進入鄰位、間位、對位的比例（McMurry 數據）</p><p class="note" id="drN"></p>`;
+  function draw() {
+    const s = S[cur];
+    $('#drB', el).innerHTML = [['鄰位（ortho）', 0], ['間位（meta）', 1], ['對位（para）', 2]].map(([t, i]) => `<div><span>${t}</span><i class="${i === 1 ? 'bha' : 'ba'}" style="width:${Math.max(1, s.d[i])}%"></i><b class="mono">${s.d[i]}%</b></div>`).join('');
+    $('#drN', el).innerHTML = `<b>${s.n}：${s.k}</b>。${s.why}`;
+    pressSeg(el, 'drS', cur);
+  }
+  bindSeg(el, 'drS', v => { cur = v; draw(); });
+  draw();
+  return { set(s) { cur = s.g || cur; draw(); } };
+};
+
+/* ---------- 後中化學：原子結構與週期性的互動圖 ---------- */
+
+/* ===== 1. 氫原子能階與光譜 ===== */
+W.hspec = el => {
+  let ni = 3, nf = 2;
+  el.innerHTML = `<div class="w-row"><label class="sel">從 n = <select id="hsI">${[2, 3, 4, 5, 6, 7].map(n => `<option>${n}</option>`).join('')}</select></label><label class="sel">掉到 n = <select id="hsF">${[1, 2, 3].map(n => `<option>${n}</option>`).join('')}</select></label><span class="sp"></span>${[[3, 2, '紅線'], [4, 2, '藍綠線'], [2, 1, '萊曼系'], [4, 3, '帕申系']].map(([a, b, t]) => `<button class="btn sm ghost" type="button" data-t="${a},${b}">${t}</button>`).join('')}</div><div class="bgrid"><div id="hsL"></div><div id="hsS"></div></div><div class="cards" id="hsK"></div><p class="note" id="hsN"></p>`;
+  const E = n => -13.6 / (n * n), hc = 1239.84;   // eV·nm
+  const col = l => l < 380 ? '#7a5cff' : l < 450 ? '#6a4cff' : l < 495 ? '#2f8fff' : l < 570 ? '#2fbf5f' : l < 590 ? '#e8d23a' : l < 620 ? '#f29a2e' : l <= 750 ? '#e2403a' : '#a33';
+  function draw() {
+    if (nf >= ni) nf = Math.max(1, ni - 1);
+    const dE = E(ni) - E(nf), lam = hc / dE, Y = v => 20 + (-v) / 13.6 * 200;
+    $('#hsL', el).innerHTML = `<svg viewBox="0 0 260 240" class="ch" role="img" aria-label="氫原子能階">${[1, 2, 3, 4, 5, 6, 7].map(n => `<line class="lvl${n === ni || n === nf ? ' on' : ''}" x1="40" x2="200" y1="${Y(E(n))}" y2="${Y(E(n))}"/><text class="tk" x="206" y="${Y(E(n)) + 4}">n=${n}（${fx(E(n), 2)} eV）</text>`).join('')}<line x1="120" x2="120" y1="${Y(E(ni))}" y2="${Y(E(nf)) - 6}" stroke="${col(lam)}" stroke-width="3" marker-end="url(#hm2)"/><defs><marker id="hm2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="${col(lam)}"/></marker></defs></svg>`;
+    const lines = [3, 4, 5, 6].map(n => hc / (E(n) - E(2)));
+    $('#hsS', el).innerHTML = chart({ x: [380, 750], y: [0, 1], xt: [400, 500, 600, 700], yt: [], xlab: '可見光波長（nm）：巴耳末系（掉到 n = 2）', h: 120 }, (X, Y) => `<defs><linearGradient id="vis" x1="0" x2="1"><stop offset="0" stop-color="#6a4cff"/><stop offset=".3" stop-color="#2f8fff"/><stop offset=".5" stop-color="#2fbf5f"/><stop offset=".65" stop-color="#e8d23a"/><stop offset=".8" stop-color="#f29a2e"/><stop offset="1" stop-color="#e2403a"/></linearGradient></defs><rect x="${X(380)}" y="${Y(1)}" width="${X(750) - X(380)}" height="${Y(0) - Y(1)}" fill="url(#vis)" opacity=".18"/>${lines.map(l => `<line x1="${X(l)}" x2="${X(l)}" y1="${Y(0)}" y2="${Y(1)}" stroke="${col(l)}" stroke-width="${Math.abs(l - lam) < 1 ? 5 : 2.5}"/>`).join('')}`);
+    $('#hsK', el).innerHTML = card('e', 'ΔE', `${fx(dE, 2)} eV`) + card('l', '光的波長 λ = hc ÷ ΔE', `${fx(lam, 0)} nm`) + card('r', '區域', lam < 380 ? '紫外光' : lam <= 750 ? '可見光' : '紅外光');
+    $('#hsN', el).innerHTML = `電子從 n = ${ni} 掉到 n = ${nf}，放出能量 ΔE = 13.6 × (1/${nf}² − 1/${ni}²) eV = ${fx(dE, 2)} eV 的光子，波長 ${fx(lam, 0)} nm。能階是<b>分立</b>的，所以光譜是一條一條的線，而不是連續的彩虹。掉到 n = 1 的（萊曼系）能量大，在紫外光；掉到 n = 2 的（巴耳末系）落在可見光。`;
+    $('#hsI', el).value = ni; $('#hsF', el).value = nf;
+  }
+  $('#hsI', el).onchange = e => { ni = +e.target.value; draw(); };
+  $('#hsF', el).onchange = e => { nf = +e.target.value; draw(); };
+  $$('[data-t]', el).forEach(b => { b.onclick = () => { [ni, nf] = b.dataset.t.split(',').map(Number); draw(); }; });
+  draw();
+  return { set(s) { ni = s.ni ?? ni; nf = s.nf ?? nf; draw(); } };
+};
+
+/* ===== 2. 量子數與軌域 ===== */
+W.qn = el => {
+  const st = { n: 2, l: 1, m: 0 }, LN = 'spdf';
+  el.innerHTML = `<div class="w-row" id="qnC"></div><div class="bgrid"><div id="qnS"></div><div class="cards" id="qnK"></div></div><p class="note" id="qnN"></p>`;
+  function shape() {
+    const { l, m } = st;
+    if (l === 0) return '<circle class="orbf" cx="110" cy="100" r="58"/>';
+    if (l === 1) { const v = m === 0; return v ? '<ellipse class="orbf" cx="110" cy="55" rx="28" ry="44"/><ellipse class="orbf b" cx="110" cy="145" rx="28" ry="44"/>' : `<ellipse class="orbf" cx="${m > 0 ? 55 : 60}" cy="100" rx="44" ry="28"/><ellipse class="orbf b" cx="${m > 0 ? 165 : 160}" cy="100" rx="44" ry="28"/>`; }
+    if (m === 0) return '<ellipse class="orbf" cx="110" cy="45" rx="20" ry="40"/><ellipse class="orbf" cx="110" cy="155" rx="20" ry="40"/><ellipse class="orbf b" cx="110" cy="100" rx="56" ry="15"/>';
+    return [0, 1, 2, 3].map(k => { const a = k * 90 + (Math.abs(m) === 1 ? 45 : 0), x = 110 + Math.cos(a * Math.PI / 180) * 48, y = 100 - Math.sin(a * Math.PI / 180) * 48; return `<ellipse class="orbf${k % 2 ? ' b' : ''}" cx="${x}" cy="${y}" rx="34" ry="18" transform="rotate(${-a} ${x} ${y})"/>`; }).join('');
+  }
+  function draw() {
+    const { n, l, m } = st;
+    $('#qnC', el).innerHTML = `<span class="small">n</span>${[1, 2, 3, 4].map(v => `<button class="btn sm${v === n ? ' pri' : ''}" type="button" data-n="${v}">${v}</button>`).join('')}<span class="small">ℓ</span>${[0, 1, 2, 3].map(v => `<button class="btn sm${v === l ? ' pri' : ''}" type="button" data-l="${v}"${v >= n ? ' disabled' : ''}>${v}（${LN[v]}）</button>`).join('')}<span class="small">mℓ</span>${Array.from({ length: 2 * l + 1 }, (_, i) => i - l).map(v => `<button class="btn sm${v === m ? ' pri' : ''}" type="button" data-m="${v}">${v}</button>`).join('')}`;
+    $$('[data-n]', el).forEach(b => { b.onclick = () => { st.n = +b.dataset.n; st.l = Math.min(st.l, st.n - 1); st.m = clamp(st.m, -st.l, st.l); draw(); }; });
+    $$('[data-l]', el).forEach(b => { b.onclick = () => { st.l = +b.dataset.l; st.m = clamp(st.m, -st.l, st.l); draw(); }; });
+    $$('[data-m]', el).forEach(b => { b.onclick = () => { st.m = +b.dataset.m; draw(); }; });
+    $('#qnS', el).innerHTML = l === 3 ? '<p class="note">f 軌域形狀複雜，考試只需要知道有 7 個。</p>' : `<svg viewBox="0 0 220 200" class="bk" role="img" aria-label="${n}${LN[l]} 軌域">${shape()}<line x1="10" x2="210" y1="100" y2="100" class="axl"/><line x1="110" x2="110" y1="5" y2="195" class="axl"/><text class="tk" x="205" y="94">x</text><text class="tk" x="114" y="14">z</text></svg><p class="small mut c">${n}${LN[l]} 軌域（示意，深淺兩色為波函數正負號）</p>`;
+    $('#qnK', el).innerHTML = card('o', '軌域', `${n}${LN[l]}`) + card('c', '這個副層的軌域數', 2 * l + 1) + card('e', '最多電子數', 2 * (2 * l + 1)) + card('s', `n = ${n} 殼層總軌域數`, n * n) + card('nd', '節面數（角節面 ℓ + 徑向 n−ℓ−1）', `${l} + ${n - l - 1}`);
+    $('#qnN', el).innerHTML = `規則：n = 1, 2, 3…；ℓ = 0 到 n − 1；mℓ = −ℓ 到 +ℓ；每個軌域再有 ms = ±½ 兩個自旋。所以第 n 層有 n² 個軌域、最多 2n² 個電子。<b>沒有 1p、2d</b>，因為 ℓ 必須小於 n。`;
+  }
+  draw();
+  return { set(s) { Object.assign(st, s); draw(); } };
+};
+
+/* ===== 3. 電子組態 ===== */
+const ELEM = 'H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr'.split(' ');
+const ENAME = '氫 氦 鋰 鈹 硼 碳 氮 氧 氟 氖 鈉 鎂 鋁 矽 磷 硫 氯 氬 鉀 鈣 鈧 鈦 釩 鉻 錳 鐵 鈷 鎳 銅 鋅 鎵 鍺 砷 硒 溴 氪'.split(' ');
+function econf(Z) {
+  const order = [['1s', 2], ['2s', 2], ['2p', 6], ['3s', 2], ['3p', 6], ['4s', 2], ['3d', 10], ['4p', 6]], out = []; let left = Z;
+  for (const [o, c] of order) { if (left <= 0) break; const k = Math.min(c, left); out.push([o, k]); left -= k; }
+  const fix = { 24: [['4s', 1], ['3d', 5]], 29: [['4s', 1], ['3d', 10]] }[Z];   // 鉻、銅的例外：半滿、全滿的 d 較穩定
+  if (fix) fix.forEach(([o, k]) => { const e = out.find(x => x[0] === o); if (e) e[1] = k; });
+  return out;
+}
+W.econf = el => {
+  let Z = 8;
+  el.innerHTML = `<div class="w-row"><label class="rng">原子序 Z <input type="range" id="ecZ" min="1" max="36" step="1"><output class="mono" id="ecO"></output></label></div><div class="w-row">${[[6, '碳'], [7, '氮'], [8, '氧'], [24, '鉻（例外）'], [26, '鐵'], [29, '銅（例外）']].map(([z, t]) => `<button class="btn sm ghost" type="button" data-z="${z}">${t}</button>`).join('')}</div><p class="eq" id="ecS"></p><div class="boxes" id="ecB"></div><p class="note" id="ecN"></p>`;
+  function draw() {
+    const cf = econf(Z), sup = n => String(n).split('').map(c => SUP[c]).join('');
+    $('#ecO', el).textContent = `${Z}　${ELEM[Z - 1]}（${ENAME[Z - 1]}）`; $('#ecZ', el).value = Z;
+    $('#ecS', el).innerHTML = cf.map(([o, k]) => `${o}${sup(k)}`).join(' ');
+    $('#ecB', el).innerHTML = cf.map(([o, k]) => { const nb = { s: 1, p: 3, d: 5 }[o[1]], up = Math.min(k, nb), dn = k - up;
+      return `<div class="sub"><span class="mono small">${o}</span><div>${Array.from({ length: nb }, (_, i) => `<span class="box">${i < up ? '↑' : ''}${i < dn ? '↓' : ''}</span>`).join('')}</div></div>`; }).join('');
+    const unp = cf.reduce((s, [o, k]) => { const nb = { s: 1, p: 3, d: 5 }[o[1]]; return s + (k <= nb ? k : 2 * nb - k); }, 0);
+    $('#ecN', el).innerHTML = `${ENAME[Z - 1]}有 <b>${unp}</b> 個未成對電子${unp ? '（順磁性）' : '（反磁性）'}。填電子三規則：<b>構築原理</b>（由低能量填起：1s 2s 2p 3s 3p 4s 3d 4p）、<b>包立不相容</b>（每格最多兩個、自旋相反）、<b>洪德定則</b>（同一副層先各填一個、自旋平行）。${Z === 24 || Z === 29 ? `<b>例外</b>：${ENAME[Z - 1]}從 4s 借一個電子給 3d，形成${Z === 24 ? '半滿 3d⁵' : '全滿 3d¹⁰'}，比較穩定。` : ''}${Z >= 21 && Z <= 30 ? ' 過渡金屬形成陽離子時，先失去的是 <b>4s</b> 電子（例如 Fe²⁺ 是 [Ar]3d⁶）。' : ''}`;
+  }
+  $('#ecZ', el).oninput = e => { Z = +e.target.value; draw(); };
+  $$('[data-z]', el).forEach(b => { b.onclick = () => { Z = +b.dataset.z; draw(); }; });
+  draw();
+  return { set(s) { Z = s.Z ?? Z; draw(); } };
+};
+
+/* ===== 4. 週期趨勢 ===== */
+W.trend = el => {
+  // 主族元素：[符號, 週期, 族序（1–8 表示 1, 2, 13–18 族）, 共價半徑 pm（Cordero 2008）, 第一游離能 kJ/mol, 鮑林電負度]
+  const D = [['H', 1, 1, 31, 1312, 2.20], ['He', 1, 8, 28, 2372, null], ['Li', 2, 1, 128, 520, 0.98], ['Be', 2, 2, 96, 899, 1.57], ['B', 2, 3, 84, 801, 2.04], ['C', 2, 4, 76, 1086, 2.55], ['N', 2, 5, 71, 1402, 3.04], ['O', 2, 6, 66, 1314, 3.44], ['F', 2, 7, 57, 1681, 3.98], ['Ne', 2, 8, 58, 2081, null],
+    ['Na', 3, 1, 166, 496, 0.93], ['Mg', 3, 2, 141, 738, 1.31], ['Al', 3, 3, 121, 578, 1.61], ['Si', 3, 4, 111, 787, 1.90], ['P', 3, 5, 107, 1012, 2.19], ['S', 3, 6, 105, 1000, 2.58], ['Cl', 3, 7, 102, 1251, 3.16], ['Ar', 3, 8, 106, 1521, null],
+    ['K', 4, 1, 203, 419, 0.82], ['Ca', 4, 2, 176, 590, 1.00], ['Ga', 4, 3, 122, 579, 1.81], ['Ge', 4, 4, 120, 762, 2.01], ['As', 4, 5, 119, 947, 2.18], ['Se', 4, 6, 120, 941, 2.55], ['Br', 4, 7, 120, 1140, 2.96], ['Kr', 4, 8, 116, 1351, 3.00]];
+  const P = { r: ['原子半徑（pm）', 3, 210], ie: ['第一游離能（kJ/mol）', 4, 2400], en: ['電負度', 5, 4] };
+  let cur = 'ie';
+  el.innerHTML = `${seg('trS', Object.entries(P).map(([k, v]) => [k, v[0]]), cur)}<div id="trG" class="ptab"></div><div id="trC"></div><p class="note" id="trN"></p>`;
+  function draw() {
+    const [nm, idx, mx] = P[cur];
+    $('#trG', el).innerHTML = D.map(d => { const v = d[idx]; return `<div class="pcell" style="grid-row:${d[1]};grid-column:${d[2]};--v:${v == null ? 0 : v / mx}"><b>${d[0]}</b><small>${v == null ? '—' : v}</small></div>`; }).join('');
+    const row = D.filter(d => d[1] === 2 && d[idx] != null);
+    $('#trC', el).innerHTML = chart({ x: [0.5, 8.5], y: [0, mx], xt: [], yt: [0, mx / 2, mx], xlab: '第二週期（Li → Ne）', ylab: nm, h: 200 }, (X, Y) => `<path class="tline" d="${path(row.map(d => [X(d[2]), Y(d[idx])]))}"/>${row.map(d => `<circle class="dot3" cx="${X(d[2])}" cy="${Y(d[idx])}" r="5"/><text class="tk" x="${X(d[2])}" y="${Y(d[idx]) - 9}" text-anchor="middle">${d[0]}</text>`).join('')}`);
+    $('#trN', el).innerHTML = { r: '<b>原子半徑</b>：同週期由左到右<b>變小</b>（質子增加、電子在同一層，有效核電荷變大，拉得更緊）；同族由上到下<b>變大</b>（多一層電子）。',
+      ie: '<b>第一游離能</b>：拿走最外層一個電子需要的能量。同週期由左到右大致<b>變大</b>、同族由上到下<b>變小</b>，和半徑相反。注意第二週期的兩個<b>凹陷</b>：B 比 Be 低（B 的電子在能量較高的 2p）；O 比 N 低（O 的 2p 有一個軌域要放兩個電子，互相排斥，比較容易拿走一個）。',
+      en: '<b>電負度</b>：原子在鍵中吸引電子的能力。右上角最大（F = 3.98），左下角最小。電負度差決定鍵的極性，是判斷有機反應中哪裡帶 δ+、δ− 的依據。' }[cur];
+    pressSeg(el, 'trS', cur);
+  }
+  bindSeg(el, 'trS', v => { cur = v; draw(); });
+  draw();
+  return { set(s) { cur = s.p || cur; draw(); } };
 };
 
 /* ---------- 後中化學：醛與酮的互動圖 ---------- */
@@ -2240,6 +2587,95 @@ W.gibbs = el => {
   $$('[data-p]', el).forEach(b => { b.onclick = () => { const p = PRE[b.dataset.p]; st.dH = p[1]; st.dS = p[2]; draw(); }; });
   draw();
   return { set(s) { if (s.p) { const p = PRE[s.p]; st.dH = p[1]; st.dS = p[2]; } if (s.T != null) st.T = s.T; draw(); } };
+};
+
+/* ---------- 後中化學：化學鍵與分子形狀的互動圖 ---------- */
+
+/* ===== 1. 電負度差與鍵的類型 ===== */
+const EN = { H: 2.20, Li: 0.98, C: 2.55, N: 3.04, O: 3.44, F: 3.98, Na: 0.93, Mg: 1.31, Si: 1.90, P: 2.19, S: 2.58, Cl: 3.16, K: 0.82, Br: 2.96, I: 2.66 };
+W.bondtype = el => {
+  let a = 'H', b = 'Cl';
+  el.innerHTML = `<div class="w-row"><label class="sel">原子 A <select id="btA">${Object.keys(EN).map(k => `<option>${k}</option>`).join('')}</select></label><label class="sel">原子 B <select id="btB">${Object.keys(EN).map(k => `<option>${k}</option>`).join('')}</select></label><span class="sp"></span>${[['H', 'H'], ['C', 'H'], ['H', 'Cl'], ['C', 'O'], ['Na', 'Cl']].map(([x, y]) => `<button class="btn sm ghost" type="button" data-p="${x},${y}">${x}–${y}</button>`).join('')}</div><div id="btC"></div><p class="note" id="btN"></p>`;
+  function draw() {
+    const d = Math.abs(EN[a] - EN[b]), hi = EN[a] >= EN[b] ? a : b, lo = hi === a ? b : a;
+    $('#btC', el).innerHTML = chart({ x: [0, 3.3], y: [0, 1], xt: [0, 0.5, 1, 1.7, 2, 3], yt: [], xlab: '電負度差 ΔEN', h: 120 }, (X, Y) => `<rect x="${X(0)}" y="${Y(1)}" width="${X(0.5) - X(0)}" height="${Y(0) - Y(1)}" fill="var(--acid)" opacity=".12"/><rect x="${X(0.5)}" y="${Y(1)}" width="${X(1.7) - X(0.5)}" height="${Y(0) - Y(1)}" fill="var(--accent)" opacity=".12"/><rect x="${X(1.7)}" y="${Y(1)}" width="${X(3.3) - X(1.7)}" height="${Y(0) - Y(1)}" fill="var(--base)" opacity=".14"/><text class="tk" x="${X(0.25)}" y="${Y(0.85)}" text-anchor="middle">非極性共價</text><text class="tk" x="${X(1.1)}" y="${Y(0.85)}" text-anchor="middle">極性共價</text><text class="tk" x="${X(2.5)}" y="${Y(0.85)}" text-anchor="middle">離子性為主</text><circle class="dot" cx="${X(Math.min(3.2, d))}" cy="${Y(0.4)}" r="8"/>`);
+    $('#btN', el).innerHTML = a === b ? `${a}–${b}：完全相同的原子，電子平均共用，<b>非極性共價鍵</b>。` : `${a}（${EN[a]}）與 ${b}（${EN[b]}），ΔEN = ${fx(d, 2)}：${d < 0.5 ? '<b>非極性共價鍵</b>（C–H 屬此類，所以烷類幾乎不反應）' : d < 1.7 ? `<b>極性共價鍵</b>，電子偏向 ${hi}：${hi} 帶 δ−、${lo} 帶 δ+` : `<b>離子鍵為主</b>：電子幾乎完全轉移到 ${hi}，形成 ${lo}⁺ 與 ${hi}⁻`}。界線（0.5、1.7）只是大約的分法，鍵的性質是連續變化的。`;
+    $('#btA', el).value = a; $('#btB', el).value = b;
+  }
+  $('#btA', el).onchange = e => { a = e.target.value; draw(); };
+  $('#btB', el).onchange = e => { b = e.target.value; draw(); };
+  $$('[data-p]', el).forEach(x => { x.onclick = () => { [a, b] = x.dataset.p.split(','); draw(); }; });
+  draw();
+  return { set(s) { a = s.a || a; b = s.b || b; draw(); } };
+};
+
+/* ===== 2. VSEPR：電子區域與孤對電子 ===== */
+W.vsepr = el => {
+  // 各位置（二維投影）＋鍵型；孤對電子位置由前面開始放（三角雙錐先放赤道）
+  const GEO = {
+    2: [[[-1.3, 0], 's'], [[1.3, 0], 's']],
+    3: [[[0, 1.25], 's'], [[-1.1, -0.65], 's'], [[1.1, -0.65], 's']],
+    4: [[[0, 1.25], 's'], [[1.15, -0.4], 's'], [[-0.95, -0.55], 'w'], [[-0.25, -1.1], 'h']],
+    5: [[[1.3, 0], 's'], [[-0.75, -0.45], 'w'], [[-0.5, 0.55], 'h'], [[0, 1.35], 's'], [[0, -1.35], 's']],
+    6: [[[1.3, 0], 's'], [[-1.3, 0], 's'], [[0.6, 0.5], 'h'], [[-0.6, -0.5], 'w'], [[0, 1.35], 's'], [[0, -1.35], 's']],
+  };
+  const NAME = { '2,0': ['直線', '180°', 'CO₂、BeCl₂'], '3,0': ['平面三角形', '120°', 'BF₃、SO₃'], '3,1': ['彎曲', '< 120°', 'SO₂'], '4,0': ['正四面體', '109.5°', 'CH₄、CCl₄'], '4,1': ['三角錐', '約 107°', 'NH₃'], '4,2': ['彎曲', '約 104.5°', 'H₂O'],
+    '5,0': ['三角雙錐', '90°、120°', 'PCl₅'], '5,1': ['蹺蹺板', '< 90°、< 120°', 'SF₄'], '5,2': ['T 形', '< 90°', 'ClF₃'], '5,3': ['直線', '180°', 'XeF₂、I₃⁻'],
+    '6,0': ['正八面體', '90°', 'SF₆'], '6,1': ['四角錐', '< 90°', 'BrF₅'], '6,2': ['平面四方形', '90°', 'XeF₄'] };
+  const LPORDER = { 2: [], 3: [0], 4: [0, 3], 5: [0, 1, 2], 6: [4, 5] };
+  const st = { d: 4, lp: 1 };
+  el.innerHTML = `<div class="w-row"><span class="small">電子區域數</span>${[2, 3, 4, 5, 6].map(v => `<button class="btn sm" type="button" data-d="${v}">${v}</button>`).join('')}<span class="sp"></span><span class="small">其中孤對電子</span><span id="vsL"></span></div><div class="bgrid"><div id="vsM"></div><div class="cards" id="vsK"></div></div><p class="note" id="vsN"></p>`;
+  function draw() {
+    const maxlp = { 2: 0, 3: 1, 4: 2, 5: 3, 6: 2 }[st.d]; st.lp = Math.min(st.lp, maxlp);
+    $('#vsL', el).innerHTML = Array.from({ length: maxlp + 1 }, (_, i) => `<button class="btn sm${i === st.lp ? ' pri' : ''}" type="button" data-l="${i}">${i}</button>`).join('');
+    $$('[data-l]', el).forEach(b => { b.onclick = () => { st.lp = +b.dataset.l; draw(); }; });
+    $$('[data-d]', el).forEach(b => b.classList.toggle('pri', +b.dataset.d === st.d));
+    const lps = new Set(LPORDER[st.d].slice(0, st.lp)), atoms = { A: { x: 0, y: 0, t: 'A' } }, bonds = [];
+    GEO[st.d].forEach(([[x, y], k], i) => { if (lps.has(i)) { atoms['L' + i] = { x: x * 0.62, y: y * 0.62, t: '', lp: [Math.atan2(y, x) * 180 / Math.PI] }; return; } atoms['X' + i] = { x, y, t: 'X' }; bonds.push(['A', 'X' + i, k]); });
+    const svg = MOL.svg({ atoms, bonds }, { w: 260, h: 220, s: 62 }).replace(/<circle class="lp"/g, '<circle class="lp big"');
+    $('#vsM', el).innerHTML = svg;
+    const [nm, ang, ex] = NAME[`${st.d},${st.lp}`];
+    $('#vsK', el).innerHTML = card('g', '電子區域排列', { 2: '直線', 3: '平面三角形', 4: '四面體', 5: '三角雙錐', 6: '八面體' }[st.d]) + card('s', '分子形狀', nm) + card('a', '鍵角', ang);
+    $('#vsN', el).innerHTML = `例子：${ex}。電子區域（鍵或孤對）彼此排斥，盡量遠離，決定<b>電子區域的排列</b>；但<b>分子形狀</b>只看原子的位置，孤對電子「看不見」。孤對電子比鍵結電子佔更多空間，會把鍵角壓小（CH₄ 109.5° → NH₃ 107° → H₂O 104.5°）。${st.d === 5 && st.lp ? '三角雙錐的孤對電子放在<b>赤道</b>位置（120° 方向，比較寬敞）。' : ''}${st.d === 6 && st.lp === 2 ? '八面體的兩對孤對電子放在<b>相對</b>位置，互相離得最遠，所以是平面四方形。' : ''}`;
+  }
+  $$('[data-d]', el).forEach(b => { b.onclick = () => { st.d = +b.dataset.d; draw(); }; });
+  draw();
+  return { set(s) { Object.assign(st, s); draw(); } };
+};
+
+/* ===== 3. 分子極性：鍵偶極的向量和 ===== */
+W.dipole = el => {
+  const M = {
+    co2: { n: 'CO₂', a: { C: [0, 0, 'C'], O1: [-1.3, 0, 'O'], O2: [1.3, 0, 'O'] }, b: [['C', 'O1', 'd'], ['C', 'O2', 'd']], v: [[-1, 0], [1, 0]], polar: false },
+    h2o: { n: 'H₂O', a: { O: [0, 0.2, 'O'], H1: [-0.95, -0.55, 'H'], H2: [0.95, -0.55, 'H'] }, b: [['O', 'H1', 's'], ['O', 'H2', 's']], v: [[0.6, 0.55], [-0.6, 0.55]], polar: true },
+    bf3: { n: 'BF₃', a: { B: [0, 0, 'B'], F1: [0, 1.25, 'F'], F2: [-1.1, -0.65, 'F'], F3: [1.1, -0.65, 'F'] }, b: [['B', 'F1', 's'], ['B', 'F2', 's'], ['B', 'F3', 's']], v: [[0, 1], [-0.87, -0.5], [0.87, -0.5]], polar: false },
+    nh3: { n: 'NH₃', a: { N: [0, 0.25, 'N'], H1: [-1.05, -0.4, 'H'], H2: [0.3, -0.75, 'H'], H3: [1.0, -0.3, 'H'] }, b: [['N', 'H1', 's'], ['N', 'H2', 'w'], ['N', 'H3', 'h']], v: [[0.5, 0.3], [-0.1, 0.5], [-0.45, 0.3]], polar: true },
+    ccl4: { n: 'CCl₄', a: { C: [0, 0, 'C'], A: [0, 1.25, 'Cl'], B: [1.15, -0.4, 'Cl'], D: [-0.95, -0.55, 'Cl'], E: [-0.25, -1.1, 'Cl'] }, b: [['C', 'A', 's'], ['C', 'B', 's'], ['C', 'D', 'w'], ['C', 'E', 'h']], v: [], polar: false },
+    ch3cl: { n: 'CH₃Cl', a: { C: [0, 0, 'C'], A: [0, 1.25, 'Cl'], B: [1.15, -0.4, 'H'], D: [-0.95, -0.55, 'H'], E: [-0.25, -1.1, 'H'] }, b: [['C', 'A', 's'], ['C', 'B', 's'], ['C', 'D', 'w'], ['C', 'E', 'h']], v: [[0, 1]], polar: true },
+  };
+  let cur = 'h2o';
+  el.innerHTML = `${seg('dpS', Object.entries(M).map(([k, v]) => [k, v.n]), cur)}<div class="bgrid"><div id="dpM"></div><p class="note" id="dpN"></p></div>`;
+  function draw() {
+    const m = M[cur], atoms = Object.fromEntries(Object.entries(m.a).map(([k, [x, y, t]]) => [k, { x, y, t }]));
+    let svg = MOL.svg({ atoms, bonds: m.b }, { w: 280, h: 230, s: 62 });
+    const sx = 140, sy = 115, S = 62, sum = m.v.reduce((s, v) => [s[0] + v[0], s[1] + v[1]], [0, 0]), L = Math.hypot(...sum);
+    const arrows = m.polar ? `<line x1="${sx}" y1="${sy + 10}" x2="${sx + sum[0] / L * S * 1.2}" y2="${sy + 10 - sum[1] / L * S * 1.2}" class="netd" marker-end="url(#dpm)"/><defs><marker id="dpm" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--arrow)"/></marker></defs>` : '';
+    $('#dpM', el).innerHTML = svg.replace('</svg>', arrows + '</svg>');
+    $('#dpN', el).innerHTML = `<b>${m.n}</b>：${m.polar ? '<span class="ok">極性分子</span>。各鍵的偶極加起來不為零，紅色箭頭是淨偶極方向（指向電子偏向的一側）。' : '<span class="warn">非極性分子</span>。雖然每個鍵都有極性，但形狀對稱，鍵偶極互相抵消，淨偶極為零。'}判斷方法：先用 VSEPR 決定形狀，再把鍵偶極當向量相加。CCl₄ 非極性、CH₃Cl 極性，就是因為一個對稱、一個不對稱。`;
+    pressSeg(el, 'dpS', cur);
+  }
+  bindSeg(el, 'dpS', v => { cur = v; draw(); });
+  draw();
+  return { set(s) { cur = s.m || cur; draw(); } };
+};
+
+/* ===== 4. 分子間作用力：氫化物的沸點 ===== */
+W.imf = el => {
+  const G = { 14: ['CH₄', -161.5, 'SiH₄', -111.9, 'GeH₄', -88.5, 'SnH₄', -51.8], 15: ['NH₃', -33.3, 'PH₃', -87.7, 'AsH₃', -62.5, 'SbH₃', -17.0], 16: ['H₂O', 100.0, 'H₂S', -60.3, 'H₂Se', -41.3, 'H₂Te', -2.2], 17: ['HF', 19.5, 'HCl', -85.1, 'HBr', -66.8, 'HI', -35.4] };
+  const C = { 14: 'var(--muted)', 15: 'var(--acid)', 16: 'var(--arrow)', 17: 'var(--base)' };
+  el.innerHTML = `<div id="imC"></div><p class="note">第 14 族（CH₄ 系列）只有分散力：分子越大、電子越多，越容易被極化，沸點規律上升。第 15–17 族的第二週期（<b>NH₃、H₂O、HF</b>）沸點反常地高，因為 N、O、F 電負度大、半徑小，形成<b>氫鍵</b>。H₂O 每個分子可以形成四個氫鍵（兩個 H、兩對孤對電子），所以沸點最高。</p>`;
+  $('#imC', el).innerHTML = chart({ x: [1.5, 5.5], y: [-180, 120], xt: [2, 3, 4, 5], yt: [-150, -100, -50, 0, 50, 100], xlab: '週期', ylab: '沸點（°C）', h: 280, label: '氫化物沸點' }, (X, Y) => Object.entries(G).map(([g, d]) => { const pts = [0, 1, 2, 3].map(i => [X(i + 2), Y(d[2 * i + 1])]); return `<path d="${path(pts)}" fill="none" stroke="${C[g]}" stroke-width="2.4"/>${pts.map((p, i) => `<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="${C[g]}"/><text class="tk" x="${p[0] + 6}" y="${p[1] - 5}">${d[2 * i]}</text>`).join('')}`; }).join(''));
+  return { set() {} };
 };
 
 /* ---------- 後中化學：頁面框架（首頁、單元目錄、章節、練習題、進度） ---------- */
