@@ -2,7 +2,7 @@
 # 用無頭 Chrome 載入每一章：按下所有「在上方圖表示範這題」按鈕與所有數字卡；
 # 在實驗室頁跑過每一種分析並按遍數字卡。回報 JavaScript 錯誤，以及沒有對應圖上元素的數字卡。
 # 執行：sh tests/smoke.sh（需先 python3 build.py）
-cd "$(dirname "$0")/.." || exit 1
+cd "$(dirname "$0")/../.." || exit 1
 CHROME="${CHROME:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"
 TMP=$(mktemp -d)
 PROBE="$TMP/probe.html"
@@ -51,7 +51,7 @@ setTimeout(() => {
 EOF
 {
   printf '<script>window.__e=[];addEventListener("error",e=>__e.push(e.message));</script>'
-  sed 's#</body>#<script src="probe.js"></script></body>#' docs/index.html
+  sed 's#</body>#<script src="probe.js"></script></body>#' docs/biostat/index.html
 } > "$PROBE"
 # 每頁開一個獨立的無頭瀏覽器，同時跑 8 頁
 export CHROME PROBE TMP
@@ -60,7 +60,7 @@ run_page() {
   case "$r" in *"untaught= orphan= errors=") echo "ok   $1  $r" ;; *) echo "FAIL $1  ${r:-逾時（超過 60 秒）}" ;; esac
 }
 export -f run_page 2>/dev/null
-CHAPTERS=$(node -e "const fs=require('fs');const r=f=>fs.readFileSync('src/'+f,'utf8');console.log(new Function(r('core.js')+r('content.js')+';return CH;')().map(c=>c.id).join(' '))")
+CHAPTERS=$(node -e "const fs=require('fs');const r=f=>fs.readFileSync('src/biostat/'+f,'utf8');console.log(new Function(r('core.js')+r('content.js')+';return CH;')().map(c=>c.id).join(' '))")
 OUT=$(printf '%s\n' ${PAGES:-home $CHAPTERS lab data} | xargs -P ${SMOKE_JOBS:-4} -I{} bash -c 'run_page {}')
 # 逾時的頁面（通常是電腦忙碌）單獨再跑一次
 for h in $(echo "$OUT" | grep "逾時" | awk '{print $2}'); do

@@ -1,0 +1,48 @@
+<title>學習階梯</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/*BASE*/
+body { margin: 0; }
+.wrap { max-width: 1040px; margin: 0 auto; padding: 0 16px; }
+.prog-all { margin-left: auto; font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.hero-box { padding: 48px 0 28px; }
+.hero-box h1 { font-family: var(--display); font-size: clamp(30px, 6vw, 46px); margin: 0 0 12px; }
+.hero-box .lede { font-size: 17px; color: var(--muted); max-width: 640px; margin: 0; }
+.courses { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; padding: 8px 0 40px; }
+.course { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px 20px 18px; display: flex; flex-direction: column; gap: 10px; color: var(--ink); text-decoration: none; position: relative; border-top: 4px solid var(--cc, var(--accent)); transition: border-color .15s, transform .15s; }
+a.course:hover { transform: translateY(-2px); border-color: var(--cc, var(--accent)); }
+.course .glyph { font-family: var(--mono); font-size: 22px; color: var(--cc, var(--accent)); }
+.course h2 { font-family: var(--display); font-size: 24px; margin: 0; }
+.course p { margin: 0; color: var(--muted); font-size: 14.5px; }
+.course ul { margin: 0; padding-left: 18px; font-size: 14px; }
+.course .meter { display: flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 12px; color: var(--muted); margin-top: auto; padding-top: 6px; }
+.course .meter .bar { flex: 1; height: 6px; background: var(--sunk); border-radius: 3px; overflow: hidden; }
+.course .meter i { display: block; height: 100%; background: var(--cc, var(--accent)); }
+.course .go { font-weight: 700; color: var(--cc, var(--accent)); }
+.course.soon { opacity: .75; }
+.badge { position: absolute; top: 14px; right: 14px; font-size: 12px; border-radius: 99px; padding: 2px 10px; background: var(--warn-soft); color: var(--warn); }
+.how { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line); padding: 20px 0 40px; }
+.how b { color: var(--ink); }
+</style>
+
+<header class="top"><div class="top-in">
+  <a class="brand" href="./" style="text-decoration:none">學習階梯<small>LEARN LADDER</small></a>
+  <span class="prog-all" id="progAll"></span>
+</div></header>
+<main class="wrap">
+  <section class="hero-box">
+    <p class="eyebrow" id="eb">互動圖解 · 從原理學起</p>
+    <h1 id="h1">一階一階，把難的東西學懂。</h1>
+    <p class="lede" id="lede">每門課都從直覺和圖像開始，再講原理與應用。不用安裝軟體，手機也能學；登入後進度在不同裝置同步。</p>
+    <div id="syncSlot"></div>
+  </section>
+  <section class="courses" id="courses" aria-label="課程"></section>
+  <p class="how" id="how"></p>
+</main>
+<script>
+/*PURE*/
+/*CONTENT*/
+/*APP*/
+</script>

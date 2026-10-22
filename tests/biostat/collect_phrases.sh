@@ -2,7 +2,7 @@
 # 收集介面與互動圖上會出現的中文片語（不含內容包已處理的章節內文、練習題、名詞），供翻譯片語字典使用。
 # 用法：bash tests/collect_phrases.sh > /tmp/phrases.json（需先 python3 build.py）
 # UI_LANG=en：改為檢查英文模式翻譯後仍殘留的中文（輸出殘留片語；空陣列＝通過）
-cd "$(dirname "$0")/.." || exit 1
+cd "$(dirname "$0")/../.." || exit 1
 CHROME="${CHROME:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"
 TMP=$(mktemp -d)
 cat > "$TMP/probe.js" <<'EOF'
@@ -46,7 +46,7 @@ cat > "$TMP/probe.js" <<'EOF'
   const pre = document.createElement('pre'); pre.id = '__out'; pre.textContent = JSON.stringify([...out]); document.body.appendChild(pre);
 })();
 EOF
-sed 's#</body>#<script src="probe.js"></script></body>#' docs/index.html > "$TMP/p.html"
+sed 's#</body>#<script src="probe.js"></script></body>#' docs/biostat/index.html > "$TMP/p.html"
 export CHROME TMP UI_LANG
 one() {
   # Chrome 會忽略 SIGALRM，改用看門狗在逾時後強制結束
@@ -56,6 +56,6 @@ one() {
   python3 -c "import sys,re,json,html;s=open(sys.argv[1]).read();m=re.search(r'<pre id=\"__out\">(.*?)</pre>',s,re.S);print(json.dumps(json.loads(html.unescape(m.group(1))) if m else ['__FAIL__ $1'],ensure_ascii=False))" "$TMP/out-$1"
 }
 export -f one
-PAGES=${PAGES:-"home lab data $(node -e "const fs=require('fs');const r=f=>fs.readFileSync('src/'+f,'utf8');console.log(new Function(r('core.js')+r('content.js')+';return CH;')().map(c=>c.id).join(' '))")"}
+PAGES=${PAGES:-"home lab data $(node -e "const fs=require('fs');const r=f=>fs.readFileSync('src/biostat/'+f,'utf8');console.log(new Function(r('core.js')+r('content.js')+';return CH;')().map(c=>c.id).join(' '))")"}
 printf '%s\n' $PAGES | xargs -P ${JOBS:-4} -I{} bash -c 'one {} 2>/dev/null' | python3 -c "import sys,json;s=set();f=[];[ (f.append(x) if x.startswith('__FAIL__') else s.add(x)) for l in sys.stdin if l.strip() for x in json.loads(l)];print(json.dumps(sorted(s),ensure_ascii=False,indent=0));sys.stderr.write('phrases %d, failed %s\n'%(len(s),f))"
 rm -rf "$TMP"

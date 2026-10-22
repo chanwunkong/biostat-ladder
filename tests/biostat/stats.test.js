@@ -2,7 +2,7 @@
 // 執行：node tests/stats.test.js
 const fs = require('fs');
 const path = require('path');
-const src = fs.readFileSync(path.join(__dirname, '..', 'src', 'core.js'), 'utf8');
+const src = fs.readFileSync(path.join(__dirname, '..', '..', 'src', 'biostat', 'core.js'), 'utf8');
 const { S, AN, DATASETS, makeDS, dsFromText } = new Function(src + '; return { S, AN, DATASETS, makeDS, dsFromText };')();
 
 let fail = 0;

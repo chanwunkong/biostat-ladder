@@ -4,7 +4,7 @@
 // 執行：node tests/content.test.js
 const fs = require('fs');
 const path = require('path');
-const read = f => fs.readFileSync(path.join(__dirname, '..', 'src', f), 'utf8');
+const read = f => fs.readFileSync(path.join(__dirname, '..', '..', 'src', 'biostat', f), 'utf8');
 const { CH, GLOSS } = new Function(read('core.js') + read('content.js') + '; return { CH, GLOSS };')();
 const dsrc = read('demos.js');
 const QD = new Function('CH', dsrc.slice(0, dsrc.indexOf('function applyDemo')) + '; return QD;')(CH);

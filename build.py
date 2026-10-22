@@ -1,42 +1,56 @@
 #!/usr/bin/env python3
-"""把 src/ 組成單一網頁。
+"""學習階梯：把 src/ 組成首頁與各課程的單一網頁。
 
 產出：
-  docs/index.html      完整 HTML，給 GitHub Pages
-  dist/artifact.html   不含 <html>/<head> 外殼，給 Claude Artifact（發佈時會自動補上）
+  docs/index.html            首頁（課程總覽）
+  docs/<課程>/index.html     各課程完整 HTML，給 GitHub Pages
+  dist/<課程>.html           不含 <html>/<head> 外殼，給 Claude Artifact（發佈時會自動補上）
+  docs/manifest.webmanifest、icon-*.png、sw.js   全站共用的 PWA 檔案
+
+原始碼：src/<課程>/ 為各課程；src/shared/ 為共用模組（腳本名稱前加 @ 表示從 shared 取）。
 """
+import hashlib
+import json
 from pathlib import Path
 
 ROOT = Path(__file__).parent
 SRC = ROOT / "src"
-# 載入順序有相依性：core（統計、圖表、分析）→ content（課程）→ app（介面）→ widgets（互動圖）→ demos（練習題示範，最後啟動）
-SCRIPTS = ["core.js", "content.js", "app.js", "widgets.js", "terms.js", "demos.js", "i18n.js", "lang-en.js", "cloud.js", "start.js"]
+SITE = "學習階梯"
+# 各課程：載入順序有相依性（生統：core → content → app → widgets → terms → demos → 多語系 → 同步 → 啟動）
+COURSES = {
+    "biostat": {
+        "scripts": ["core.js", "content.js", "app.js", "widgets.js", "terms.js", "demos.js", "i18n.js", "lang-en.js", "@cloud.js", "start.js"],
+        "desc": "從國中數學到可投稿論文的互動式生物統計課程，含不需寫程式的分析實驗室。",
+        "theme": "#2F3B99",
+    },
+}
+PORTAL = {"scripts": ["@cloud.js", "portal.js"], "desc": "學習階梯：用互動圖解從原理學起的線上課程。", "theme": "#2F3B99"}
 
 HEAD = """<!doctype html>
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="從國中數學到可投稿論文的互動式生物統計課程，含不需寫程式的分析實驗室。">
+<meta name="description" content="{desc}">
 <meta name="app-site" content="pages">
-<meta name="theme-color" content="#2F3B99">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" type="image/png" href="icon-192.png">
-<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="{theme}">
+<link rel="manifest" href="{root}manifest.webmanifest">
+<link rel="icon" type="image/png" href="{root}icon-192.png">
+<link rel="apple-touch-icon" href="{root}icon-192.png">
 <style>
-:root { color-scheme: light; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
-body { margin: 0; font: 14px system-ui, sans-serif; }
-img { max-width: 100%; }
-[hidden] { display: none !important; }
+:root {{ color-scheme: light; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }}
+body {{ margin: 0; font: 14px system-ui, sans-serif; }}
+img {{ max-width: 100%; }}
+[hidden] {{ display: none !important; }}
 </style>
 """
 
 
-def phrase_tables():
+def phrase_tables(cdir):
     """src/lang/<語言>/*.tsv：每行「中文片語<TAB>譯文」，數字已換成 {0}、{1}…；轉成片語字典。"""
     import json
     out = []
-    for d in sorted((SRC / "lang").glob("*")):
+    for d in sorted((cdir / "lang").glob("*")):
         ph = {}
         for t in sorted(d.glob("*.tsv")):
             for n, line in enumerate(t.read_text(encoding="utf-8").splitlines(), 1):
@@ -71,50 +85,67 @@ def png_icon(size):
             + chunk(b"IDAT", zlib.compress(b"".join(rows), 9)) + chunk(b"IEND", b""))
 
 
-def pwa(full):
-    """PWA：manifest、圖示、service worker（快取版本＝頁面內容的雜湊，內容一改就換新快取）。"""
-    import hashlib, json
+def pwa(pages):
+    """PWA：manifest、圖示、service worker（快取版本＝所有頁面內容的雜湊，內容一改就換新快取）。"""
     docs = ROOT / "docs"
     for n in (192, 512):
         (docs / f"icon-{n}.png").write_bytes(png_icon(n))
-    man = {"name": "生統階梯 Biostat Ladder", "short_name": "生統階梯", "start_url": "./", "scope": "./",
+    man = {"name": SITE, "short_name": SITE, "start_url": "./", "scope": "./",
            "display": "standalone", "background_color": "#F3F4F0", "theme_color": "#2F3B99",
            "icons": [{"src": f"icon-{n}.png", "sizes": f"{n}x{n}", "type": "image/png", "purpose": "any maskable"} for n in (192, 512)]}
     (docs / "manifest.webmanifest").write_text(json.dumps(man, ensure_ascii=False, indent=1), encoding="utf-8")
-    ver = hashlib.sha1(full.encode()).hexdigest()[:10]
-    (docs / "sw.js").write_text((SRC / "sw.js").read_text(encoding="utf-8").replace("__VERSION__", ver), encoding="utf-8")
+    ver = hashlib.sha1("".join(pages.values()).encode()).hexdigest()[:10]
+    urls = ["./", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"] + [f"./{k}/" for k in pages if k]
+    sw = (SRC / "shared" / "sw.js").read_text(encoding="utf-8").replace("__VERSION__", ver).replace("__URLS__", json.dumps(urls))
+    (docs / "sw.js").write_text(sw, encoding="utf-8")
+
+
+def assemble(cdir, scripts):
+    """依序串接腳本，套進 shell.html；回傳不含外殼的頁面（給 Artifact）。"""
+    shell = (cdir / "shell.html").read_text(encoding="utf-8")
+    shell = shell.replace("/*BASE*/", (SRC / "shared" / "base.css").read_text(encoding="utf-8"))
+    files = []
+    for f in scripts:
+        files.append(SRC / "shared" / f[1:] if f.startswith("@") else cdir / f)
+        if f.startswith("lang-"):  # 語言包的分檔：<課程>/lang/<語言>/*.js
+            files += sorted((cdir / "lang" / f[5:-3]).glob("*.js"))
+    # 片語字典要在最後一支（啟動、開始翻譯）之前載入
+    js = "\n".join(p.read_text(encoding="utf-8") for p in files[:-1])
+    js += "\n" + phrase_tables(cdir) + "\n" + files[-1].read_text(encoding="utf-8")
+    if "</script" in js.lower():
+        raise SystemExit(f"{cdir.name}：原始碼中出現 </script>，會提早結束 script 標籤")
+    if "\ufffd" in shell + js:
+        raise SystemExit(f"{cdir.name}：原始碼中有 U+FFFD 替換字元，請改寫成 \\uFFFD")
+    page = shell.replace("/*PURE*/\n/*CONTENT*/\n/*APP*/", js)
+    if page == shell:
+        raise SystemExit(f"{cdir.name}/shell.html 找不到 /*PURE*/ /*CONTENT*/ /*APP*/ 佔位符")
+    return page
+
+
+def full_html(page, cfg, root):
+    style_end = page.index("</style>") + len("</style>")
+    assert page.index("</title>") < style_end
+    head = HEAD.format(desc=cfg["desc"], theme=cfg["theme"], root=root)
+    return head + page[:style_end] + "\n</head>\n<body>\n" + page[style_end:] + "\n</body>\n</html>\n"
 
 
 def build():
-    shell = (SRC / "shell.html").read_text(encoding="utf-8")
-    files = []
-    for f in SCRIPTS:
-        files.append(SRC / f)
-        if f.startswith("lang-"):  # 語言包的分檔：src/lang/<語言>/*.js
-            files += sorted((SRC / "lang" / f[5:-3]).glob("*.js"))
-    # 片語字典要在 start.js（啟動翻譯）之前載入
-    js = "\n".join(p.read_text(encoding="utf-8") for p in files[:-1])
-    js += "\n" + phrase_tables() + "\n" + files[-1].read_text(encoding="utf-8")
-    if "</script" in js.lower():
-        raise SystemExit("原始碼中出現 </script>，會提早結束 script 標籤")
-    if "�" in shell + js:
-        raise SystemExit("原始碼中有 U+FFFD 替換字元，請改寫成 \\uFFFD")
-    page = shell.replace("/*PURE*/\n/*CONTENT*/\n/*APP*/", js)
-    if page == shell:
-        raise SystemExit("shell.html 找不到 /*PURE*/ /*CONTENT*/ /*APP*/ 佔位符")
-
-    (ROOT / "dist").mkdir(exist_ok=True)
-    (ROOT / "dist" / "artifact.html").write_text(page, encoding="utf-8")
-    title_end = page.index("</title>") + len("</title>")
-    style_end = page.index("</style>") + len("</style>")
-    full = HEAD + page[:style_end] + "\n</head>\n<body>\n" + page[style_end:] + "\n</body>\n</html>\n"
-    assert title_end < style_end
-    (ROOT / "docs").mkdir(exist_ok=True)
-    (ROOT / "docs" / "index.html").write_text(full, encoding="utf-8")
-    (ROOT / "docs" / ".nojekyll").write_text("", encoding="utf-8")
-    pwa(full)
-    print(f"docs/index.html  {len(full.encode()) // 1024} KB")
-    print(f"dist/artifact.html  {len(page.encode()) // 1024} KB")
+    docs, dist = ROOT / "docs", ROOT / "dist"
+    docs.mkdir(exist_ok=True); dist.mkdir(exist_ok=True)
+    (docs / ".nojekyll").write_text("", encoding="utf-8")
+    pages = {}
+    for cid, cfg in COURSES.items():
+        page = assemble(SRC / cid, cfg["scripts"])
+        (dist / f"{cid}.html").write_text(page, encoding="utf-8")
+        (docs / cid).mkdir(exist_ok=True)
+        pages[cid] = full_html(page, cfg, "../")
+        (docs / cid / "index.html").write_text(pages[cid], encoding="utf-8")
+        print(f"docs/{cid}/index.html  {len(pages[cid].encode()) // 1024} KB")
+    page = assemble(SRC / "portal", PORTAL["scripts"])
+    pages[""] = full_html(page, PORTAL, "")
+    (docs / "index.html").write_text(pages[""], encoding="utf-8")
+    print(f"docs/index.html  {len(pages[''].encode()) // 1024} KB")
+    pwa(pages)
 
 
 if __name__ == "__main__":

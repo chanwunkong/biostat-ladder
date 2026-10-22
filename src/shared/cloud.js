@@ -1,22 +1,27 @@
-/* ---------- 雲端同步（Firebase）：Google 登入後，把「已完成的章節」存到 Firestore ----------
+/* ---------- 雲端同步（Firebase，各課程與首頁共用）：Google 登入後，把「已完成的章節」存到 Firestore ----------
    只在正式網站（GitHub Pages，HEAD 帶 app-site meta）啟用；Artifact 與本機檔案不載入 SDK。
-   位置：users/{uid}/settings/biostatLadder ＝ { done: {章節id: 1}, lang, updated }
-   介面：右上角按鈕 → 下拉面板說明「登入有什麼用」與目前同步狀態；首頁在有進度但未登入時提示。 */
+   位置：users/{uid}/settings/<課程 doc> ＝ { done: {章節id: 1}, lang, updated }
+   使用前先定義 COURSE：
+     tracks: [{ doc, get() → 已完成表, set(表) }]   課程頁一條；首頁列出全部課程，一次同步
+     count() / total()                             面板上顯示的完成章數
+     refresh()                                     從雲端合併進新章節後重畫畫面
+   介面：右上角按鈕 → 下拉面板說明「登入有什麼用」與目前同步狀態；hint() 給首頁的提示列。 */
 const CLOUD = (() => {
   const CFG = { apiKey: 'AIzaSyD8oEe02SY2PCDe3d40NtTprrApqW_DhB8', authDomain: 'test-5dbba.firebaseapp.com', projectId: 'test-5dbba' };
   const SDK = 'https://www.gstatic.com/firebasejs/10.12.0/firebase-';
   let auth = null, db = null, user = null, timer = 0, ready = false, busy = false, err = '', last = 0;
   const on = () => !!document.querySelector('meta[name="app-site"]') && /^https?:$/.test(location.protocol);
   const load = src => new Promise((ok, no) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s); });
-  const ref = () => db.collection('users').doc(user.uid).collection('settings').doc('biostatLadder');
-  const T = (zh, en) => (isZh() ? zh : en);
-  const nDone = () => CH.filter(c => state.done[c.id]).length;
-  const time = t => new Date(t).toLocaleTimeString(isZh() ? 'zh-TW' : 'en', { hour: '2-digit', minute: '2-digit' });
+  const ref = doc => db.collection('users').doc(user.uid).collection('settings').doc(doc);
+  const zh = () => (typeof isZh === 'function' ? isZh() : true), lang = () => (typeof I18N !== 'undefined' ? I18N.lang : 'zh-TW');
+  const T = (a, b) => (zh() ? a : b);
+  const nDone = () => COURSE.count();
+  const time = t => new Date(t).toLocaleTimeString(zh() ? 'zh-TW' : 'en', { hour: '2-digit', minute: '2-digit' });
   const G = '<svg viewBox="0 0 18 18" width="16" height="16" aria-hidden="true"><path fill="#4285F4" d="M17.6 9.2c0-.6-.1-1.2-.2-1.7H9v3.3h4.8a4.1 4.1 0 0 1-1.8 2.7v2.2h2.9c1.7-1.6 2.7-3.9 2.7-6.5z"/><path fill="#34A853" d="M9 18c2.4 0 4.5-.8 5.9-2.2L12 13.6c-.8.5-1.8.9-3 .9-2.3 0-4.3-1.6-5-3.7H1v2.3A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M4 10.8a5.4 5.4 0 0 1 0-3.5V4.9H1a9 9 0 0 0 0 8.1l3-2.3z"/><path fill="#EA4335" d="M9 3.6c1.3 0 2.5.5 3.4 1.3l2.6-2.6A9 9 0 0 0 1 4.9l3 2.3c.7-2.1 2.7-3.6 5-3.6z"/></svg>';
 
   function panelHTML() {
     if (!ready) return `<p class="cp-t">${T('連線中…', 'Connecting…')}</p>`;
-    const n = nDone(), tot = CH.length, e = err ? `<p class="cp-err">${esc(err)}</p>` : '';
+    const n = nDone(), tot = COURSE.total(), e = err ? `<p class="cp-err">${esc(err)}</p>` : '';
     if (!user) return `<p class="cp-t">${T('在不同裝置接著學', 'Pick up where you left off on any device')}</p>
 <p>${T('用 Google 帳號登入後，你完成的章節會存到雲端。之後在手機或其他電腦登入同一個帳號，進度會自動接上。', 'Sign in with Google and the chapters you finish are saved to the cloud. Sign in with the same account on your phone or another computer and your progress follows you.')}</p>
 <p class="cp-st">${T(`目前：進度只存在這台裝置（已完成 ${n} / ${tot} 章）`, `Now: progress is saved on this device only (${n} / ${tot} chapters done)`)}</p>
@@ -55,20 +60,24 @@ const CLOUD = (() => {
   function push() {
     if (!user) return;
     clearTimeout(timer); busy = true; render();
-    timer = setTimeout(() => ref().set({ done: state.done, lang: I18N.lang, updated: Date.now() })
+    timer = setTimeout(() => Promise.all(COURSE.tracks.map(t => ref(t.doc).set({ done: t.get(), lang: lang(), updated: Date.now() })))
       .then(() => { busy = false; err = ''; last = Date.now(); render(); })
       .catch(e => { busy = false; err = T('同步失敗：', 'Sync failed: ') + e.code; render(); }), 800);
   }
   async function pull() {
     try {
       busy = true; render();
-      const snap = await ref().get(), remote = (snap.exists && snap.data().done) || {};
-      const added = Object.keys(remote).filter(k => !state.done[k] && CH.some(c => c.id === k));
-      added.forEach(k => { state.done[k] = 1; });
-      store.set('done', state.done);
-      if (added.length) { updateProgress(); route(location.hash.slice(1)); }
+      let added = 0, ahead = false;
+      for (const t of COURSE.tracks) {
+        const snap = await ref(t.doc).get(), remote = (snap.exists && snap.data().done) || {}, local = { ...t.get() };
+        const add = Object.keys(remote).filter(k => !local[k]);
+        add.forEach(k => { local[k] = 1; });
+        if (add.length) { t.set(local); added += add.length; }
+        if (Object.keys(local).some(k => !remote[k])) ahead = true;
+      }
+      if (added) COURSE.refresh();
       busy = false; last = Date.now(); err = '';
-      if (Object.keys(state.done).some(k => !remote[k])) push(); else render();
+      if (ahead) push(); else render();
     } catch (e) { busy = false; err = T('同步失敗：', 'Sync failed: ') + e.code; render(); }
   }
   // 首頁提示：有進度、還沒登入、沒按過「不用了」時才出現

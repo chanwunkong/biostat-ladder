@@ -1,6 +1,6 @@
 {
- "name": "生統階梯 Biostat Ladder",
- "short_name": "生統階梯",
+ "name": "學習階梯",
+ "short_name": "學習階梯",
  "start_url": "./",
  "scope": "./",
  "display": "standalone",
