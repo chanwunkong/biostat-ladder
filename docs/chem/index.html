@@ -293,6 +293,11 @@ svg.ch, svg.mol, svg.en, svg.bk, svg.ions { width: 100%; height: auto; display: 
 .oxs { border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; font-family: var(--mono); font-size: 14px; background: var(--bg); }
 .oxs.end { border-color: var(--accent); background: var(--soft); font-weight: 700; }
 .oxa { color: var(--arrow); font-size: 20px; }
+.ladder2 { margin: 6px 0 10px; }
+.rung { border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; margin: 4px 0; background: var(--bg); font-size: 13.5px; display: grid; }
+.rung span { font-family: var(--mono); font-size: 12.5px; } .rung small { color: var(--muted); }
+.rung.from { border-color: var(--acid); background: color-mix(in srgb, var(--acid) 10%, var(--bg)); }
+.rung.to { border-color: var(--arrow); background: color-mix(in srgb, var(--arrow) 10%, var(--bg)); }
 /* 練習題 */
 .q { border-top: 1px solid var(--line); padding: 14px 0; }
 .qt { font-weight: 500; margin: 0 0 8px; }
@@ -616,6 +621,49 @@ CH.push({
         why: '當量點 pH 約 8.7，落在暴衝區中段。酚酞在這段變色；甲基橙、甲基紅會在緩衝區就變色，造成終點提早。', show: { w: 'indicator', set: { ind: 'mo', v: 8 } } },
     ],
   });
+
+/* ---------- 後中化學：羧酸及其衍生物 ---------- */
+CH.push({
+  id: 'acyl', unit: 'o9', title: '羧酸及其衍生物：親核醯基取代',
+  lede: '羧酸衍生物和醛酮一樣有羰基，但羰基碳上多了一個能離開的基團，所以加成之後會再脫去，結果變成取代。只要比較離去基的好壞，就能排出反應性順序，知道哪些轉換做得到。',
+  sections: [
+    { h: '羧酸', body: `
+<p>羧酸（RCOOH）的酸性來自羧酸根的共振（兩個 O 平分負電荷），pKa 約 4–5（有機酸鹼一章）。拉電子基使酸性增強，例如三氯乙酸 pKa 0.65。</p>
+<p>在生理 pH（約 7.4）下，羧酸幾乎完全以<b>羧酸根</b>（RCOO⁻）存在：胺基酸、脂肪酸、許多藥物都是如此。這影響它們的溶解度與能否穿過細胞膜。</p>
+<p>羧酸的製備：一級醇或醛氧化、烷基苯以 KMnO₄ 氧化（側鏈變成 COOH）、格任亞試劑加 CO₂、腈（R–CN）水解。</p>` },
+    { h: '親核醯基取代：先加成、再脫去', w: 'nacyl', body: `
+<p>醯氯、酸酐、酯、醯胺都是<b>羧酸衍生物</b>：羰基碳上接著一個電負度大的原子（Cl、O、N）。它們的共同反應：</p>
+<ol><li>親核基加成到羰基碳，形成<b>四面體中間物</b>（和醛酮相同）；</li><li>C=O 重新形成，把較好的離去基擠出去。</li></ol>
+<p>醛酮停在第 1 步，是因為 H⁻ 和 R⁻ 不會離開；羧酸衍生物則有 Cl⁻、RCOO⁻、RO⁻ 等可以離開，所以會走完第 2 步。</p>` },
+    { h: '反應性順序與轉換', w: 'acylrank', body: `
+<p class="eq">醯氯 &gt; 酸酐 &gt; 酯 ≈ 羧酸 &gt; 醯胺 &gt; 羧酸根</p>
+<p>兩個原因指向同一個方向：</p>
+<ul><li><b>離去基能力</b>：共軛酸越強越好離開（Cl⁻ 最好、NH₂⁻ 最差）。</li><li><b>共振穩定</b>：接在羰基上的原子把孤對電子共振給羰基，降低羰基碳的正電性。N 給得最多，所以醯胺最穩定（蛋白質的胜肽鍵在水中可以保存很久）。</li></ul>
+<p>結論：<b>只能往下轉換</b>，從活潑的變成穩定的。例如醯氯加醇得到酯、加胺得到醯胺；但酯不能直接變成醯氯。</p>` },
+    { h: '酯化、水解與其他反應', w: 'ester', body: `
+<ul><li><b>費雪酯化</b>：羧酸 + 醇，酸催化，可逆（K 約 1–10）。用過量醇或移除水提高產率。</li>
+<li><b>酯的水解</b>：酸性水解可逆；鹼性水解（<b>皂化</b>）因生成羧酸根而不可逆。油脂皂化得到肥皂（脂肪酸鈉）與甘油。</li>
+<li><b>還原</b>：LiAlH₄ 把酯、羧酸還原成一級醇；醯胺還原成胺。NaBH₄ 太弱，通常不還原酯。</li>
+<li><b>格任亞試劑</b>：和酯反應兩次（第一次取代成酮，酮更活潑，立刻再加成一次），得到三級醇。</li>
+<li><b>克來森縮合</b>：酯的 α-H 被拿走形成烯醇離子，攻擊另一個酯的羰基，得到 β-酮酯，相當於酯版本的醛醇反應。脂肪酸合成與分解都用到這類反應。</li></ul>` },
+  ],
+  quiz: [
+    { q: '羧酸衍生物與醛酮都會被親核基攻擊，為什麼羧酸衍生物發生「取代」而非「加成」？', o: ['羰基碳上有可以離開的基團', '羧酸衍生物不是平面', '羧酸衍生物的羰基沒有極性', '醛酮沒有羰基'], a: 0,
+      why: '四面體中間物重新形成 C=O 時，可以把 Cl⁻、RO⁻ 等離去基擠出去；醛酮的 H⁻、R⁻ 不會離開。', show: { w: 'nacyl', set: { x: 'cl', step: 2 } } },
+    { q: '下列羧酸衍生物對親核醯基取代的反應性由大到小為？', o: ['醯氯 > 酸酐 > 酯 > 醯胺', '醯胺 > 酯 > 酸酐 > 醯氯', '酯 > 醯氯 > 醯胺 > 酸酐', '酸酐 > 醯氯 > 醯胺 > 酯'], a: 0,
+      why: '離去基能力 Cl⁻ > RCOO⁻ > RO⁻ > NH₂⁻，且共振給電子能力相反，所以順序一致。', show: { w: 'acylrank', set: { a: 0, b: 3 } } },
+    { q: '下列哪一個轉換「不能」直接進行？', o: ['酯 → 醯氯', '醯氯 → 酯', '酸酐 → 醯胺', '醯氯 → 醯胺'], a: 0,
+      why: '只能從活潑的衍生物往較穩定的方向轉換。酯要先水解成羧酸，再用 SOCl₂ 轉成醯氯。', show: { w: 'acylrank', set: { a: 2, b: 0 } } },
+    { q: '費雪酯化（K ≈ 4）中，下列哪一種做法無法提高酯的產率？', o: ['加入更多硫酸催化劑', '使用大量過量的醇', '移除生成的水', '使用過量的羧酸'], a: 0,
+      why: '催化劑只加快到達平衡的速度，不改變平衡位置。過量反應物或移除產物才能使平衡右移。', show: { w: 'ester', set: { r: 10 } } },
+    { q: '酯在鹼性條件下水解（皂化）為什麼是不可逆的？', o: ['生成的羧酸立刻被鹼去質子成為羧酸根，無法再被醇進攻', '鹼使酯變成醯氯', '醇會揮發', '鹼是催化劑'], a: 0,
+      why: '羧酸根帶負電、是最不活潑的衍生物，不會再被醇進攻，平衡被完全拉向產物。', show: { w: 'nacyl', set: { x: 'es', step: 2 } } },
+    { q: '乙酸乙酯與過量 CH₃MgBr 反應後酸處理，產物主要為？', o: ['2-甲基-2-丙醇（三級醇）', '丙酮', '乙醇', '2-丁醇'], a: 0,
+      why: '第一當量取代乙氧基成為丙酮；酮比酯更活潑，立刻再加成一次，得到三級醇。' },
+    { q: '為什麼醯胺（例如蛋白質的胜肽鍵）在水中很穩定？', o: ['N 的孤對電子強烈共振給羰基，且 NH₂⁻ 是極差的離去基', '醯胺沒有羰基', '醯胺是強酸', '醯胺不溶於水'], a: 0,
+      why: '兩個因素都讓醯胺成為最不活潑的衍生物；體內要靠蛋白酶才能有效水解胜肽鍵。', show: { w: 'nacyl', set: { x: 'am', step: 1 } } },
+  ],
+});
 
 /* ---------- 後中化學：醇、醚與環氧化物 ---------- */
 CH.push({
@@ -1874,6 +1922,64 @@ W.decide = el => {
   $('#dh', el).onchange = e => { st.heat = e.target.checked; draw(); };
   draw();
   return { set(s) { Object.assign(st, s); draw(); } };
+};
+
+/* ---------- 後中化學：羧酸及其衍生物的互動圖 ---------- */
+
+/* ===== 1. 親核醯基取代：加成–脫去 ===== */
+W.nacyl = el => {
+  const X = { cl: ['醯氯', 'Cl', [0, 270, 315]], es: ['酯', 'OCH₃', [0, 270]], am: ['醯胺', 'NH₂', [270]] };
+  let cur = 'cl', pl;
+  el.innerHTML = `${seg('nyS', Object.entries(X).map(([k, v]) => [k, `${v[0]} + OH⁻`]), cur)}<div id="nyP"></div>`;
+  const frames = () => {
+    const [nm, xl, xlp] = X[cur];
+    const F0 = { atoms: { C: { x: 0, y: 0, t: 'C', c: 'δ+' }, O: { x: 0, y: 1.25, t: 'O', lp: [45, 135] }, Me: { x: -1.15, y: -0.6, t: 'CH₃' }, X: { x: 1.2, y: -0.6, t: xl, lp: xlp }, N: { x: -0.35, y: -2.1, t: 'HO', c: '−', lp: [70] } }, bonds: [['C', 'O', 'd'], ['C', 'Me', 's'], ['C', 'X', 's']],
+      arrows: [{ f: { lp: ['N', 70] }, t: { a: 'C' }, bend: -0.25 }, { f: { b: ['C', 'O'] }, t: { a: 'O' }, bend: -0.8 }], notes: [{ x: 0, y: -2.85, t: `${nm}（平面羰基）` }] };
+    const F1 = { atoms: { C: { x: 0, y: 0, t: 'C' }, O: { x: 0.2, y: 1.2, t: 'O', c: '−', lp: [0, 90, 150] }, Me: { x: -1.15, y: -0.45, t: 'CH₃' }, X: { x: 1.15, y: -0.55, t: xl, lp: xlp }, N: { x: -0.2, y: -1.2, t: 'HO' } }, bonds: [['C', 'O', 's'], ['C', 'Me', 's'], ['C', 'X', 's'], ['C', 'N', 's']],
+      arrows: [{ f: { lp: ['O', 150] }, t: { m: ['C', 'O'] }, bend: 0.6 }, { f: { b: ['C', 'X'] }, t: { a: 'X' }, bend: 0.7 }], notes: [{ x: 0, y: -2.85, t: '四面體中間物' }] };
+    const F2 = { atoms: { C: { x: 0, y: 0, t: 'C' }, O: { x: 0, y: 1.25, t: 'O', lp: [45, 135] }, Me: { x: -1.15, y: -0.6, t: 'CH₃' }, X: { x: 2.4, y: -1.1, t: xl, c: '−', lp: xlp }, N: { x: 1.15, y: -0.6, t: 'OH' } }, bonds: [['C', 'O', 'd'], ['C', 'Me', 's'], ['C', 'N', 's']], notes: [{ x: 0, y: -2.85, t: `乙酸 + ${xl}⁻` }] };
+    return [
+      { sc: F0, at: 0, cap: '<b>加成</b>：和醛酮一樣，親核基攻擊羰基碳，π 電子推到 O 上。' },
+      { sc: F1, at: 0.45, cap: '生成<b>四面體中間物</b>。到這裡為止和醛酮完全相同；差別是羰基碳上有一個可以離開的基團。' },
+      { sc: F2, at: 1, cap: `<b>脫去</b>：O 上的電子推回來重新形成 C=O，把 ${xl}⁻ 擠出去。結果是 ${xl} 被 OH 取代：<b>親核醯基取代</b>。${cur === 'cl' ? 'Cl⁻ 是極好的離去基，這一步非常快。' : cur === 'es' ? 'CH₃O⁻ 是較差的離去基，需要加熱（皂化）；生成的羧酸立刻被鹼拿走 H⁺，變成羧酸根，使反應不可逆。' : 'NH₂⁻ 是極差的離去基，醯胺水解要在強酸或強鹼中長時間加熱。'}` }];
+  };
+  pl = mechPlayer($('#nyP', el), { frames, energy: () => ({ pts: cur === 'cl' ? [[0, 0.4], [0.25, 0.7], [0.45, 0.55], [0.65, 0.6], [1, 0.1]] : cur === 'es' ? [[0, 0.3], [0.25, 0.78], [0.45, 0.6], [0.65, 0.72], [1, 0.2]] : [[0, 0.2], [0.25, 0.85], [0.45, 0.68], [0.65, 0.88], [1, 0.3]], labels: [[0.45, '四面體中間物', 14]] }), w: 440, h: 270, s: 54, cy: 115, label: '親核醯基取代' });
+  bindSeg(el, 'nyS', v => { cur = v; pressSeg(el, 'nyS', v); pl.reset(); });
+  return { set(s) { if (s.x) { cur = s.x; pressSeg(el, 'nyS', cur); pl.reset(); } pl.go(s.step || 0, false); } };
+};
+
+/* ===== 2. 反應性階梯：只能往下走 ===== */
+W.acylrank = el => {
+  const L = [['醯氯 RCOCl', 'Cl⁻', 'HCl', -7, '幾乎沒有共振給電子（Cl 的 3p 軌域和 C 的 2p 重疊差）'], ['酸酐 (RCO)₂O', 'RCOO⁻', 'RCOOH', 4.8, 'O 的孤對電子分給兩個羰基'], ['酯 RCOOR′', "R′O⁻", "R′OH", 16, 'O 的孤對電子共振給羰基'], ['醯胺 RCONH₂', 'NH₂⁻', 'NH₃', 38, 'N 的孤對電子強烈共振給羰基（醯胺最穩定）'], ['羧酸根 RCOO⁻', 'O²⁻', 'OH⁻', '—', '帶負電，親核基幾乎無法進攻']];
+  let a = 0, b = 2;
+  el.innerHTML = `<div class="ladder2" id="arL"></div><div class="w-row"><label class="sel">從 <select id="arA">${L.map((x, i) => `<option value="${i}">${x[0]}</option>`).join('')}</select></label><label class="sel">變成 <select id="arB">${L.map((x, i) => `<option value="${i}">${x[0]}</option>`).join('')}</select></label></div><p class="note" id="arN"></p>`;
+  function draw() {
+    $('#arL', el).innerHTML = L.map((x, i) => `<div class="rung${i === a ? ' from' : ''}${i === b ? ' to' : ''}" style="margin-left:${i * 22}px"><b>${x[0]}</b><span>離去基 ${x[1]}（共軛酸 ${x[2]} pKa ${x[3]}）</span><small>${x[4]}</small></div>`).join('') + '<p class="small mut">越上面越活潑。</p>';
+    const ok = b > a, same = a === b;
+    $('#arN', el).innerHTML = same ? '選兩種不同的衍生物。' : ok ? `<span class="ok">可以直接轉換</span>：${L[a][0]} → ${L[b][0]} 是往下走（從較活潑變成較穩定），只要加入對應的親核基（${['', '羧酸根', '醇', '胺（或氨）', '鹼水解'][b]}）即可。離去的 ${L[a][1]} 比進來的基團更容易離開。`
+      : `<span class="bad">不能直接轉換</span>：${L[a][0]} → ${L[b][0]} 是往上走。進來的 ${L[b][1]} 比要離開的 ${L[a][1]} 更好離開，四面體中間物會把新來的基團踢回去。必須先水解成羧酸、再用 SOCl₂ 轉成醯氯，才能往下走。`;
+    $('#arA', el).value = a; $('#arB', el).value = b;
+  }
+  $('#arA', el).onchange = e => { a = +e.target.value; draw(); };
+  $('#arB', el).onchange = e => { b = +e.target.value; draw(); };
+  draw();
+  return { set(s) { a = s.a ?? a; b = s.b ?? b; draw(); } };
+};
+
+/* ===== 3. 費雪酯化：用過量醇推高產率 ===== */
+W.ester = el => {
+  let r = 1; const K = 4;
+  el.innerHTML = `<p class="eq">CH₃COOH + CH₃CH₂OH ⇌ CH₃COOCH₂CH₃ + H₂O　　K ≈ 4（H₂SO₄ 催化）</p><div class="w-row"><label class="rng">乙醇：乙酸 莫耳比 <input type="range" id="esR" min="0" max="2" step="0.02"><output class="mono" id="esO"></output></label></div><div id="esG"></div><p class="note" id="esN"></p>`;
+  const yieldOf = r => { const a = K - 1, bq = -K * (1 + r), c = K * r; return (-bq - Math.sqrt(bq * bq - 4 * a * c)) / (2 * a); };   // x² = K(1−x)(r−x)
+  function draw() {
+    const y = yieldOf(r), xs = Array.from({ length: 101 }, (_, i) => 10 ** (i / 50));
+    $('#esG', el).innerHTML = chart({ x: [0, 2], y: [0, 1], xt: [0, 1, 2], yt: [0, 0.5, 0.67, 1], xlab: 'log（乙醇／乙酸）：0 = 1:1、1 = 10:1、2 = 100:1', ylab: '酯的產率', h: 200 }, (X, Y) => `<path class="tline" d="${path(xs.map(v => [X(Math.log10(v)), Y(yieldOf(v))]))}"/><circle class="dot" cx="${X(Math.log10(r))}" cy="${Y(y)}" r="7"/>`);
+    $('#esN', el).innerHTML = `乙醇：乙酸 = ${fx(r, 1)} : 1 時，酯的平衡產率（以乙酸計）= <b>${fx(100 * y, 1)}%</b>。K 只有 4，等莫耳時只得到約 67%。用勒沙特列原理推高產率：加入過量的醇（便宜的那一個），或把生成的水移走（迪安–史塔克分水器）。反過來，酯在大量水和酸中會水解回羧酸和醇；在鹼中水解（皂化）則因為生成羧酸根而不可逆。`;
+    $('#esR', el).value = Math.log10(r); $('#esO', el).textContent = `${fx(r, 1)} : 1`;
+  }
+  $('#esR', el).oninput = e => { r = 10 ** +e.target.value; draw(); };
+  draw();
+  return { set(s) { r = s.r ?? r; draw(); } };
 };
 
 /* ---------- 後中化學：醇、醚與環氧化物的互動圖 ---------- */
