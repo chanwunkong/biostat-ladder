@@ -289,6 +289,10 @@ svg.ch, svg.mol, svg.en, svg.bk, svg.ions { width: 100%; height: auto; display: 
 .lmrow i.qa { background: var(--acid); } .lmrow i.qb { background: var(--base); } .lmrow i.qp { background: var(--good); } .lmrow i.used { background: none; border: 1.5px dashed var(--line); }
 .pb { fill: none; stroke: var(--ink); stroke-width: 2.2; }
 .atc { fill: var(--acid); fill-opacity: .75; } .atf { fill: var(--base); fill-opacity: .85; } .atb { fill: var(--arrow); }
+.oxpath { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0; }
+.oxs { border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; font-family: var(--mono); font-size: 14px; background: var(--bg); }
+.oxs.end { border-color: var(--accent); background: var(--soft); font-weight: 700; }
+.oxa { color: var(--arrow); font-size: 20px; }
 /* 練習題 */
 .q { border-top: 1px solid var(--line); padding: 14px 0; }
 .qt { font-weight: 500; margin: 0 0 8px; }
@@ -612,6 +616,50 @@ CH.push({
         why: '當量點 pH 約 8.7，落在暴衝區中段。酚酞在這段變色；甲基橙、甲基紅會在緩衝區就變色，造成終點提早。', show: { w: 'indicator', set: { ind: 'mo', v: 8 } } },
     ],
   });
+
+/* ---------- 後中化學：醇、醚與環氧化物 ---------- */
+CH.push({
+  id: 'alcohol', unit: 'o7', title: '醇、醚與環氧化物',
+  lede: '醇的 OH 是很差的離去基，卻能透過酸、PBr₃、TsCl 變成好離去基；醇也能被氧化成醛、酮、羧酸。這一章把取代、脫去、氧化串起來，最後看張力很大的三元環醚：環氧化物。',
+  sections: [
+    { h: '醇的物理性質：氫鍵', w: 'bpcmp', body: `
+<p>醇（R–OH）依帶 OH 的碳接幾個碳，分為一級、二級、三級。O–H 鍵讓醇：</p>
+<ul><li>分子間形成<b>氫鍵</b>，沸點比同分子量的醚、烷高很多；</li><li>小分子醇能和水互溶；碳鏈越長越不溶。</li><li>有很弱的酸性（pKa 約 16，和水相近），和 Na 金屬或 NaH 反應生成<b>烷氧離子</b> RO⁻，是強鹼也是好的親核基。</li></ul>
+<p>醚（R–O–R）沒有 O–H，分子之間不能形成氫鍵，沸點低、化性穩定，常當作溶劑（乙醚、THF）。</p>` },
+    { h: '醇的取代與脫去：先讓 OH 變好離去基', w: 'alcconv', body: `
+<p>OH⁻ 是強鹼、很差的離去基（有機酸鹼一章）。要讓醇進行取代或脫去，第一步永遠是<b>把 OH 改造成好離去基</b>：</p>
+<ul><li><b>加酸</b>：質子化成 –OH₂⁺，以中性水離開。適合 HX 取代與酸催化脫水。三級醇經碳陽離子（SN1／E1），要注意重排。</li>
+<li><b>PBr₃、SOCl₂</b>：把 O 接到 P 或 S 上變成好離去基，再讓 X⁻ 做 SN2。不經碳陽離子，不重排，適合一級、二級醇。</li>
+<li><b>TsCl</b>：變成磺酸酯（–OTs），之後可以接任何親核基。這一步 C–O 鍵沒斷，構型保留。</li></ul>
+<p>醇的酸催化<b>脫水</b>是 E1（三級、二級），得到查依采夫烯；溫度較低、醇過量時，則可能兩分子醇脫水生成醚。</p>` },
+    { h: '醇的氧化', w: 'oxid', body: `
+<p>醇氧化時，帶 OH 的碳要失去一個 H，所以結果取決於那個碳上有幾個 H：</p>
+<ul><li><b>一級醇</b>（2 個 H）→ 醛 →（在水中）羧酸。PCC 可以停在醛。</li><li><b>二級醇</b>（1 個 H）→ 酮。</li><li><b>三級醇</b>（0 個 H）→ 不反應。</li></ul>
+<p>體內的乙醇代謝也是同樣的路：乙醇 →（醇脫氫酶）乙醛 →（醛脫氫酶）乙酸。乙醛造成宿醉與臉紅；部分東亞人醛脫氫酶活性低，所以特別容易臉紅。反方向的「還原」就是醛酮一章的 NaBH₄ 反應。</p>` },
+    { h: '醚的合成與環氧化物', w: 'epox', body: `
+<p><b>威廉森醚合成</b>：烷氧離子 RO⁻ 對鹵烷做 SN2。因為是 SN2，鹵烷要選<b>甲基或一級</b>；如果用三級鹵烷，強鹼 RO⁻ 會讓它走 E2 變成烯。設計時要選對「拆法」：例如合成第三丁基甲基醚，要用 (CH₃)₃CO⁻ + CH₃I，而不是 CH₃O⁻ + (CH₃)₃CBr。</p>
+<p>醚的 C–O 鍵很穩定，只有強酸（HBr、HI）才能切開。</p>
+<p><b>環氧化物</b>是三元環醚，環張力很大，很容易被親核基打開：</p>
+<ul><li><b>鹼性或強親核基</b>：SN2，進攻<b>取代較少</b>的碳。</li><li><b>酸性</b>：O 先質子化，進攻<b>取代較多</b>的碳（正電荷較穩定的那一邊）。</li></ul>
+<p>兩種情況都從背面進攻，得到反式產物。環氧化物可由烯與過氧酸（如 mCPBA）製得；許多藥物和致癌物（例如黃麴毒素的代謝物）的作用就是環氧化物被 DNA 的親核基打開。</p>` },
+  ],
+  quiz: [
+    { q: '乙醇（分子量 46）的沸點遠高於二甲醚（分子量 46），主要原因是？', o: ['乙醇分子間有氫鍵', '乙醇分子量較大', '二甲醚是非極性分子', '乙醇是離子化合物'], a: 0,
+      why: '兩者分子量相同；乙醇有 O–H，分子間可形成氫鍵。二甲醚有極性，但沒有 O–H。', show: { w: 'bpcmp' } },
+    { q: '下列哪一種醇與盧卡斯試劑（濃 HCl／ZnCl₂）反應最快？', o: ['2-甲基-2-丙醇（三級）', '2-丙醇（二級）', '1-丙醇（一級）', '甲醇'], a: 0,
+      why: '盧卡斯試驗走 SN1：三級碳陽離子最穩定，生成最快，立刻出現混濁。', show: { w: 'alcconv', set: { i: 0 } } },
+    { q: '(R)-2-丁醇與 PBr₃ 反應，產物為？', o: ['(S)-2-溴丁烷', '(R)-2-溴丁烷', '外消旋 2-溴丁烷', '1-丁烯'], a: 0,
+      why: 'PBr₃ 把 OH 變成好離去基後，Br⁻ 以 SN2 從背面進攻，構型反轉。', show: { w: 'alcconv', set: { i: 1 } } },
+    { q: '1-丙醇以 K₂Cr₂O₇／H₂SO₄ 氧化，主產物為？', o: ['丙酸', '丙醛', '丙酮', '不反應'], a: 0,
+      why: '一級醇先成醛，在水溶液中醛會繼續被強氧化劑氧化成羧酸。要停在醛需用 PCC。', show: { w: 'oxid', set: { a: 'p', o: 'cr' } } },
+    { q: '下列哪一種醇不會被 K₂Cr₂O₇ 氧化？', o: ['2-甲基-2-丙醇', '2-丁醇', '1-丁醇', '甲醇'], a: 0,
+      why: '三級醇帶 OH 的碳上沒有 H，無法形成 C=O。', show: { w: 'oxid', set: { a: 't' } } },
+    { q: '以威廉森合成法製備第三丁基甲基醚 (CH₃)₃C–O–CH₃，應選擇哪一組試劑？', o: ['(CH₃)₃CO⁻ Na⁺ + CH₃I', 'CH₃O⁻ Na⁺ + (CH₃)₃CBr', 'CH₃OH + (CH₃)₃COH', '(CH₃)₃CBr + CH₃I'], a: 0,
+      why: '威廉森合成是 SN2，鹵烷要是甲基或一級。用三級溴烷配強鹼會走 E2 得到烯。' },
+    { q: '2,2-二甲基環氧乙烷在酸性甲醇中開環，CH₃OH 主要進攻哪一個碳？', o: ['取代較多的三級碳', '取代較少的一級碳', '兩邊相同', '進攻氧原子'], a: 0,
+      why: '酸性條件下 O 先質子化，正電荷主要累積在較穩定的三級碳上，弱親核基進攻該碳（SN1 性質）。鹼性條件則相反。', show: { w: 'epox', set: { c: 'acid' } } },
+  ],
+});
 
 /* ---------- 後中化學：烯烴與炔烴 ---------- */
 CH.push({
@@ -1826,6 +1874,69 @@ W.decide = el => {
   $('#dh', el).onchange = e => { st.heat = e.target.checked; draw(); };
   draw();
   return { set(s) { Object.assign(st, s); draw(); } };
+};
+
+/* ---------- 後中化學：醇、醚與環氧化物的互動圖 ---------- */
+
+/* ===== 1. 沸點比較：氫鍵的效果 ===== */
+W.bpcmp = el => {
+  const D = [['丙烷 CH₃CH₂CH₃', 44, -42, '只有分散力'], ['二甲醚 CH₃OCH₃', 46, -24, '有極性，但沒有 O–H，分子間不能形成氫鍵'], ['乙醇 CH₃CH₂OH', 46, 78, '有 O–H，分子間形成氫鍵'], ['乙醚 (CH₃CH₂)₂O', 74, 35, '和 1-丁醇同分子量，但沒有氫鍵'], ['1-丁醇', 74, 118, '氫鍵'], ['乙二醇 HOCH₂CH₂OH', 62, 197, '兩個 OH，氫鍵更多（汽車防凍液）']];
+  el.innerHTML = `<div class="bars pk">${D.map(([n, m, b, w]) => `<div title="${w}"><span>${n}（${m}）</span><i class="${/醇/.test(n) ? 'ba' : 'bha'}" style="width:${4 + 96 * (b + 50) / 250}%"></i><b class="mono">${b} °C</b></div>`).join('')}</div><p class="small mut">括號內為分子量；橘色為醇</p><p class="note">分子量相近時，醇的沸點遠高於醚與烷，因為 O–H 能在分子之間形成<b>氫鍵</b>。醚的 O 有孤對電子，可以接受水的氫鍵，所以小分子醚在水中有一定溶解度，但醚分子之間不能互相形成氫鍵。醇的碳鏈越長，非極性部分越大，在水中的溶解度越低（乙醇和水完全互溶，1-丁醇只溶約 7.7 g/100 mL）。</p>`;
+  return { set() {} };
+};
+
+/* ===== 2. 醇的轉換：讓 OH 變成好離去基 ===== */
+W.alcconv = el => {
+  const R = [
+    ['HBr、HCl（濃）', '鹵烷', '三級：SN1（快，可能重排）；一級：SN2', 'OH 先被質子化成 –OH₂⁺，以水離開。三級醇與濃 HCl 室溫就反應（盧卡斯試驗：三級最快混濁、二級較慢、一級幾乎不反應）。'],
+    ['PBr₃', '溴烷', '一級、二級；SN2，構型反轉', 'O 進攻 P 形成好的離去基，Br⁻ 從背面 SN2。不經過碳陽離子，所以不重排。'],
+    ['SOCl₂（吡啶）', '氯烷', '一級、二級；SN2', '副產物 SO₂ 和 HCl 都是氣體，容易分離。'],
+    ['TsCl、吡啶', '對甲苯磺酸酯（R–OTs）', '構型保留（C–O 鍵沒斷）', '把 OH 變成 OTs（極好的離去基，TsOH 是強酸），之後再用任何親核基做 SN2。分兩步，所以總結果是一次反轉。'],
+    ['濃 H₂SO₄，加熱', '烯（脫水）', '三級 > 二級 > 一級；E1（三級、二級）', '質子化後失去水形成碳陽離子，再失去 β-H。查依采夫產物為主，可能重排。這是酸催化水合的逆反應。'],
+    ['PCC（CH₂Cl₂）', '一級 → 醛；二級 → 酮', '溫和氧化劑，停在醛', '無水條件下，醛不會再被氧化成羧酸。'],
+    ['K₂Cr₂O₇／H₂SO₄（瓊斯試劑）', '一級 → 羧酸；二級 → 酮', '強氧化劑', '一級醇先成醛，醛在水中形成水合物後再被氧化成羧酸。橙色 Cr⁶⁺ 變成綠色 Cr³⁺，舊式酒測器的原理。'],
+  ];
+  let cur = 0;
+  el.innerHTML = `<div class="tscroll"><table class="tbl sel-tbl" id="acT"><thead><tr><th>試劑</th><th>產物</th><th>適用／立體</th></tr></thead><tbody>${R.map((r, i) => `<tr data-i="${i}" tabindex="0"><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('')}</tbody></table></div><p class="note" id="acN"></p>`;
+  function draw() { $$('#acT tbody tr', el).forEach((t, i) => t.classList.toggle('on', i === cur)); $('#acN', el).innerHTML = `<b>${R[cur][0]}</b>：${R[cur][3]}`; }
+  $$('#acT tbody tr', el).forEach(t => { t.onclick = t.onkeydown = e => { if (e.type === 'keydown' && e.key !== 'Enter') return; cur = +t.dataset.i; draw(); }; });
+  draw();
+  return { set(s) { cur = s.i ?? cur; draw(); } };
+};
+
+/* ===== 3. 醇的氧化：看帶 OH 的碳上有幾個 H ===== */
+W.oxid = el => {
+  const A = { p: ['一級醇 RCH₂OH', 2], s: ['二級醇 R₂CHOH', 1], t: ['三級醇 R₃COH', 0] }, O = { pcc: 'PCC（溫和）', cr: 'K₂Cr₂O₇／H₂SO₄（強）' };
+  const st = { a: 'p', o: 'pcc' };
+  el.innerHTML = `${seg('oxA', Object.entries(A).map(([k, v]) => [k, v[0]]), st.a)}${seg('oxO', Object.entries(O), st.o)}<div class="oxpath" id="oxP"></div><p class="note" id="oxN"></p>`;
+  function draw() {
+    const [nm, h] = A[st.a], steps = h === 0 ? [nm, '不反應'] : h === 1 ? [nm, '酮 R₂C=O'] : st.o === 'pcc' ? [nm, '醛 RCHO'] : [nm, '醛 RCHO', '羧酸 RCOOH'];
+    $('#oxP', el).innerHTML = steps.map((s, i) => `<span class="oxs${i === steps.length - 1 ? ' end' : ''}">${s}</span>`).join('<span class="oxa">→</span>');
+    $('#oxN', el).innerHTML = `帶 OH 的碳上有 <b>${h} 個 H</b>。醇氧化時，這個碳要失去一個 H（連同 O–H 的 H）形成 C=O，所以：${h === 0 ? '三級醇沒有 H 可以拿，<b>不會被氧化</b>（強烈條件下只會斷 C–C 鍵）。' : h === 1 ? '二級醇氧化一次就成為酮，酮的羰基碳上已經沒有 H，停在這裡。' : st.o === 'pcc' ? '一級醇氧化成醛；PCC 在無水條件下反應，醛無法形成水合物，所以停在醛。' : '一級醇先成醛；在水溶液中醛的羰基碳上還有 H，會繼續被氧化成羧酸。'}`;
+    pressSeg(el, 'oxA', st.a); pressSeg(el, 'oxO', st.o);
+  }
+  bindSeg(el, 'oxA', v => { st.a = v; draw(); }); bindSeg(el, 'oxO', v => { st.o = v; draw(); });
+  draw();
+  return { set(s) { Object.assign(st, s); draw(); } };
+};
+
+/* ===== 4. 環氧化物開環：酸性 vs 鹼性 ===== */
+W.epox = el => {
+  let cond = 'base';
+  el.innerHTML = `<p class="eq">2,2-二甲基環氧乙烷 + CH₃OH</p>${seg('epS', [['base', '鹼性：CH₃O⁻ / CH₃OH'], ['acid', '酸性：H⁺ / CH₃OH']], cond)}<div id="epM"></div><p class="note" id="epN"></p>`;
+  function draw() {
+    const base = cond === 'base';
+    const sc = { atoms: { C1: { x: -0.65, y: 0, t: 'C' }, C2: { x: 0.65, y: 0, t: 'CH₂' }, O: { x: 0, y: 1.0, t: 'O', c: base ? '' : '+', lp: base ? [60, 120] : [90] }, M1: { x: -1.45, y: 0.55, t: 'CH₃' }, M2: { x: -1.45, y: -0.6, t: 'CH₃' }, H: { x: 0, y: 1.9, t: 'H', hide: base }, Nu: { x: base ? 1.4 : -0.95, y: -1.75, t: base ? 'CH₃O' : 'CH₃OH', c: base ? '−' : '', lp: [90] } },
+      bonds: [['C1', 'C2', 's'], ['O', 'C1', 's'], ['O', 'C2', 's'], ['C1', 'M1', 's'], ['C1', 'M2', 's'], ...(base ? [] : [['O', 'H', 's']])],
+      arrows: [{ f: { lp: ['Nu', 90] }, t: { a: base ? 'C2' : 'C1' }, bend: base ? 0.3 : -0.3 }, { f: { b: base ? ['O', 'C2'] : ['O', 'C1'] }, t: { a: 'O' }, bend: base ? -0.6 : 0.6 }] };
+    $('#epM', el).innerHTML = MOL.svg(sc, { w: 360, h: 250, s: 58, cy: 120, label: '環氧化物開環' });
+    $('#epN', el).innerHTML = base ? '<b>鹼性條件</b>：強親核基 CH₃O⁻ 直接做 <b>SN2</b>，從背面進攻<b>立體較空、取代較少</b>的碳（CH₂）。產物：1-甲氧基-2-甲基-2-丙醇。三元環的環張力很大，所以即使 O⁻ 不是好離去基，環也會打開。'
+      : '<b>酸性條件</b>：O 先被質子化，C–O 鍵開始變長，正電荷主要累積在<b>較能承受正電荷的三級碳</b>上（類似 SN1）。弱親核基 CH₃OH 進攻<b>取代較多</b>的碳。產物：2-甲氧基-2-甲基-1-丙醇。兩種條件下親核基都從 O 的背面進攻，所以開環都是<b>反式</b>的。';
+    pressSeg(el, 'epS', cond);
+  }
+  bindSeg(el, 'epS', v => { cond = v; draw(); });
+  draw();
+  return { set(s) { cond = s.c || cond; draw(); } };
 };
 
 /* ---------- 後中化學：烯烴與炔烴的互動圖 ---------- */
