@@ -20,7 +20,7 @@ window.__errs = []; addEventListener('error', e => __errs.push(e.message)); cons
     for (const s of w.querySelectorAll('select')) for (const o of [...s.options]) { s.value = o.value; fire(s, 'change'); }
     for (const c of w.querySelectorAll('input[type=checkbox]')) { c.click(); c.click(); }
     for (const b of [...w.querySelectorAll('button.btn')]) { if (!b.closest('.mech-ctl')) b.click(); }
-    if (/NaN(?!H)|undefined|Infinity/.test(w.textContent)) __errs.push(`${w.dataset.w}: 文字中出現 NaN/undefined`);
+    if (/\bNaN\b|\bundefined\b|\bInfinity\b/.test(w.textContent)) __errs.push(`${w.dataset.w}: 文字中出現 NaN/undefined`);
   }
   for (const q of document.querySelectorAll('.q')) {
     rep.quiz++;
